@@ -1832,7 +1832,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
                   (file-write-date dst-file)
                   0
   ! and (<= (file-write-date src-file) dst-date)
-        (<= *header-timestamp* dst-date))
+        ;;(<= *header-timestamp* dst-date)
+        )
 
 (to compile-runtime src-file dst-file
   ! when (file-older src-file dst-file) (return-from compile-runtime)
@@ -1868,9 +1869,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
   ! expanded-expr = builtin-expander expr-with-deps
   ! c-file = "{dst}.c"
   ! ssa-produce-file c-file expanded-expr
-  ! result = c-compiler dst c-file
-  ! when (string/= result "")
-     (e l (split #\Newline result) (format t "~a~%" l))
+  ;! result = c-compiler dst c-file
+  ;! when (string/= result "")
+  ;   (e l (split #\Newline result) (format t "~a~%" l))
   ! deps)
 
 (to symta-read-file filename
@@ -1901,15 +1902,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
   ! nil)
 
 (to build build-folder
-  ! *root-folder* = "/Users/nikita/Documents/git/symta/"
-  ! *src-folders* = list "{build-folder}src/" "{*root-folder*}src/"
+  ;;! *root-folder* = "/Users/nikita/Documents/git/symta/"
+  ! *src-folders* = list "{build-folder}src/" ;;"{*root-folder*}src/"
   ! *dst-folder* = "{build-folder}lib/"
-  ! runtime-src = "{*root-folder*}/runtime/runtime.c"
-  ! *header-timestamp* = file-write-date "{*root-folder*}/runtime/symta.h"
-  ! runtime-path = "{build-folder}run"
-  ! compile-runtime runtime-src runtime-path
+  ;;! runtime-src = "{*root-folder*}/runtime/runtime.c"
+  ;;! *header-timestamp* = file-write-date "{*root-folder*}/runtime/symta.h"
+  ;;! runtime-path = "{build-folder}run"
+  ;;! compile-runtime runtime-src runtime-path
   ! dst-file = compile-module "main"
   ! unless dst-file (error "cant compile main.s")
-  ! result = shell runtime-path ;;":{*dst-folder*}"
-  ! e l (butlast (split #\Newline result)) (format t "~a~%" l)
+  ;;! result = shell runtime-path ;;":{*dst-folder*}"
+  ;;! e l (butlast (split #\Newline result)) (format t "~a~%" l)
   )
