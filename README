@@ -5,4 +5,4 @@ See doc/symta-by-example.md for a quick introduction to the language.
 
 To produce compiler do "bash build.sh". Currently Symta needs GCC to function correctly. It was tested with gcc-4.2. Newer GCCs are know to fail.
 
-`bsrenew` produces compiler's C files (needs SBCL)
+`bsrenew` renews compiler's C files (needs SBCL), in case you do any changes to files udner src/ or pkg/symta/src
