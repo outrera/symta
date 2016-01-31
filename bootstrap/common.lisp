@@ -370,11 +370,11 @@ pathnames as well."
 ;;(defmacro symbol-macro-bound-p (variable &environment env)
 ;;  (eq :symbol-macro (sb-cltl2:variable-information variable env)))
 
-(defun lexically-bound-p (symbol env)
-  "Return T if the symbol is bound in lexical environment env"
-  ;;#+sbcl (sb-walker:var-lexical-p symbol env)
-  #+sbcl (eq :lexical (sb-cltl2:variable-information symbol env))
-  #-(or sbcl) (error 'not-implemented :proc (list 'lexically-bound-p symbol env)))
+;;(defun lexically-bound-p (symbol env)
+;;  "Return T if the symbol is bound in lexical environment env"
+;;  ;;#+sbcl (sb-walker:var-lexical-p symbol env)
+;;  #+sbcl (eq :lexical (sb-cltl2:variable-information symbol env))
+;;  #-(or sbcl) (error 'not-implemented :proc (list 'lexically-bound-p symbol env)))
 
 
 ;; On 32-bit machines lower three bits of address word usually contain type tag.
