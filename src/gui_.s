@@ -8,7 +8,7 @@ ffi show_get_ticks.u4
 
 ffi show_sound_load.int Filename.text Music.int
 ffi show_sound_free.void Id.int
-ffi show_sound_play.int Id.int Channel.int Loop.int
+ffi show_sound_play.int Id.int Channel.int Volume.int Loop.int
 ffi show_sound_playing.int Channel.int
 
 dummy = No

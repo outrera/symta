@@ -548,11 +548,13 @@ void show_sound_free(int id) {
 
 #define MUSIC_CHANNEL 0xFFFFFFF
 
-int show_sound_play(int id, int channel, int loop) {
+int show_sound_play(int id, int channel, int volume, int loop) {
   if (sounds[id].flags&SND_MUSIC) {
+    Mix_VolumeMusic(volume*MIX_MAX_VOLUME/1000);
     Mix_PlayMusic((Mix_Music*)sounds[id].sound, loop+1);
     return MUSIC_CHANNEL;
   }
+  Mix_Volume(channel,volume*MIX_MAX_VOLUME/1000);
   return Mix_PlayChannel(channel, (Mix_Chunk*)sounds[id].sound, loop+0);
 }
 
