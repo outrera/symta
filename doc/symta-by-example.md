@@ -294,7 +294,13 @@ say Xs{X => X*X}
 
 The `=>` is the lambda operator, which expresses anonymous function. In our case it take argument `X` and returns `X*X`. In case of `{}`, there is a shorthand for that: `Xs{?*?}`, which is equivalent to `Xs{X => X*X}`
 
+The subexpression binding operator `!` available in the context of `:` is especially useful with looping:
+```
+Xs = [0 1 2 3 No 4 5 6]
+while not Xs.end and got !it pop Xs: say it //pints 0 1 2 3
+```
 
+Here we process values of `Xs` until `No` is encountered or Xs is over. This syntax is more flexible, than usual anaphoric macros available in Lisp-based languages or Rust's `while let Some(elem) = iterator.next()`
 
 Object Oriented Programming
 ------------------------------
@@ -774,6 +780,8 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 
 `clock` - realtime clock in seconds (floating point)
 
+`Item^~{Default}` - if Item is No, then return `Default`, otherwise return `Item`
+`Item^~{A Default}` - if Item is `A`, then return `B`, otherwise return `Item`
 
 Thanks
 ------------------------------
