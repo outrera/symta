@@ -218,6 +218,11 @@ gui.input Es =
       | NW.input{[mice over 1 XY]}
   [mice Button State]
     | MP = $mice_xy
+    | LW = $last_widget
+    | when LW^address <> NW^address:
+      | when got LW: LW.input{[mice over 0 MP]}
+      | $last_widget <= NW
+      | NW.input{[mice over 1 MP]}
     | if $mice_focus
       then | LastClickTime = $click_time.Button
            | when got LastClickTime and T-LastClickTime < 0.25:
