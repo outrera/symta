@@ -10,11 +10,14 @@ queue.push Item =
 
 queue.pop =
 | Item = $xs.$a
-| $xs.$a <= 0 // ensure we have no reference to it
 | !$a+1
 | when $a >< $xs.size: $a <= 0
 | Item
 
-queue.clear = while $a <> $b: $pop
+queue.reset = $a <= $b
+
+queue.clear = // ensures we have no reference to any object
+| $xs.clear{0}
+| $a <= $b
 
 export queue

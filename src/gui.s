@@ -27,6 +27,7 @@ widget.items = No
 widget.render = Me
 widget.draw G PX PY =
 widget.popup = 0
+widget.infoline = '' //text to draw at info line
 widget.pointer = 0
 widget.parent = 
 widget.`!parent` P = 
@@ -41,7 +42,7 @@ widget.x = 0
 widget.y = 0
 widget.w = 0
 widget.h = 0
-widget.above_all = 0
+widget.above_all = 0 //draw above all other widgets
 widget.wants_focus = 0
 widget.wants_focus_rect = 0
 
@@ -135,10 +136,23 @@ input_split.itemAt Point XY WH =
 
 
 type gui{Root cursor/host}
-  root/Root timers/[] mice_xy/[0 0] widget_cursor result/No fb/No
-  keys/(t) popup/0 last_widget/(widget) focus_widget/No
-  focus_xy/[0 0] focus_wh/[0 0] mice_focus mice_focus_xy/[0 0] click_time/(t)
-  cursor/Cursor host_cursor/0
+  root/Root
+  timers/[]
+  mice_xy/[0 0]
+  widget_cursor //cursor current widgets provides
+  result/No
+  fb/No
+  keys/(t)
+  popup/0
+  mice_widget/(widget) //widget under cursor
+  focus_widget/No //widget currently receiving keyboard input
+  focus_xy/[0 0]
+  focus_wh/[0 0]
+  mice_focus
+  mice_focus_xy/[0 0]
+  click_time/(t)
+  cursor/Cursor //defaut cursor
+  host_cursor/0
 | GUI <= Me
 | $fb <= gfx 1 1
 | show: Es => | GUI.input{Es}
@@ -211,17 +225,17 @@ gui.input Es =
     | if $mice_focus
       then $mice_focus.input{[mice_move XY XY-$mice_focus_xy]}
       else NW.input{[mice_move XY XY-NW_XY]}
-    | LW = $last_widget
-    | when LW^address <> NW^address:
-      | when got LW: LW.input{[mice over 0 XY]}
-      | $last_widget <= NW
+    | MW = $mice_widget
+    | when MW^address <> NW^address:
+      | when got MW: MW.input{[mice over 0 XY]}
+      | $mice_widget <= NW
       | NW.input{[mice over 1 XY]}
   [mice Button State]
     | MP = $mice_xy
-    | LW = $last_widget
-    | when LW^address <> NW^address:
-      | when got LW: LW.input{[mice over 0 MP]}
-      | $last_widget <= NW
+    | MW = $mice_widget
+    | when MW^address <> NW^address:
+      | when got MW: MW.input{[mice over 0 MP]}
+      | $mice_widget <= NW
       | NW.input{[mice over 1 MP]}
     | if $mice_focus
       then | LastClickTime = $click_time.Button

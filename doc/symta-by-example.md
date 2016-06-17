@@ -676,6 +676,10 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 
 `list.size` - number of elements in a list
 
+`list.end` - returns 1 when `list.size` is 0
+
+`list.pre X` - prefixes X to the begining of a list. Note that for efficency purposes returned list shares tail elements with the original list. To make truly new list, call `list.list` on the result.
+
 `list.xs @Xs` - pick list elements indexed by Xs
 
 `table.xs @Xs` - pick list elements indexed by Xs
