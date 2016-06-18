@@ -113,9 +113,9 @@
 #define REGS_ARGS(P) P, api
 
 typedef struct frame_t {
-  void *base;
-  void *mark;
-  void *lifts;
+  void *base;  //pointer to heap
+  void *mark;  //current function name
+  void *lifts; //what should be lifted to parent frame
 } frame_t;
 
 
