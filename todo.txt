@@ -1,0 +1,54 @@
+- fix `say (123).s2.s2`, gives wrong result for positive numbers
+- `:` should work inside of `{}`
+- for loop, with proper breaking (needs local macros and probably interpreter)
+- "stack overflow" and and "out of memory" error messages waste a lot of code and CPU time
+- instead of _label and _goto allow calling label as a function with optional return value
+- when label jumps above variable introduction, notify user
+- `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys. Just use something similar to `++` and `+=`. Although `++` is already used.
+- "case C" should require `:`
+- Array slicing (could be implemented through a{} calling different method when used with `:`). Currently SoM has 192:28 proportion of List.Index to List.(expr). Consider Python's approach
+  a[start:end] # items start through end-1
+  a[start:]    # items start through the rest of the array
+  a[:end]      # items from the beginning through end-1
+  a[:]         # a copy of the whole array
+  a[start:end:step] # step through array (usable with any of the above)
+  a[-1]    # last item in the array
+  a[-2:]   # last two items in the array
+  a[:-2]   # everything except the last two items
+- `mark` could implemented differently, using stacktrace
+- frame_t can be allocated at call site in C's stack
+- `more` instead of `continue`
+- return from lambda
+- Non-local return
+- error/exception catching (using non-local return)
+- types should allow keywords initing fields by default; rethink the whole keywords syntax; because lowercase letter type constructor already conflict with lowercase letter in function calls. I.e. make keywords to be uppercase
+- array fields should provide special `!`, which uses init, instead of allocating new memory.
+- SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
+- list of all functions that use specific method
+- unless export table changes, no recompilation of dependent files should be required
+- a way to simply include other symta file directly, as part of macro facility. I.e. `include` should be macro
+- instead of NTypes*NMethods table, cache most recent types->methods at the call place.
+- better way to read items from byte arrays. Also consider bit arrays
+- symbols starting with digit, like `4players`, should be printed with "``" quotes
+- tab character in text breaks parser
+- `when 123: 456;` gives parser error "bad call: () `.` 0", under parse_semicolon
+- `and` and `or` should have usual binary op syntax, otherwise they are too confusing
+- `when got!it Expr: process it` should work with if
+- confusing and non uniform absence of  `:` in `when Condition | action`
+- `bad number of argument` should provide the function name
+- recompile dependent modules only when exports list changes
+- rename `leave` to `lift, that is shorter and better describes what is being done to value. We are lifting control and result value back to the caller.
+- a way to quickly set all object fields to 0
+- interpreter. Especially useful when C compiler is unavailable for bootstrap and for scripting.
+- unknown variable at top level doesn't provide location, just "unknown:0,0: undefined variable `XYZ`"
+- Inline C/C++ code for FFI
+- Source location in stack traces. So when a wrong method on `No` object gets called, we can get the location immediately.
+- proper heap allocation, instead of enheap, allowing moving any type to heap.
+- enheap related stuff should be part of runtime to maximize efficiency
+- the `_.enheap` returns base type, instead of returning derived type object; provide a way to access complete object inside called method
+- Dynamic malloc and free, when say "P = freeable: point X Y" allocates point inside of inside of user provided pool. There should be an easy way to move existing object into pool and from pool.
+- More-efficient hash tables
+- Networking
+- some potential problems with class inheritance, like no base class data fields: adding `items` field in widget leads to subtle error
+- variables are exported by value, instead of by reference, so they cannot be modified
+- are variable sized arglists really necessary? They are hard to implement efficiently
