@@ -41,6 +41,7 @@
 - a way to quickly set all object fields to 0
 - interpreter. Especially useful when C compiler is unavailable for bootstrap and for scripting.
 - unknown variable at top level doesn't provide location, just "unknown:0,0: undefined variable `XYZ`"
+- a way to declare argument type for fast field access and to avoid `Me=type` comments
 - Inline C/C++ code for FFI
 - Source location in stack traces. So when a wrong method on `No` object gets called, we can get the location immediately.
 - proper heap allocation, instead of enheap, allowing moving any type to heap.
@@ -48,6 +49,7 @@
 - the `_.enheap` returns base type, instead of returning derived type object; provide a way to access complete object inside called method
 - Dynamic malloc and free, when say "P = freeable: point X Y" allocates point inside of inside of user provided pool. There should be an easy way to move existing object into pool and from pool.
 - More-efficient hash tables
+- proper I/O streams, so that output of underlying could be redirected or suppressed.
 - Networking
 - some potential problems with class inheritance, like no base class data fields: adding `items` field in widget leads to subtle error
 - variables are exported by value, instead of by reference, so they cannot be modified
