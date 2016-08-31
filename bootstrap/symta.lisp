@@ -278,7 +278,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
   ! when (token-is :|{}| o)
     (! as = /parse (getf o :value)
      ! as = if (find-if #'delim? as) (list as) as ;allow Xs.map{X=>...}
-     ! ret (/binary-loop ops down `((,@o :parsed "{}") ,e ,@as)))
+     ! ret (/binary-loop ops down `((,@o :parsed ,'"{}") ,e ,@as)))
   ! b = try (funcall down) (parser-error "no right operand for" o)
   ! unless (and (token-is :. o) (token-is :integer e) (token-is :integer b))
     (ret (/binary-loop ops down (list o e b)))
