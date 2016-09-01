@@ -164,7 +164,7 @@ static LARGE_INTEGER getFILETIMEoffset()
     return (t);
 }
 
-int clock_gettime(int X, struct timeval *tv)
+int compat_clock_gettime(int X, struct timeval *tv)
 {
     LARGE_INTEGER           t;
     FILETIME            f;
@@ -201,3 +201,4 @@ int clock_gettime(int X, struct timeval *tv)
     tv->tv_usec = t.QuadPart % 1000000;
     return (0);
 }
+

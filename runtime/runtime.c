@@ -13,7 +13,7 @@
 #include <mach/clock.h>
 #include <mach/mach.h>
 #define CLOCK_REALTIME 0
-int clock_gettime(int clk_id, struct timespec *ts) {
+int my_clock_gettime(int clk_id, struct timespec *ts) {
   clock_serv_t cclock;
   mach_timespec_t mts;
   host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
@@ -24,6 +24,8 @@ int clock_gettime(int clk_id, struct timespec *ts) {
 }
 #else
 #include <sys/time.h>
+
+#define my_clock_gettime clock_gettime
 #endif
 
 #include "runtime.h"
@@ -1500,7 +1502,7 @@ RETURNS(FIXNUM((intptr_t)time(0)))
 //RETURNS(R)
 BUILTIN0("clock",clock)
   struct timespec time;
-  clock_gettime(CLOCK_REALTIME,&time);
+  my_clock_gettime(CLOCK_REALTIME,&time);
   double dSeconds = time.tv_sec;
   double dNanoSeconds = (double)time.tv_nsec/1000000000L;
   LOAD_FLOAT(R, dSeconds+dNanoSeconds);
