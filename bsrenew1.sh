@@ -1,4 +1,4 @@
-#Windows version, used to start SBCL from bash
+#Windows version, used to start SBCL from MINGW64/git bash
 # renew bootstrap/c files
 
 mkdir -p bootstrap/c
@@ -31,4 +31,4 @@ cp build/symta/lib/macro.c bootstrap/c
 cp build/symta/lib/eval.c bootstrap/c
 cp build/symta/lib/main.c bootstrap/c
 
-echo "Done. Now run appropriate build* file to produce compiler executable."
+echo "Done. Now run appropriate build* file to produce compiler's executable."

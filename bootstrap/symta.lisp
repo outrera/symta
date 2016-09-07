@@ -1202,7 +1202,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
  ! match place
     (("." object field)
      (if (fn-sym? field)
-         `("_mcall" ,object ,"!{field}" ,value)
+         `("_mcall" ,object ,(! "!{field}") ,value)
          `("_mcall" ,object "!" ,field ,value)))
     (("$" field) (expand-assign `("." "Me" ,field) value))
     (else `("_set" ,place ,value)))
@@ -1270,10 +1270,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
                ,@copy
                ,@(m s super `("_subtype" ,s ,name))
                ("=" (("." ,name ,"fields_")) ("[]" ,@fs))
-               ("=" (("." ,name ,"is_{name}")) 1)
-               ("=" (("." "_" ,"is_{name}")) 0)
+               ("=" (("." ,name ,(! "is_{name}"))) 1)
+               ("=" (("." "_" ,(! "is_{name}"))) 0)
                ,@(m f fs `("=" (("." ,name ,f)) ("_dget" "Me" ,(incf j))))
-               ,@(m f fs `("=" (("." ,name ,"!{f}") ,v) ("_dset" "Me" ,(incf k) ,v))))))
+               ,@(m f fs `("=" (("." ,name ,(! "!{f}")) ,v) ("_dset" "Me" ,(incf k) ,v))))))
 
 (to expand-block-item-method type name args body
   ! unless (equal name "_") (setf args `("Me" ,@args))
@@ -1286,7 +1286,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
                          ,body)))
        (else (error "bad arglist for `_`: ~a" args)))
   ! setf body `("default_leave_" ,name ,(expand-named name body))
-  ! list nil `("_dmet" ,name ,type ("=>" ,args ("_progn" ("_mark" ,"{type}.{name}") ,body))))
+  ! list nil `("_dmet" ,name ,type
+                 ("=>" ,args ("_progn" ("_mark" ,(! "{type}.{name}")) ,body))))
 
 (to expand-block-item x
   ! y = match x
@@ -1337,7 +1338,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
          ! cond
            ((var-sym? a) `(("let_" ((,a ,b)) ,r)))
            ((match a (("[]" . bs) (every #'var-sym? bs))) `(,(expand-destructuring b (cdr a) r)))
-           (t `(,(expand-match b `((,a ,r)) `("_fatal" ,"couldnt match {b} to {a}")))))))
+           (t `(,(expand-match b `((,a ,r)) `("_fatal" ,(! "couldnt match {b} to {a}"))))))))
 
 (to expand-block xs
   ! when (and (= (length xs) 1)
@@ -1586,7 +1587,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
      (("." a b) `("_mcall" ,a ,b ,@as))
      (("$" b) `("_mcall" "Me" ,b ,@as))
      (("^" a b) `(,b ,@as ,a))
-     (else (if (fn-sym? h) `(,h ,@as) `("_mcall" ,h ,'"{}" ,@as))))
+     (else (if (fn-sym? h) `(,h ,@as) `("_mcall" ,h ,(! '"{}") ,@as))))
 
 (to handle-package x
   ! p = position #\? x
