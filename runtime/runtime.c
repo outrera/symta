@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <dlfcn.h>
 #include <stdarg.h>
 #include <sys/stat.h>
@@ -7,6 +10,10 @@
 #include <float.h>
 #include <math.h>
 #include <dirent.h>
+
+
+// used for debugging
+#define D fprintf(stderr, "%d:%s\n", __LINE__, __FILE__);
 
 #ifdef __MACH__
 // OS X does not have clock_gettime, define it through clock_get_time

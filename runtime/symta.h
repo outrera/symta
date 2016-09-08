@@ -1,16 +1,10 @@
 #ifndef SYMTA_H
 #define SYMTA_H
 
-#include <stdlib.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 #include <setjmp.h>
 
 #define SYMTA_DEBUG 1
-
-// used for debugging
-#define D fprintf(stderr, "%d:%s\n", __LINE__, __FILE__);
 
 #define TAGL_BITS ((uintptr_t)2)
 #define PTR_BITS ((uintptr_t)40)
@@ -182,6 +176,7 @@ typedef void *(*pfun)(REGS);
   }
 #else
 #define HEAP_GUARD()
+#define LIFT_GUARD()
 #define FRAME_GUARD()
 #endif
 

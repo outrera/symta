@@ -23,24 +23,6 @@ get_lib_exports LibName =
                             Else | ['Dummy'.rand]
 | bad "no [LibName].s"
 
-GCC = 'gcc -O1 -Wno-return-type -Wno-pointer-sign'
-DLL_EXT = ''
-
-when get_rt_flag_ windows:
-| GCC <= "[GCC] -D WINDOWS"
-
-when get_rt_flag_ unix:
-| GCC <= "[GCC] -g"
-
-c_runtime_compiler Dst Src =
-| RtFolder = "[GRootFolder]runtime"
-| unix "[GCC] -I '[RtFolder]' -o \"[Dst]\" \"[Src]\""
-
-c_compiler Dst Src =
-| RtFolder = "[GRootFolder]runtime"
-| when get_rt_flag_ windows: Dst <= "[Dst]." // else gcc will add ".exe"
-| unix "[GCC] -I \"[RtFolder]\" -fpic -shared -o \"[Dst]\" \"[Src]\""
-
 // check if Dependent file is up to date with Source file
 newerThan Source Dependent =
 | DependentTime = Dependent.time
@@ -53,14 +35,16 @@ copy_file A B =
        | unix "copy /y \"[A]\" \"[B]\""
   else unix "cp -f '[A]' '[B]'"
 
-compile_runtime Src Dst =
-| when get_rt_flag_ windows
-  | less "[Dst].exe".exists: copy_file "[GRootFolder]symta.exe" "[Dst].exe"
-  | leave No
-| when Dst^newerThan{Src}: leave No
-| say "compiling runtime..."
-| Result = c_runtime_compiler Dst Src
-| when Result <> "": bad Result
+DLL_EXT = ''
+
+c_compiler Dst Src =
+| Dst <= "[Dst]." // else gcc will add ".exe" on Windows
+| RtFolder = "[GRootFolder]runtime/"
+| unix "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
+
+copy_runtime Dst =
+| when get_rt_flag_ windows: Dst <= "[Dst].exe"
+| less Dst.exists: copy_file "[GRootFolder]symta.exe" Dst
 
 add_imports Expr Deps =
 | less Deps.size: leave Expr
@@ -153,9 +137,8 @@ build RootFolder SrcFolder dst/0 =
     | bad "Missing [GSrcFolders.0][Entry].s"
   | "[GDstFolder]/ffi".mkpath
   | register_library_folder GDstFolder
-  | RuntimeSrc = "[GRootFolder]runtime/runtime.c"
   | RuntimePath = "[DstFolder]run"
-  | compile_runtime RuntimeSrc RuntimePath
+  | copy_runtime RuntimePath
   | build_entry Entry
   | RuntimePath //unix RuntimePath //"[RuntimePath] ':[GDstFolder]'"
 
