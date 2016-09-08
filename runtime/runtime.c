@@ -1975,6 +1975,22 @@ static void fatal_error_chars(api_t *api, char *msg) {
   abort();
 }
 
+
+static void handle_event(api_t *api, int type) {
+  if (type == SYMT_STACK_OVERFLOW) {
+    fprintf(stderr, "fatal: stack overflow\n");
+  } else if (type == SYMT_OUT_OF_MEMORY) {
+    fprintf(stderr, "fatal: out of memory\n");
+  } else if (type == SYMT_LIFT_OUT_OF_MEMORY) {
+    fprintf(stderr, "fatal: out of memory during lift\n");
+  } else {
+    fprintf(stderr, "fatal: handle_event invalid type: %d\n", type);
+  }
+  print_stack_trace(api);
+  abort();
+}
+
+
 #define METHOD_FN(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void) \
   multi = api->resolve_method(api, name); \
   if (m_int) {BUILTIN_CLOSURE(multi[T_INT], m_int);}\
@@ -2230,6 +2246,7 @@ static api_t *init_api() {
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
   api->fatal_chars = fatal_error_chars;
+  api->handle = handle_event;
   api->resolve_method = resolve_method;
   api->resolve_type = resolve_type;
   api->add_subtype = add_subtype;

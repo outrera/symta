@@ -95,7 +95,10 @@ read_token R LeftSpaced =
     | when Value >< '-' and LeftSpaced and C <> '\n' and C <> ' ':
       | Type <= \negate
     | when Type >< end and got C: Type <= 0
-    | less Type: R error "unexpected `[Value][C or '']`"
+    | less Type:
+      | when Value><'' and C.size><1:
+        | C <= if C.code>#d then "[C] (#[C.code.x])" else "no-printable (#[C.code.x])"
+      | R.error{"unexpected `[Value][C or '']`"}
     | when Type.is_fn
       | Value <= Type R Value
       | when Value.is_token: leave Value

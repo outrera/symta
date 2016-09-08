@@ -137,6 +137,7 @@ typedef struct api_t {
   void *(*alloc_text)(char *s);
   void (*fatal)(struct api_t *api, void *msg);
   void (*fatal_chars)(struct api_t *api, char *msg);
+  void (*handle)(struct api_t *api, int type);
   void **(*resolve_method)(struct api_t *api, char *name);
   int (*resolve_type)(struct api_t *api, char *name);
   void (*add_subtype)(struct api_t *api, intptr_t super, intptr_t sub);
@@ -161,18 +162,23 @@ typedef void *(*pfun)(REGS);
 #define Base Frame.base
 #define Level api->level
 
+
+#define SYMT_STACK_OVERFLOW       0x01
+#define SYMT_OUT_OF_MEMORY        0x02
+#define SYMT_LIFT_OUT_OF_MEMORY   0x03
+
 #ifdef SYMTA_DEBUG
 #define HEAP_GUARD() \
   if ((uint8_t*)Top - (uint8_t*)api->heap[Level&1] < 1024*4) { \
-    api->fatal_chars(api, "out of memory"); \
+    api->handle(api, SYMT_OUT_OF_MEMORY); \
   }
 #define LIFT_GUARD() \
   if ((uint8_t*)Top - (uint8_t*)api->heap[Level&1] < 1024*4) { \
-    api->fatal_chars(api, "out of memory during lift"); \
+    api->handle(api, SYMT_LIFT_OUT_OF_MEMORY); \
   }
 #define FRAME_GUARD() \
   if (Level + 5 > MAX_LEVEL) { \
-    api->fatal_chars(api, "stack overflow"); \
+    api->handle(api, SYMT_STACK_OVERFLOW); \
   }
 #else
 #define HEAP_GUARD()

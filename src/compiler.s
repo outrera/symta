@@ -359,7 +359,12 @@ ssa_alloc K N =
 ssa_store Base Off Value = ssa untagged_store Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
-ssa_text K S = ssa text K S^ssa_cstring
+ssa_text K S =
+| TextBytes = ssa_cstring S
+| TextVar = ssa_global t
+| push [text TextVar TextBytes] GRawInits
+| ssa move K TextVar
+//| ssa text K S^ssa_cstring
 
 ssa_ffi_var Type Name =
 | V = @rand v
