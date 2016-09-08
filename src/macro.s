@@ -760,7 +760,7 @@ copy_ffi S D =
 
 ffi_begin Name =
 | [Root Srcs Dst] = GModuleFolders{}
-| RootFFI = "[Root]ffi/[Name]/lib/"
+| RootFFI = "[Root]/lib/ffi/[Name]/"
 | DstFFI = "[Dst]ffi/[Name]/"
 | less RootFFI.exists: mex_error "Missing [RootFFI]"
 | copy_ffi RootFFI DstFFI
