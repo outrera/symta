@@ -1,3 +1,5 @@
+- factor out C compiler invocation into separate executable, out of eval.s. That way C compiler could be easily changed and also used by build scripts.
+- Fin proper way to install FFI libs. because currently it searches in both symta's ./lib/ffi and ./ffi, and ffi's should have no .exe prefix, which results into errors like "ffi_load: dlopen couldnt load C:/Users/nikita/Documents/git/symta/lib/ffi/gfx/main".
 - fix `say (123).s2.s2`, gives wrong result for positive numbers
 - `:` should work inside of `{}`
 - for loop, with proper breaking (needs local macros and probably interpreter)
