@@ -378,6 +378,7 @@ static int text_size(void *o) {
   if (IS_FIXTEXT(o)) return fixtext_size(o);
   if (!IS_BIGTEXT(o)) {
     fprintf(stderr, "text_size: invalid type (%d)\n", (int)O_TYPE(o));
+    print_stack_trace(&api_g);
     abort();
   }
   return BIGTEXT_SIZE(o);

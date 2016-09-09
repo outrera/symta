@@ -202,7 +202,7 @@ ssa_set K Place Value =
 // FIXME: _label should be allowed only inside of _progn
 ssa_progn K Xs =
 | when Xs.end: Xs <= [[]]
-| D = ssa_var dummy
+| D = 'dummy' //ssa_var dummy
 | for X Xs: case X [_label Name] | GBases <= [[Name @GBases.head] @GBases.tail]
 | till Xs.end
   | X = pop Xs

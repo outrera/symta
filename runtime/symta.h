@@ -243,8 +243,8 @@ typedef void *(*pfun)(REGS);
 
 #define getArg(i) (*((void**)E+(i)))
 #define PROLOGUE void *E = (void**)Top+OBJ_HEAD_SIZE;
-#define ENTRY(name) } void *name(REGS) {PROLOGUE;
-#define LABEL(name) } static void *name(REGS) {PROLOGUE;
+#define ENTRY(name) } void *name(REGS) {PROLOGUE; void *dummy;
+#define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
 #define VAR(name) void *name;
 
 #define MARK(name) Frame.mark = (void*)(name);
@@ -387,6 +387,7 @@ typedef struct {
     longjmp(js_->anchor, 0); \
   }
 
+#ifdef SYMTA_DEBUG
 #define CHECK_NARGS(expected,size,meta) \
   if (NARGS(E) != FIXNUM(expected)) { \
     return api->handle_args(REGS_ARGS(P), E, FIXNUM(expected), FIXNUM(size), No, meta); \
@@ -395,6 +396,10 @@ typedef struct {
   if (NARGS(E) < FIXNUM(0)) { \
     return api->handle_args(REGS_ARGS(P), E, FIXNUM(-1), FIXNUM(size), No, meta); \
   }
+#else
+#define CHECK_NARGS(expected,size,meta)
+#define CHECK_VARARGS(size,meta)
+#endif
 
 // kludge for FFI identifiers
 #define text_ char*
