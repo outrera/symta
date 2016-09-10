@@ -1,3 +1,4 @@
+- a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.
 - `:` should work inside of `{}`
 - for loop, with proper breaking (needs local macros and probably interpreter)
 - "stack overflow" and and "out of memory" error messages waste a lot of code and CPU time

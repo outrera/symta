@@ -112,9 +112,11 @@ typedef struct frame_t {
   void *lifts; //what should be lifted to parent frame
 } frame_t;
 
+#define PAGE_SIZE 4096
 
 typedef struct api_t {
   frame_t frame[MAX_LEVEL];
+  uint8_t frame_guard[PAGE_SIZE*2];
   void *top[2]; // heap top
 
   intptr_t level; // stack frame depth
@@ -167,7 +169,7 @@ typedef void *(*pfun)(REGS);
 #define SYMT_OUT_OF_MEMORY        0x02
 #define SYMT_LIFT_OUT_OF_MEMORY   0x03
 
-#ifdef SYMTA_DEBUG
+/*#ifdef SYMTA_DEBUG
 #define HEAP_GUARD() \
   if ((uint8_t*)Top - (uint8_t*)api->heap[Level&1] < 1024*4) { \
     api->handle(api, SYMT_OUT_OF_MEMORY); \
@@ -180,11 +182,11 @@ typedef void *(*pfun)(REGS);
   if (Level + 5 > MAX_LEVEL) { \
     api->handle(api, SYMT_STACK_OVERFLOW); \
   }
-#else
+#else*/
 #define HEAP_GUARD()
 #define LIFT_GUARD()
 #define FRAME_GUARD()
-#endif
+//#endif
 
 #define ALLOC_BASIC(dst,code,count) \
   HEAP_GUARD(); \
@@ -387,7 +389,6 @@ typedef struct {
     longjmp(js_->anchor, 0); \
   }
 
-#ifdef SYMTA_DEBUG
 #define CHECK_NARGS(expected,size,meta) \
   if (NARGS(E) != FIXNUM(expected)) { \
     return api->handle_args(REGS_ARGS(P), E, FIXNUM(expected), FIXNUM(size), No, meta); \
@@ -396,10 +397,6 @@ typedef struct {
   if (NARGS(E) < FIXNUM(0)) { \
     return api->handle_args(REGS_ARGS(P), E, FIXNUM(-1), FIXNUM(size), No, meta); \
   }
-#else
-#define CHECK_NARGS(expected,size,meta)
-#define CHECK_VARARGS(size,meta)
-#endif
 
 // kludge for FFI identifiers
 #define text_ char*

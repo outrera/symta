@@ -39,6 +39,11 @@ int my_clock_gettime(int clk_id, struct timespec *ts) {
 
 #ifdef WINDOWS
 #include "w/compat.h"
+#include "w/sigaction.h"
+#include "w/mman.h"
+#else
+#include <signal.h>
+#include <sys/mman.h>
 #endif
 
 #define VIEW_START(o) REF4(o,0)
@@ -74,7 +79,7 @@ static int lib_folders_used;
 
 static char *lib_folders[MAX_LIB_FOLDERS];
 
-static api_t api_g; // one for each heap
+static api_t api_g;
 
 
 static int methods_used;
@@ -2237,7 +2242,23 @@ static void init_args(api_t *api, int argc, char **argv) {
   }
 }
 
+static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
+  api_t *api = &api_g;
+  uint8_t *p = (uint8_t*)si->si_addr;
+  if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
+    fprintf(stderr, "fatal: stack overflow\n");
+  } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
+    fprintf(stderr, "fatal: out of memory\n");
+  } else {
+    fprintf(stderr, "fatal: segfault at 0x%p != %p\n", p, (uint8_t*)api->heap[0]);
+  }
+  print_stack_trace(api);
+  abort();
+}
+
 static api_t *init_api() {
+  struct sigaction sa;
+  void *paligned;
   api_t *api = &api_g;
 
   api->bad_type = bad_type;
@@ -2270,6 +2291,15 @@ static api_t *init_api() {
 
   ALLOC_DATA(No, T_VOID, 0);
   LIST_ALLOC(Empty, 0);
+
+  sa.sa_flags = SA_SIGINFO;
+  sa.sa_sigaction = sigsegv_handler;
+  sigaction(SIGSEGV, &sa, NULL);
+
+#define ALIGN(ptr) (void*)(((uintptr_t)ptr+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
+  _mprotect(ALIGN(api->frame_guard), PAGE_SIZE, PROT_NONE);
+  _mprotect(ALIGN(api->heap[0]), PAGE_SIZE*2, PROT_NONE);
+  _mprotect(ALIGN(api->heap[1]), PAGE_SIZE*2, PROT_NONE);
 
   return api;
 }
