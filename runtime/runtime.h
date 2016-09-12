@@ -3,11 +3,6 @@
 
 #include "symta.h"
 
-#define FN_GET_NAME  FIXNUM(-1)
-#define FN_GET_SIZE  FIXNUM(-2)
-#define FN_GET_META  FIXNUM(-3)
-#define FN_GET_NARGS FIXNUM(-4)
-
 #define MAX_METHODS (4*1024)
 #define MAX_LIBS 1024
 

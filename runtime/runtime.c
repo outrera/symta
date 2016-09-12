@@ -1812,23 +1812,11 @@ print_tail:
 static void *handle_args(REGS, void *E, intptr_t expected, intptr_t size, void *tag, void *meta) {
   intptr_t got = NARGS(E);
 
-  if (got == FN_GET_NAME) {
-    RETURN_NO_GC(tag);
-  } else if (got == FN_GET_SIZE) {
-    RETURN_NO_GC(size)
-  } else if (got == FN_GET_META) {
-    RETURN_NO_GC(meta);
-  } else if (got == FN_GET_NARGS) {
-    RETURN_NO_GC(expected);
-  }
-
-  if (meta != Empty) {
-  }
   if (UNFIXNUM(expected) < 0) {
     fprintf(stderr, "bad number of arguments: got %ld, expected at least %ld\n",
        UNFIXNUM(got)-1, -UNFIXNUM(expected)-1);
   } else {
-    fprintf(stderr, "bad number of arguments: got %ld, expected %ld\n", UNFIXNUM(got), UNFIXNUM(expected));
+    fprintf(stderr, "bad number of arguments = %ld (expected %ld)\n", UNFIXNUM(got), UNFIXNUM(expected));
   }
   print_stack_trace(api);
   fatal("during call to `%s`\n", print_object(tag));
@@ -1865,11 +1853,7 @@ static void *collect_closure(void *o) {
   void *p, *q;
   void *fixed_size, *dummy;
   api_t *api = &api_g;
-  void *savedTop = Top;
-  ALLOC_CLOSURE(dummy, FN_GET_SIZE, 1);
-  CALL(fixed_size,o);
-  size = UNFIXNUM(fixed_size);
-  Top = savedTop;
+  size = ((fn_meta_t*)get_meta(O_FN(o)))->size;
   ALLOC_CLOSURE(p, O_CODE(o), size);
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
@@ -2039,7 +2023,8 @@ static void setup_0() {}
 #define METHOD_FN1(name, type, fn) \
   multi = api->resolve_method(api, name); \
   BUILTIN_CLOSURE(multi[type], fn); \
-  if (type == T_TEXT) {BUILTIN_CLOSURE(multi[T_FIXTEXT], fn);}
+  if (type == T_TEXT) {BUILTIN_CLOSURE(multi[T_FIXTEXT], fn); \
+                       setup_##fn(api);}
 
 #define METHOD_VAL(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void, m_bytes) \
   multi = api->resolve_method(api, name); \
