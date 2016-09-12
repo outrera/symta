@@ -34,11 +34,13 @@ static void do_sig(int sig, void *addr) {
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo) {
   void *segfault_place;
+  LONG r = EXCEPTION_EXECUTE_HANDLER; //by default abort execution
   switch(ExceptionInfo->ExceptionRecord->ExceptionCode)
   {
   case EXCEPTION_ACCESS_VIOLATION:
       segfault_place = (void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1];
       do_sig(SIGSEGV, segfault_place);
+      r = EXCEPTION_CONTINUE_EXECUTION; //hope user has fixed it
       break;
   case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
       fputs("Error: EXCEPTION_ARRAY_BOUNDS_EXCEEDED\n", stderr);
@@ -47,6 +49,7 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
       fputs("Error: EXCEPTION_BREAKPOINT\n", stderr);
       break;
   }
+  return r;
 }
 
 static void default_handler(int sig) {

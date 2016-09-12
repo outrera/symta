@@ -55,6 +55,37 @@ int my_clock_gettime(int clk_id, struct timespec *ts) {
   VIEW_SIZE(dst) = (uint32_t)(size);
 #define VIEW_REF(o,start,i) *((void**)O_CODE(o) + start + (i))
 
+
+static void **metlut[0x10000];
+
+#define FN_ALIGN 2
+#ifdef WINDOWS
+// on Windows executable and libs are loaded into
+// lower 32-bits of address space, so no masking
+#define FN_MASKED(x) (x)
+#else
+#define FN_MASKED(x) ((x)&0xFFFFFFFF)
+#endif
+
+static void *get_meta(void *ptr) {
+  uintptr_t iptr = FN_MASKED((uintptr_t)ptr);
+  uintptr_t index = (iptr>>16);
+  void **pt = metlut[index];
+  return pt ? pt[(iptr&0xFFFF)>>FN_ALIGN] : 0;
+}
+
+static void set_meta(void *ptr, void *meta) {
+  uintptr_t iptr = FN_MASKED((uintptr_t)ptr);
+  uintptr_t index = (iptr>>16);
+  void **pt = metlut[index];
+  if (!pt) {
+    pt = (void**)malloc((0x10000>>FN_ALIGN)*sizeof(void*));
+    memset(pt, 0, (0x10000>>FN_ALIGN)*sizeof(void*));
+    metlut[index] = pt;
+  }
+  pt[(iptr&0xFFFF)>>FN_ALIGN] = meta;
+}
+
 static char *main_lib;
 static void *main_args;
 
@@ -626,9 +657,8 @@ RETURNS(FIXNUM(a == b))
 BUILTIN2("fn.`<>`",fn_ne,C_ANY,a,C_ANY,b)
 RETURNS(FIXNUM(a != b))
 BUILTIN1("fn.nargs",fn_nargs,C_ANY,o)
-  void *dummy, *nargs;
-  ALLOC_CLOSURE(dummy, FN_GET_NARGS, 1);
-  CALL(nargs,o);
+  fn_meta_t *meta = (fn_meta_t*)get_meta(O_FN(o));
+  void *nargs = meta ? meta->nargs : No;
 RETURNS(nargs)
 
 BUILTIN1("bytes.size",bytes_size,C_ANY,o)
@@ -1638,38 +1668,40 @@ RETURNS(0)
 static struct {
   char *name;
   void *fun;
+  void *setup;
 } builtins[] = {
-  {"address", b_address},
-  {"inspect", b_inspect},
-  {"halt", b_halt},
-  {"typename", b_typename},
-  {"methods_", b_methods_},
-  {"log", b_log},
-  {"say_", b_say_},
-  {"rtstat", b_rtstat},
-  {"stack_trace", b_stack_trace},
-  {"get_file_", b_get_file_},
-  {"set_file_", b_set_file_},
-  {"get_text_file_", b_get_text_file_},
-  {"set_text_file_", b_set_text_file_},
-  {"file_exists_", b_file_exists_},
-  {"file_time_", b_file_time_},
-  {"get_work_folder", b_get_work_folder},
-  {"get_symta_version", b_get_symta_version},
-  {"get_rt_flag_", b_get_rt_flag_},
-  {"mkpath_", b_mkpath_},
-  {"load_library", b_load_library},
-  {"register_library_folder", b_register_library_folder},
-  {"unix", b_unix},
-  {"time", b_time},
-  {"clock", b_clock},
-  {"main_args", b_main_args},
-  {"main_lib", b_main_lib},
-  {"get_line", b_get_line},
-  {"parse_float", b_parse_float},
-  {"ffi_load", b_ffi_load},
-
-  {0, 0}
+#define B(name) {#name, b_##name, setup_b_##name},
+  B(address)
+  B(inspect)
+  B(halt)
+  B(typename)
+  B(methods_)
+  B(log)
+  B(say_)
+  B(rtstat)
+  B(stack_trace)
+  B(get_file_)
+  B(set_file_)
+  B(get_text_file_)
+  B(set_text_file_)
+  B(file_exists_)
+  B(file_time_)
+  B(get_work_folder)
+  B(get_symta_version)
+  B(get_rt_flag_)
+  B(mkpath_)
+  B(load_library)
+  B(register_library_folder)
+  B(unix)
+  B(time)
+  B(clock)
+  B(main_args)
+  B(main_lib)
+  B(get_line)
+  B(parse_float)
+  B(ffi_load)
+#undef B
+  {0, 0, 0}
 };
 
 static char *print_object_r(api_t *api, char *out, void *o) {
@@ -1981,33 +2013,28 @@ static void fatal_error_chars(api_t *api, char *msg) {
   abort();
 }
 
-
-static void handle_event(api_t *api, int type) {
-  if (type == SYMT_STACK_OVERFLOW) {
-    fprintf(stderr, "fatal: stack overflow\n");
-  } else if (type == SYMT_OUT_OF_MEMORY) {
-    fprintf(stderr, "fatal: out of memory\n");
-  } else if (type == SYMT_LIFT_OUT_OF_MEMORY) {
-    fprintf(stderr, "fatal: out of memory during lift\n");
-  } else {
-    fprintf(stderr, "fatal: handle_event invalid type: %d\n", type);
-  }
-  print_stack_trace(api);
-  abort();
-}
-
+static void setup_0() {}
 
 #define METHOD_FN(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void) \
   multi = api->resolve_method(api, name); \
-  if (m_int) {BUILTIN_CLOSURE(multi[T_INT], m_int);}\
-  if (m_float) {BUILTIN_CLOSURE(multi[T_FLOAT], m_float);}\
-  if (m_fixtext) {BUILTIN_CLOSURE(multi[T_FIXTEXT], m_fixtext);} \
-  if (m_fn) {BUILTIN_CLOSURE(multi[T_CLOSURE], m_fn);}\
-  if (m_list) {BUILTIN_CLOSURE(multi[T_LIST], m_list);} \
-  if (m_text) {BUILTIN_CLOSURE(multi[T_TEXT], m_text);} \
-  if (m_view) {BUILTIN_CLOSURE(multi[T_VIEW], m_view);} \
-  if (m_cons) {BUILTIN_CLOSURE(multi[T_CONS], m_cons);} \
-  if (m_void) {BUILTIN_CLOSURE(multi[T_VOID], m_void);}
+  if (m_int) {BUILTIN_CLOSURE(multi[T_INT], m_int); \
+              setup_##m_int(api);} \
+  if (m_float) {BUILTIN_CLOSURE(multi[T_FLOAT], m_float); \
+                setup_##m_float(api);} \
+  if (m_fixtext) {BUILTIN_CLOSURE(multi[T_FIXTEXT], m_fixtext); \
+                  setup_##m_fixtext(api);} \
+  if (m_fn) {BUILTIN_CLOSURE(multi[T_CLOSURE], m_fn); \
+             setup_##m_fn(api);} \
+  if (m_list) {BUILTIN_CLOSURE(multi[T_LIST], m_list); \
+               setup_##m_list(api);} \
+  if (m_text) {BUILTIN_CLOSURE(multi[T_TEXT], m_text); \
+               setup_##m_text(api);} \
+  if (m_view) {BUILTIN_CLOSURE(multi[T_VIEW], m_view); \
+               setup_##m_view(api);} \
+  if (m_cons) {BUILTIN_CLOSURE(multi[T_CONS], m_cons); \
+               setup_##m_cons(api);} \
+  if (m_void) {BUILTIN_CLOSURE(multi[T_VOID], m_void); \
+               setup_##m_void(api);}
 
 #define METHOD_FN1(name, type, fn) \
   multi = api->resolve_method(api, name); \
@@ -2169,6 +2196,10 @@ static void init_builtins(api_t *api) {
     REF(pair,1) = builtins[i].fun;
     REF(rt,i) = pair;
   }
+  
+  for (i = 0; builtins[i].name; i++) {
+    ((void (*)(api_t*))builtins[i].setup)(api);
+  }
 
   LIST_ALLOC(lib_exports, MAX_LIBS);
 
@@ -2250,7 +2281,7 @@ static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
   } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
     fprintf(stderr, "fatal: out of memory\n");
   } else {
-    fprintf(stderr, "fatal: segfault at 0x%p != %p\n", p, (uint8_t*)api->heap[0]);
+    fprintf(stderr, "fatal: segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
   }
   print_stack_trace(api);
   abort();
@@ -2263,12 +2294,13 @@ static api_t *init_api() {
 
   api->bad_type = bad_type;
   api->handle_args = handle_args;
+  api->set_meta = set_meta;
+  api->get_meta = get_meta;
   api->print_object_f = print_object_f;
   api->gc_lifts = gc_lifts;
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
   api->fatal_chars = fatal_error_chars;
-  api->handle = handle_event;
   api->resolve_method = resolve_method;
   api->resolve_type = resolve_type;
   api->add_subtype = add_subtype;

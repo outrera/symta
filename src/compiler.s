@@ -79,11 +79,15 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
       GEnv     LocalEnv
       GClosure [[]@GClosure]
   | when Prologue: ssa label GNs
-  | SizeVar = "[F]_size"
+  | SizeVar = "[F]_s"
+  | MetaVar = "[F]_m"
   | when Prologue
-    | if Args.is_text
-      then ssa check_varargs SizeVar 'Empty' /*(get_meta O)*/
-      else ssa check_nargs Args.size SizeVar 'Empty' /*(get_meta O)*/
+    | NArgs = if Args.is_text then -1 else Args.size 
+    | ssa fnmeta_stru MetaVar
+    | push [fnmeta F MetaVar SizeVar NArgs] GRawInits
+    | if NArgs><-1
+      then ssa check_varargs SizeVar 'Empty'
+      else ssa check_nargs NArgs SizeVar 'Empty'
   | when no K: K <= ssa_var result
   | ssa_expr K Body
   | when Epilogue: ssa return K
@@ -486,7 +490,7 @@ ssa_to_c Xs = let GCompiled []
   [label Name] | push "DECL_LABEL([Name])" Decls
                | c "LABEL([Name])"
   [global Name] | push "static void *[Name];" Decls
-  [alloc_closure Place Name Size] | push "#define [Name]_size [Size]" Decls
+  [alloc_closure Place Name Size] | push "#define [Name]_s [Size]" Decls
                                   | cnorm X
   [type Place Name TagName Size]
     | TName = @rand n
@@ -509,6 +513,8 @@ ssa_to_c Xs = let GCompiled []
     | Brackets = '[]'
     | Values = (map X Xs X.as_text).text{','}
     | push "static uint8_t [Name][Brackets] = {[Values]};" Decls
+  [fnmeta_stru MetaVar]
+    | push "static fn_meta_t [MetaVar];" Decls
   [ffi_call ResultType Dst F ArgsTypes Args]
     | ArgsText = Args.text{', '}
     | ArgsTypesText = ArgsTypes.text{', '}

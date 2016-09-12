@@ -9,6 +9,6 @@ int compat_clock_gettime(int X, struct timeval *tv);
 #ifdef my_clock_gettime
 #undef my_clock_gettime
 #endif
-#define my_clock_gettime compat_clock_gettime
+#define my_clock_gettime(x,tv) compat_clock_gettime(x,(struct timeval*)(tv))
 
 #endif

@@ -77,12 +77,22 @@
     return api->handle_args(REGS_ARGS(P), E, -FIXNUM(expected), FIXNUM(0), ttag, meta); \
   }
 
+#define BUILTIN_SETUP(name,nargs) \
+  static void *b_##name(REGS); \
+  static fn_meta_t meta_b_##name; \
+  static void setup_b_##name(api_t *api) { \
+    void *p = b_##name; \
+    FNMETA(p,meta_b_##name,0,nargs); \
+  }
+
 #define BUILTIN0(sname, name) \
+  BUILTIN_SETUP(name,0) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R; \
   BUILTIN_CHECK_NARGS(0,0,sname);
 #define BUILTIN1(sname,name,a_check,a) \
+  BUILTIN_SETUP(name,1) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a; \
@@ -90,6 +100,7 @@
   a = getArg(0); \
   a_check(a, 0, sname);
 #define BUILTIN2(sname,name,a_check,a,b_check,b) \
+  BUILTIN_SETUP(name,2) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a, *b; \
@@ -99,6 +110,7 @@
   b = getArg(1); \
   b_check(b, 1, sname);
 #define BUILTIN3(sname,name,a_check,a,b_check,b,c_check,c) \
+  BUILTIN_SETUP(name,3) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a, *b,*c; \
@@ -110,6 +122,7 @@
   c = getArg(2); \
   c_check(c, 2, sname);
 #define BUILTIN_VARARGS(sname,name) \
+  BUILTIN_SETUP(name,-1) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R; \
