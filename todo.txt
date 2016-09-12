@@ -1,4 +1,4 @@
-- find a way to strip all useless C++ related GCC boilerplate
+- avoid duplicated strings in compiled file
 - implement stack trace, using get_meta, instead of marks
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.
