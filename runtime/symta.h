@@ -221,7 +221,13 @@ typedef void *(*pfun)(REGS);
 #define BRANCH(cnd,name) if (cnd) goto name;
 #define ZBRANCH(cnd,name) if (!(cnd)) goto name;
 #define JMP(name) goto name;
+#ifdef WINDOWS
+#define BEGIN_CODE \
+  int __stdcall DllMainCRTStartup(void *a, uint32_t  b, void *c) { return 1; } \
+  static void __dummy___ () {
+#else
 #define BEGIN_CODE static void __dummy___ () {
+#endif
 #define END_CODE }
 #define LDFXN(dst,x) dst = (void*)FIXNUM(x)
 #define TEXT(dst,x) dst = api->alloc_text((char*)(x))
