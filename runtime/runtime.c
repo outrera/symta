@@ -481,13 +481,13 @@ static void *exec_module(struct api_t *api, char *path) {
   setup = (pfun)dlsym(lib, "setup");
   if (!setup) fatal("dlsym couldnt find symbol `setup` in %s\n", path);
 
-  ARGLIST(E,0);
+  ARL(E,0);
   setup(REGS_ARGS(P)); // init module's statics
 
   //fprintf(stderr, "running %s\n", path);
 
-  PUSH_BASE();
-  ARGLIST(E,0);
+  BPUSH();
+  ARL(E,0);
   R = entry(REGS_ARGS(P)); 
 
   //fprintf(stderr, "done %s\n", path);
@@ -976,9 +976,9 @@ BUILTIN2("list.apply",list_apply,C_ANY,as,C_FN,f)
   int i;
   intptr_t nargs = UNFIXNUM(LIST_SIZE(as));
   void *e;
-  ARGLIST(e,nargs);  
+  ARL(e,nargs);  
   for (i = 0; i < nargs; i++) {
-    ARG_STORE(e,i,REF(as,i));
+    STARG(e,i,REF(as,i));
   }
   CALL_TAGGED(R,f)
 RETURNS_NO_GC(R)
@@ -994,11 +994,11 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
     bad_call(REGS_ARGS(P),P);
   }
   o = REF(as,i);
-  ARGLIST(e,nargs);
+  ARL(e,nargs);
   for (i = 0; i < nargs; i++) {
-    ARG_STORE(e,i,REF(as,i));
+    STARG(e,i,REF(as,i));
   }
-  CALL_METHOD(R,o,m);
+  MCALL(R,o,m);
 RETURNS_NO_GC(R)
 
 
@@ -1661,7 +1661,7 @@ RETURNS(0)
 BUILTIN_VARARGS("undefined",undefined)
   void *o = getArg(0);
   void **m = methods[M_SINK];
-  CALL_METHOD_NO_SAVE(R,o,m);
+  MCALL_NO_SAVE(R,o,m);
   return (void*)R; //no need to FLIP_HEAP or GC
 RETURNS(0)
 
@@ -1833,12 +1833,12 @@ static void *gc_arglist(void *o) {
   api_t *api = &api_g;
 
   size = UNFIXNUM(NARGS(o));
-  ARGLIST(p, size);
+  ARL(p, size);
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
-    ARG_LOAD(q,o,i);
+    LDARG(q,o,i);
     GC_REC(q, q);
-    ARG_STORE(p, i, q);
+    STARG(p, i, q);
   }
   return p;
 }
@@ -1854,7 +1854,7 @@ static void *collect_closure(void *o) {
   void *fixed_size, *dummy;
   api_t *api = &api_g;
   size = ((fn_meta_t*)get_meta(O_FN(o)))->size;
-  ALLOC_CLOSURE(p, O_CODE(o), size);
+  CLOSURE(p, O_CODE(o), size);
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
     q = REF(o,i);
@@ -1867,7 +1867,7 @@ static void *collect_closure(void *o) {
         q = (void*)level;
       }
     }
-    STORE(p, i, q);
+    STOR(p, i, q);
   }
   return p;
 }

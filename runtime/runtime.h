@@ -42,7 +42,7 @@
   if (O_TAG(o) != TAG(T_BYTES)) \
     api->bad_type(REGS_ARGS(P), "bytes", arg_index, meta)
 
-#define BUILTIN_CLOSURE(dst,code) { ALLOC_CLOSURE(dst, code, 0); }
+#define BUILTIN_CLOSURE(dst,code) { CLOSURE(dst, code, 0); }
 
 
 #define BUILTIN_CHECK_NARGS(expected,tag,name) \

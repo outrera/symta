@@ -25,7 +25,7 @@ get_parent_index Parent =
 path_to_sym X Es =
 | when Es.end: leave No
 | [Head@Tail] = Es
-| when case Head [U@Us] U >< GAll // reference to the whole arglist?
+| when case Head [U@Us] U >< GAll // reference to the whole arg-list?
   | Head <= Head.1
   | less Head.0 >< X: leave (path_to_sym X Tail)
   | when Es^address >< GEnv^address: leave [GAll No] // argument of the current function
@@ -46,9 +46,9 @@ ssa_symbol K X Value =
          | when got Value: bad "cant set [X]"
          | ssa tagged K Base \T_LIST
          | leave No
-       | when no Value: leave (ssa arg_load K Base Pos)
+       | when no Value: leave (ssa ldarg K Base Pos)
        | if Base >< \E and GBases.size >< 1
-         then ssa arg_store Base Pos Value
+         then ssa starg Base Pos Value
          else ssa lift Base Pos Value // must be copied into parent environment
      Else
        | bad "unknown symbol: [X]"
@@ -103,9 +103,9 @@ ssa_fn Name K Args Expr O =
 | [Body Cs] = ssa_fn_body No F Args Expr O 1 1
 | push Body GFns
 | NParents = Cs.size
-| ssa alloc_closure K F NParents
+| ssa closure K F NParents
 | for [I C] Cs.i: if C^address >< GNs^address // self?
-                  then ssa store K I \E
+                  then ssa stor K I \E
                   else ssa copy K I \P C^get_parent_index
 
 ssa_if K Cnd Then Else =
@@ -114,9 +114,9 @@ ssa_if K Cnd Then Else =
 | ssa branch Cnd^ev ThenLabel
 | ssa_expr K Else
 | ssa jmp EndLabel
-| ssa local_label ThenLabel
+| ssa local ThenLabel
 | ssa_expr K Then
-| ssa local_label EndLabel
+| ssa local EndLabel
 
 //FIXME: currently hoisting may clobber sime toplevel syms;
 //       make new syms valid only downstream
@@ -146,13 +146,13 @@ ssa_let K Args Vals Xs =
 | [SsaBody Cs] = ssa_fn_body K F Args Body [] 0 0
 | NParents = Cs.size
 | P = ssa_var p // parent environment
-| ssa local_closure P NParents
+| ssa losure P NParents
 | for [I C] Cs.i: if C^address >< GNs^address // self?
-                  then ssa store P I \E
+                  then ssa stor P I \E
                   else ssa copy P I \P C^get_parent_index
 | E = ssa_var env
-| ssa arglist E Args.size
-| for [I V] Vals.i: ssa arg_store E I V^ev
+| ssa arl E Args.size
+| for [I V] Vals.i: ssa starg E I V^ev
 | SaveP = ssa_var save_p
 | SaveE = ssa_var save_e
 | ssa move SaveP \P
@@ -165,13 +165,13 @@ ssa_let K Args Vals Xs =
 
 ssa_apply K F As =
 | case F [_fn Bs @Body]: leave: ssa_let K Bs As Body
-| ssa push_base
+| ssa bpush
 | let GBases [[] @GBases]
   | H = ev F
   | Vs = map A As: ev A
   | E = ssa_var env
-  | ssa arglist E As.size
-  | for [I V] Vs.i: ssa arg_store E I V
+  | ssa arl E As.size
+  | for [I V] Vs.i: ssa starg E I V
   | if F.is_keyword then ssa call K H else ssa call_tagged K H
 
 resolve_type Name =
@@ -189,14 +189,14 @@ resolve_method Name =
 | M
 
 ssa_apply_method K Name O As =
-| ssa push_base
+| ssa bpush
 | let GBases [[] @GBases]: named block
   | As <= [O@As]
   | Vs = map A As: ev A
   | E = ssa_var env
-  | ssa arglist E As.size
-  | for [I V] Vs.i: ssa arg_store E I V
-  | ssa call_method K Vs.0 Name.1^resolve_method
+  | ssa arl E As.size
+  | for [I V] Vs.i: ssa starg E I V
+  | ssa mcall K Vs.0 Name.1^resolve_method
 
 ssa_set K Place Value =
 | R = ev Value
@@ -296,8 +296,8 @@ uniquify Expr =
 ssa_list K Xs =
 | less Xs.size: leave: ssa move K 'Empty'
 | L = ssa_var l
-| ssa arglist L Xs.size
-| for [I X] Xs.i: ssa arg_store L I X^ev
+| ssa arl L Xs.size
+| for [I X] Xs.i: ssa starg L I X^ev
 | ssa tagged K L \T_LIST
 
 ssa_data K Type Xs =
@@ -337,14 +337,14 @@ ssa_import K Lib Symbol =
 | push [import G Lib Symbol GImportLibs.Lib Symbol^ssa_cstring] GRawInits
 | ssa move K G
 
-ssa_label Name = ssa local_label Name
+ssa_label Name = ssa local Name
 
 ssa_goto Name =
 | N = GBases.locate{B => got B.locate{?><Name}}
 | when no N: bad "cant find label [Name]"
 | times I N
-  | ssa gc (ssa_var d) 0 // FIXME: have to GC, simple pop_base wont LIFT
-  | ssa pop_base
+  | ssa gc (ssa_var d) 0 // FIXME: have to GC, since base-pop wont LIFT
+  | ssa bpop
 | ssa jmp Name
 
 ssa_mark Name =
@@ -357,10 +357,10 @@ ssa_fixed2 K Op A B = ssa Op K A^ev B^ev
 
 ssa_alloc K N =
 | X = ssa_var x
-| ssa_fixed1 X fixnum_unfixnum N
-| ssa arglist K X
+| ssa_fixed1 X unfxn N
+| ssa arl K X
 
-ssa_store Base Off Value = ssa untagged_store Base^ev Off^ev Value^ev
+ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
 ssa_text K S =
@@ -415,11 +415,11 @@ ssa_form K Xs = case Xs
   [_store Base Off Value] | ssa_store Base Off Value
   [_tagged Tag X] | ssa_tagged K Tag X
   [_import Lib Symbol] | ssa_import K Lib Symbol
-  [_add A B] | ssa_fixed2 K fixnum_add A B
-  [_eq A B] | ssa_fixed2 K fixnum_eq A B
-  [_lt A B] | ssa_fixed2 K fixnum_lt A B
-  [_gte A B] | ssa_fixed2 K fixnum_gte A B
-  [_tag X] | ssa_fixed1 K fixnum_tag X
+  [_add A B] | ssa_fixed2 K fxnadd A B
+  [_eq A B] | ssa_fixed2 K fxneq A B
+  [_lt A B] | ssa_fixed2 K fxnlt A B
+  [_gte A B] | ssa_fixed2 K fxngte A B
+  [_tag X] | ssa_fixed1 K fxntag X
   [_fatal Msg] | ssa fatal Msg^ev
   [_this_method] | ssa this_method K
   [_method_name Method] | ssa method_name K Method^ev
@@ -440,7 +440,7 @@ ssa_form K Xs = case Xs
 ssa_atom K X =
 | if X.is_int then
     | when X > #7FFFFFFF or X < -#7FFFFFFF: X <= "[X]LL" //FIXME: kludge
-    | ssa load_fixnum K X
+    | ssa ldfxn K X
   else if X.is_text then ssa_symbol K X No
   else if X >< No then ssa move K 'No'
   else if X.is_float then ssa load_float K X
@@ -490,8 +490,8 @@ ssa_to_c Xs = let GCompiled []
   [label Name] | push "DECL_LABEL([Name])" Decls
                | c "LABEL([Name])"
   [global Name] | push "static void *[Name];" Decls
-  [alloc_closure Place Name Size] | push "#define [Name]_s [Size]" Decls
-                                  | cnorm X
+  [closure Place Name Size] | push "#define [Name]_s [Size]" Decls
+                            | cnorm X
   [type Place Name TagName Size]
     | TName = @rand n
     | c "  RESOLVE_TYPE([Place],[Name]);"

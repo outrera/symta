@@ -69,20 +69,20 @@
 #define FIXNUM(x) ASHL((intptr_t)(x),ALIGN_BITS)
 #define UNFIXNUM(x) ASHR((intptr_t)(x),ALIGN_BITS)
 
-#define FIXNUM_NEG(dst,o) dst = (void*)(-(intptr_t)(o))
-#define FIXNUM_ADD(dst,a,b) dst = (void*)((intptr_t)(a) + (intptr_t)(b))
-#define FIXNUM_SUB(dst,a,b) dst = (void*)((intptr_t)(a) - (intptr_t)(b))
-#define FIXNUM_MUL(dst,a,b) dst = (void*)(UNFIXNUM(a) * (intptr_t)(b))
-#define FIXNUM_DIV(dst,a,b) dst = (void*)(FIXNUM((intptr_t)(a) / (intptr_t)(b)))
-#define FIXNUM_REM(dst,a,b) dst = (void*)((intptr_t)(a) % (intptr_t)(b))
-#define FIXNUM_EQ(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) == (intptr_t)(b))
-#define FIXNUM_NE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) != (intptr_t)(b))
-#define FIXNUM_LT(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) < (intptr_t)(b))
-#define FIXNUM_GT(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) > (intptr_t)(b))
-#define FIXNUM_LTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) <= (intptr_t)(b))
-#define FIXNUM_GTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) >= (intptr_t)(b))
-#define FIXNUM_TAG(dst,x) dst = (void*)FIXNUM(O_TAGL(x))
-#define FIXNUM_UNFIXNUM(dst,x) dst = (void*)UNFIXNUM(x)
+#define FXNNEG(dst,o) dst = (void*)(-(intptr_t)(o))
+#define FXNADD(dst,a,b) dst = (void*)((intptr_t)(a) + (intptr_t)(b))
+#define FXNSUB(dst,a,b) dst = (void*)((intptr_t)(a) - (intptr_t)(b))
+#define FXNMUL(dst,a,b) dst = (void*)(UNFIXNUM(a) * (intptr_t)(b))
+#define FXNDIV(dst,a,b) dst = (void*)(FIXNUM((intptr_t)(a) / (intptr_t)(b)))
+#define FXNREM(dst,a,b) dst = (void*)((intptr_t)(a) % (intptr_t)(b))
+#define FXNEQ(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) == (intptr_t)(b))
+#define FXNNE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) != (intptr_t)(b))
+#define FXNLT(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) < (intptr_t)(b))
+#define FXNGT(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) > (intptr_t)(b))
+#define FXNLTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) <= (intptr_t)(b))
+#define FXNGTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) >= (intptr_t)(b))
+#define FXNTAG(dst,x) dst = (void*)FIXNUM(O_TAGL(x))
+#define UNFXN(dst,x) dst = (void*)UNFIXNUM(x)
 
 #define LOAD_FLOAT(dst,x) { \
     double d_ = (double)(x); \
@@ -186,18 +186,21 @@ typedef void *(*pfun)(REGS);
   Top = (void**)dst - 1; \
   *((void**)Top+0) = (void*)Level;
 
-#define ALLOC_CLOSURE(dst,code,count) \
+#define CLOSURE(dst,code,count) \
   ALLOC_BASIC(dst,code,count); \
   dst = ADD_TAG(dst, T_CLOSURE);
+
+//local closure
+#define LOSURE(dst,size) CLOSURE(dst,FIXNUM(size),size)
 
 #define ALLOC_DATA(dst,tag,count) \
   ALLOC_NO_CODE(dst,count); \
   dst = ADD_TAG(dst,tag);
 
-#define ARGLIST(dst,size) ALLOC_BASIC(dst,FIXNUM(size),size)
+#define ARL(dst,size) ALLOC_BASIC(dst,FIXNUM(size),size)
 
 #define LIST_ALLOC(dst,size) \
-  ARGLIST(dst,size); \
+  ARL(dst,size); \
   dst = ADD_TAG(dst, T_LIST);
 
 #define LOAD_LIB(dst,name) dst = api->load_lib(api,(char*)(name));
@@ -214,19 +217,24 @@ typedef void *(*pfun)(REGS);
 #define print_object(object) api->print_object_f(api, object)
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
-#define LOCAL_LABEL(name) name:;
+#define LOCAL(name) name:;
 #define BRANCH(cnd,name) if (cnd) goto name;
 #define ZBRANCH(cnd,name) if (!(cnd)) goto name;
 #define JMP(name) goto name;
-#define LOCAL_CLOSURE(dst,size) ALLOC_CLOSURE(dst,FIXNUM(size),size)
 #define BEGIN_CODE static void __dummy___ () {
 #define END_CODE }
-#define LOAD_FIXNUM(dst,x) dst = (void*)FIXNUM(x)
+#define LDFXN(dst,x) dst = (void*)FIXNUM(x)
 #define TEXT(dst,x) dst = api->alloc_text((char*)(x))
-#define DECL_LABEL(name) static void *name(REGS);
 #define THIS_METHOD(dst) dst = api->method;
 #define METHOD_NAME(dst,method) dst = ((void**)(method))[T_NAME_TEXT];
 #define TYPE_ID(dst,o) dst = (void*)FIXNUM(O_TYPE(o));
+#define getArg(i) (*((void**)E+(i)))
+#define PROLOGUE void *E = (void**)Top+OBJ_HEAD_SIZE;
+#define ENTRY(name) } void *name(REGS) {PROLOGUE; void *dummy;
+#define DECL_LABEL(name) static void *name(REGS);
+#define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
+#define VAR(name) void *name;
+
 
 typedef struct fn_meta_t {
   intptr_t size;    // closure size - the size of environment,
@@ -238,35 +246,30 @@ typedef struct fn_meta_t {
 
 #define FNMETA(addr,meta,asize,anargs) \
   meta.size = asize; \
-  LOAD_FIXNUM(meta.nargs, anargs); \
+  LDFXN(meta.nargs, anargs); \
   api->set_meta(addr,&meta);
 
-#define getArg(i) (*((void**)E+(i)))
-#define PROLOGUE void *E = (void**)Top+OBJ_HEAD_SIZE;
-#define ENTRY(name) } void *name(REGS) {PROLOGUE; void *dummy;
-#define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
-#define VAR(name) void *name;
-
 #define MARK(name) Frame.mark = (void*)(name);
-#define PUSH_BASE() \
+#define BPUSH() \
   ++Level; \
   MARK(0); \
   /*fprintf(stderr, "Entering %ld\n", Level);*/ \
   Base = Top;
-#define POP_BASE() \
+#define BPOP() \
   /*fprintf(stderr, "Leaving %ld\n", Level);*/ \
   Top = Base; \
   --Level;
 #define CALL(k,f) k = O_FN(f)(REGS_ARGS(f));
-#define CALL_METHOD_NO_SAVE(k,o,m) \
+#define MCALL_NO_SAVE(k,o,m) \
    { \
       void *f_; \
       f_ = ((void**)(m))[O_TYPE(o)]; \
       CALL(k,f_); \
    }
-#define CALL_METHOD(k,o,m) \
+//method call
+#define MCALL(k,o,m) \
    api->method = m; \
-   CALL_METHOD_NO_SAVE(k,o,m);
+   MCALL_NO_SAVE(k,o,m);
 #define CALL_TAGGED(k,o) \
   { \
     if (O_TAG(o) == TAG(T_CLOSURE)) { \
@@ -274,10 +277,10 @@ typedef struct fn_meta_t {
     } else { \
       void *as = ADD_TAG((void**)Top+OBJ_HEAD_SIZE, T_LIST); \
       void *e; \
-      ARGLIST(e,2); \
-      ARG_STORE(e,0,o); \
-      ARG_STORE(e,1,as); \
-      CALL_METHOD(k,o,api->m_ampersand); \
+      ARL(e,2); \
+      STARG(e,0,o); \
+      STARG(e,1,as); \
+      MCALL(k,o,api->m_ampersand); \
     } \
   }
 typedef void *(*collector_t)( void *o);
@@ -310,7 +313,7 @@ typedef void *(*collector_t)( void *o);
    return (void*)(value);
 #define RETURN(value) \
    GC(value,value); \
-   POP_BASE(); \
+   BPOP(); \
    return (void*)(value);
 #define RETURN_NO_GC(value) return (void*)(value);
 #define LIFTS_CONS(dst,head,tail) \
@@ -333,10 +336,10 @@ typedef void *(*collector_t)( void *o);
       LIFTS_CONS(Lifts, p_, Lifts); \
     } \
   }
-#define ARG_LOAD(dst,src,src_off) dst = *((void**)(src)+(src_off))
-#define ARG_STORE(dst,dst_off,src) *((void**)(dst)+(dst_off)) = (void*)(src)
+#define LDARG(dst,src,src_off) dst = *((void**)(src)+(src_off))
+#define STARG(dst,dst_off,src) *((void**)(dst)+(dst_off)) = (void*)(src)
 #define LOAD(dst,src,src_off) dst = REF(src,src_off)
-#define STORE(dst,dst_off,src) REF(dst,dst_off) = (void*)(src)
+#define STOR(dst,dst_off,src) REF(dst,dst_off) = (void*)(src)
 #define COPY(dst,dst_off,src,src_off) REF(dst,dst_off) = REF(src,src_off)
 #define MOVE(dst,src) dst = (void*)(src)
 #define TAGGED(dst,src,tag) dst = ADD_TAG(src,tag)
@@ -344,7 +347,8 @@ typedef void *(*collector_t)( void *o);
 #define DGET(dst,src,off) dst = REF(src, off)
 #define DSET(dst,off,src) DATA_SET(dst, off, src)
 #define DINIT(dst,off,src) REF(dst, off) = src
-#define UNTAGGED_STORE(dst,off,src) *(void**)((uint8_t*)(dst)+(uint64_t)(off)) = src
+//untagged store
+#define UTSTOR(dst,off,src) *(void**)((uint8_t*)(dst)+(uint64_t)(off)) = src
 
 #define FATAL(msg) api->fatal(api, msg);
 
@@ -375,12 +379,12 @@ typedef struct {
       void *h_ = Frame.mark; \
       if (O_TAG(h_) == TAG(T_CLOSURE)) { \
           void *k_; \
-          PUSH_BASE(); \
-          ARGLIST(E,0); \
+          BPUSH(); \
+          ARL(E,0); \
           CALL(k_,h_) \
       } \
       GC(value,value); \
-      POP_BASE(); \
+      BPOP(); \
     } \
     api->jmp_return = value; \
     longjmp(js_->anchor, 0); \
