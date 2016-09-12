@@ -2,6 +2,7 @@ GEnv = No
 GOut = No // where resulting assembly code is stored
 GNs = No // unique name of current function
 GRawInits = No
+GStrings = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
@@ -11,6 +12,7 @@ GResolvedMethods = No
 GImportLibs = No
 GSrc = [0 0 unknown]
 GAll = @rand all
+
 
 ssa @As = | push As GOut
           | No
@@ -55,7 +57,11 @@ ssa_symbol K X Value =
 
 cstring_bytes S = [@S.list.map{C => C.code} 0]
 
-ssa_cstring Src = as Name 'b'.rand: ssa bytes Name Src^cstring_bytes
+ssa_cstring Str =
+| when got!it GStrings.Str: leave it
+| as Name 'b'.rand:
+  | GStrings.Str <= Name
+  | ssa bytes Name Str^cstring_bytes
 
 ssa_var Name = as V Name.rand: ssa var V
 
@@ -457,6 +463,7 @@ produce_ssa Entry Expr =
       GOut []
       GFns []
       GRawInits []
+      GStrings (t size/500)
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
