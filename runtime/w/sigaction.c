@@ -17,6 +17,7 @@
 
 static struct sigaction sigacts[NSIG];
 static siginfo_t siginfo;
+static ucontext_t ucontext;
 
 static void (*p_sigsegv_handler)(void *);
 static int sa_ready;
@@ -29,14 +30,18 @@ static void do_sig(int sig, void *addr) {
   }
   siginfo.si_signo = sig;
   siginfo.si_addr = addr;
-  sa->sa_sigaction(sig, &siginfo, 0);
+  sa->sa_sigaction(sig, &siginfo, &ucontext);
 }
+
 
 static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo) {
   void *segfault_place;
   LONG r = EXCEPTION_EXECUTE_HANDLER; //by default abort execution
-  switch(ExceptionInfo->ExceptionRecord->ExceptionCode)
-  {
+  ucontext.uc_mcontext.gregs[REG_RSP] = (intptr_t)ExceptionInfo->ContextRecord->Rsp;
+  ucontext.uc_mcontext.gregs[REG_RIP] = (intptr_t)ExceptionInfo->ContextRecord->Rip;
+  //ucontext.uc_mcontext.gregs[REG_RIP] = (intptr_t)ExceptionInfo->ExceptionRecord->ExceptionAddress;
+  switch(ExceptionInfo->ExceptionRecord->ExceptionCode) {
+  //case EXCEPTION_IN_PAGE_ERROR:
   case EXCEPTION_ACCESS_VIOLATION:
       segfault_place = (void*)ExceptionInfo->ExceptionRecord->ExceptionInformation[1];
       do_sig(SIGSEGV, segfault_place);

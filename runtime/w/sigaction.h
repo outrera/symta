@@ -15,6 +15,81 @@
 typedef int uid_t;
 typedef uint32_t sigset_t;
 
+typedef struct stack_t stack_t;
+
+struct stack_t {
+  void *ss_sp;     /* This points to the base of the signal stack.  */
+  size_t ss_size;  /* This is the size (in bytes) of the signal stack which ‘ss_sp’ points to. */
+  int ss_flags;
+};
+
+
+/*
+enum {
+  REG_GS = 0,
+  REG_FS,
+  REG_ES,
+  REG_DS,
+  REG_EDI,
+  REG_ESI,
+  REG_EBP,
+  REG_ESP,
+  REG_EBX,
+  REG_EDX,
+  REG_ECX,
+  REG_EAX,
+  REG_TRAPNO,
+  REG_ERR,
+  REG_EIP,
+  REG_CS,
+  REG_EFL,
+  REG_UESP,
+  REG_SS
+};*/
+
+enum {
+  REG_R8 = 0,
+  REG_R9,
+  REG_R10,
+  REG_R11,
+  REG_R12,
+  REG_R13,
+  REG_R14,
+  REG_R15,
+  REG_RDI,
+  REG_RSI,
+  REG_RBP,
+  REG_RBX,
+  REG_RDX,
+  REG_RAX,
+  REG_RCX,
+  REG_RSP,
+  REG_RIP,
+  REG_EFL,
+  REG_CSGSFS,
+  REG_ERR,
+  REG_TRAPNO,
+  REG_OLDMASK,
+  REG_CR2
+};
+
+typedef struct mcontext_t {
+  intptr_t gregs[19];
+  void *fpregs;
+} mcontext_t;
+
+typedef struct ucontext_t ucontext_t;
+
+struct ucontext_t {
+  ucontext_t *uc_link;     /* pointer to the context that will be resumed
+                             when this context returns*/
+  sigset_t    uc_sigmask;  /* the set of signals that are blocked when this
+                              context is active */
+  stack_t     uc_stack;    /* the stack used by this context */
+  mcontext_t  uc_mcontext; /* a machine-specific representation of the saved
+                              context */
+};
+                        
 typedef union sigval_t {
   int sival_int;
   void *sival_ptr;
@@ -44,9 +119,9 @@ struct sigaction {
   /* Special flags to affect behavior of signal. */
   int        sa_flags;
   /* Pointer to a signal-catching function. */
-  void     (*sa_sigaction)(int, siginfo_t *, void *);
+  void     (*sa_sigaction)(int signum, siginfo_t *siginfo, void *context);
 };
 
 int sigaction(int signum, const struct sigaction *act, struct sigaction *oldact);
 
-#endif /*  _SYS_MMAN_H_ */
+#endif /*  _SIGACTION_H_ */

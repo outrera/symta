@@ -2261,6 +2261,8 @@ static void init_args(api_t *api, int argc, char **argv) {
 static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
   api_t *api = &api_g;
   uint8_t *p = (uint8_t*)si->si_addr;
+  intptr_t *gpr = (intptr_t*)((ucontext_t*)context)->uc_mcontext.gregs;
+  fprintf(stderr, "at ip=%p sp=%p\n", gpr[REG_RIP], gpr[REG_RSP]);
   if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
     fprintf(stderr, "fatal: stack overflow\n");
   } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
@@ -2318,6 +2320,7 @@ static api_t *init_api() {
   _mprotect(ALIGN(api->heap[0]), PAGE_SIZE*2, PROT_NONE);
   _mprotect(ALIGN(api->heap[1]), PAGE_SIZE*2, PROT_NONE);
 
+
   return api;
 }
 
@@ -2342,3 +2345,4 @@ int main(int argc, char **argv) {
 
   return 0;
 }
+
