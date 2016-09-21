@@ -2320,7 +2320,6 @@ static api_t *init_api() {
   _mprotect(ALIGN(api->heap[0]), PAGE_SIZE*2, PROT_NONE);
   _mprotect(ALIGN(api->heap[1]), PAGE_SIZE*2, PROT_NONE);
 
-
   return api;
 }
 
@@ -2345,4 +2344,3 @@ int main(int argc, char **argv) {
 
   return 0;
 }
-
