@@ -247,7 +247,7 @@ typedef struct fn_meta_t {
                     // this function closes over.
   void *nargs; // number of arguments
   void *name;  // function name text
-  void *data;  // userprovided metadata
+  void *data;  // user-provided metadata
 } fn_meta_t;
 
 #define FNMETA(addr,meta,asize,anargs) \

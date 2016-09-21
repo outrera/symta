@@ -62,28 +62,50 @@ static void **metlut[0x10000];
 #ifdef WINDOWS
 // on Windows executable and libs are loaded into
 // lower 32-bits of address space, so no masking
-#define FN_MASKED(x) (x)
+#define MD_NORM(x) (x)
 #else
-#define FN_MASKED(x) ((x)&0xFFFFFFFF)
+#define MD_NORM(x) ((x)&0xFFFFFFFF)
 #endif
 
+static void **alloc_meta_table() {
+  void **pt = (void**)malloc((0x10000>>FN_ALIGN)*sizeof(void*));
+  memset(pt, 0, (0x10000>>FN_ALIGN)*sizeof(void*));
+  return pt;
+}
+
 static void *get_meta(void *ptr) {
-  uintptr_t iptr = FN_MASKED((uintptr_t)ptr);
+  uintptr_t iptr = MD_NORM((uintptr_t)ptr);
   uintptr_t index = (iptr>>16);
   void **pt = metlut[index];
   return pt ? pt[(iptr&0xFFFF)>>FN_ALIGN] : 0;
 }
 
 static void set_meta(void *ptr, void *meta) {
-  uintptr_t iptr = FN_MASKED((uintptr_t)ptr);
+  uintptr_t iptr = MD_NORM((uintptr_t)ptr);
   uintptr_t index = (iptr>>16);
   void **pt = metlut[index];
   if (!pt) {
-    pt = (void**)malloc((0x10000>>FN_ALIGN)*sizeof(void*));
-    memset(pt, 0, (0x10000>>FN_ALIGN)*sizeof(void*));
+    pt = alloc_meta_table();
     metlut[index] = pt;
+    if (!metlut[index+1]) metlut[index+1] = alloc_meta_table();
   }
   pt[(iptr&0xFFFF)>>FN_ALIGN] = meta;
+}
+
+static void *is_valid_meta(void *ptr) {
+  if ((uintptr_t)ptr > 0xFFFFFFFF) return 0;
+  return metlut[MD_NORM((uintptr_t)ptr)>>16];
+}
+
+static void *get_enclosing_meta(void *ptr) {
+  int i;
+  uintptr_t o = ((uintptr_t)ptr)&~3;
+  for (i = 0; i < 1024; i++) {
+    void *meta = get_meta((void*)o);
+    if (meta) return meta;
+    o -= 4;
+  }
+  return 0;
 }
 
 static char *main_lib;
@@ -133,11 +155,16 @@ static int print_depth = 0;
 #define PRINT_BUFFER_SIZE (1024*1024*2)
 static char print_buffer[PRINT_BUFFER_SIZE];
 
+#define MAX_LEVEL2 (MAX_LEVEL/8)
+
+#if 0
 static void print_stack_trace(api_t *api) {
-  intptr_t s = Level-1;
-  intptr_t e = s - 50;
-  fprintf(stderr, "Stack Trace:\n");
+  intptr_t s, e;
+  s = Level-1;
+  if (s >= MAX_LEVEL2) s = MAX_LEVEL2-1;
+  e = s - 50;
   if (e < 0) e = 0;
+  fprintf(stderr, "Stack Trace:\n");
   while (s-- > e) {
     intptr_t l = s + 2;
     void *init = api->frame[l].mark;
@@ -147,13 +174,53 @@ static void print_stack_trace(api_t *api) {
     fprintf(stderr, "  ...stack is too big...\n");
   }
 }
+#endif
+
+
+__attribute__ ((noinline)) uintptr_t get__sp() {
+  void *stack;
+  uintptr_t sp = (uintptr_t)(&stack+3); 
+  return sp;
+}
+#define getsp() ((void**)get__sp())
+
+static void **sp_main;
+
+void sp__set_main(void **sm) {
+  sp_main = sm;
+}
+#define sp_set_main() {void *d_u__m_m_y; sp__set_main(&d_u__m_m_y);}
+
+__attribute__ ((noinline)) void sp_print_stack_trace(void **sp) {
+  int sp_count = 0;
+  fn_meta_t *meta;
+  fprintf(stderr, "Stack Trace from %p to %p:\n", sp, sp_main);
+  for (; sp < sp_main; sp++) {
+    if (!is_valid_meta(*sp)) continue;
+    fn_meta_t *meta = (fn_meta_t*)get_enclosing_meta(*sp);
+    char *name;
+    if (!meta) name = "unknown";
+    else {
+      name = "found";
+      //name = text_to_cstring(meta->name);
+    }
+    fprintf(stderr, "  %p:%s\n", *sp, name);
+    if (++sp_count > 50) {
+      fprintf(stderr, "  ...stack is too big...\n");
+      return;
+    }
+  }
+  fprintf(stderr, "  ...hello...\n");
+}
+
+#define print_stack_trace(api) sp_print_stack_trace(getsp());
 
 static void fatal(char *fmt, ...) {
-   va_list ap;
-   va_start(ap,fmt);
-   vfprintf(stderr, fmt, ap);
-   va_end(ap);
-   abort();
+  va_list ap;
+  va_start(ap,fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  abort();
 }
 
 static void **resolve_method(api_t *api, char *name) {
@@ -164,10 +231,7 @@ static void **resolve_method(api_t *api, char *name) {
       return methods[i];
     }
   }
-  if (methods_used == MAX_METHODS) {
-    fprintf(stderr, "methods table overflow\n");
-    abort();
-  }
+  if (methods_used == MAX_METHODS) fatal("methods table overflow\n");
   ++methods_used;
 
   for (j = 0; j < types_used; j++) methods[i][j] = undefined;
@@ -189,10 +253,7 @@ static int resolve_type(api_t *api, char *name) {
   for (i = 0; i < types_used; i++)
     if (!strcmp(typenames[i], name))
       return i;
-  if (types_used == MAX_TYPES) {
-    fprintf(stderr, "typenames table overflow\n");
-    abort();
-  }
+  if (types_used == MAX_TYPES) fatal("typenames table overflow\n");
   ++types_used;
   typenames[i] = strdup(name);
 
@@ -385,8 +446,7 @@ static char *decode_text(char *out, void *o) {
       while (size-- > 0) *out++ = *p++;
       *out = 0;
   } else {
-    fprintf(stderr, "decode_text: invalid type (%d)\n", (int)O_TYPE(o));
-    abort();
+    fatal("decode_text: invalid type (%d)\n", (int)O_TYPE(o));
   }
   return out;
 }
@@ -415,7 +475,7 @@ static int text_size(void *o) {
   if (!IS_BIGTEXT(o)) {
     fprintf(stderr, "text_size: invalid type (%d)\n", (int)O_TYPE(o));
     print_stack_trace(&api_g);
-    abort();
+    fatal("aborting");
   }
   return BIGTEXT_SIZE(o);
 }
@@ -518,7 +578,7 @@ static void *load_lib(struct api_t *api, char *name) {
       for (i = 0; i < lib_folders_used; i++) {
         fprintf(stderr, "  %s\n", lib_folders[i]);
       }
-      abort();
+      fatal("aborting");
     }
     name = tmp;
   }
@@ -535,10 +595,7 @@ static void *load_lib(struct api_t *api, char *name) {
 
   //fprintf(stderr, "load_lib end: %s\n", name);
 
-  if (libs_used == MAX_LIBS) {
-    fprintf(stderr, "module table overflow\n");
-    abort();
-  }
+  if (libs_used == MAX_LIBS) fatal("module table overflow\n");
 
   lib_names[libs_used] = name;
   LIFT(&REF(lib_exports,0),libs_used,exports);
@@ -588,7 +645,7 @@ static void bad_type(REGS, char *expected, int arg_index, char *name) {
   for (i = 0; i < nargs; i++) fprintf(stderr, " %s", print_object(getArg(i)));
   fprintf(stderr, "\n");
   print_stack_trace(api);
-  abort();
+  fatal("aborting");
 }
 
 static void bad_call(REGS, void *method) {
@@ -599,7 +656,7 @@ static void bad_call(REGS, void *method) {
   for (i = 1; i < nargs; i++) fprintf(stderr, " %s", print_object(getArg(i)));
   fprintf(stderr, "\n");
   print_stack_trace(api);
-  abort();
+  fatal("aborting");
 }
 
 static char *print_object_r(api_t *api, char *out, void *o);
@@ -1143,14 +1200,14 @@ RETURNS((intptr_t)a - (intptr_t)b)
 BUILTIN2("int.`*`",int_mul,C_ANY,a,C_INT,b)
 RETURNS(UNFIXNUM(a) * (intptr_t)b)
 BUILTIN2("int.`/`",int_div,C_ANY,a,C_INT,b)
- if (!b) {
+  if (!b) {
     fprintf(stderr, "division by zero\n");
     TEXT(R, "/");
     bad_call(REGS_ARGS(P),R);
   }
 RETURNS(FIXNUM((intptr_t)a / (intptr_t)b))
 BUILTIN2("int.`%`",int_rem,C_ANY,a,C_INT,b)
- if (!b) {
+  if (!b) {
     fprintf(stderr, "division by zero\n");
     TEXT(R, "/");
     bad_call(REGS_ARGS(P),R);
@@ -1654,7 +1711,7 @@ BUILTIN_VARARGS("_",sink)
   fprintf(stderr, "%s has no method ", print_object(tag_of(o)));
   fprintf(stderr, "%s\n", print_object(name));
   print_stack_trace(api);
-  abort();
+  fatal("aborting");
 RETURNS(0)
 
 // handles methods that werent defined or inherited by type
@@ -1710,7 +1767,7 @@ static char *print_object_r(api_t *api, char *out, void *o) {
   int open_par = 1;
 
   //fprintf(stderr, "%p = %d\n", o, type);
-  //if (print_depth > 4) abort();
+  //if (print_depth > 4) fatal("aborting");
 
   if (print_depth >= MAX_PRINT_DEPTH) {
     if (!print_object_error) {
@@ -1988,13 +2045,13 @@ static void gc_lifts() {
 static void fatal_error(api_t *api, void *msg) {
   fprintf(stderr, "fatal_error: %s\n", print_object(msg));
   print_stack_trace(api);
-  abort();
+  fatal("aborting");
 }
 
 static void fatal_error_chars(api_t *api, char *msg) {
   fprintf(stderr, "fatal_error: %s\n", msg);
   print_stack_trace(api);
-  abort();
+  fatal("aborting");
 }
 
 static void setup_0() {}
@@ -2262,7 +2319,9 @@ static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
   api_t *api = &api_g;
   uint8_t *p = (uint8_t*)si->si_addr;
   intptr_t *gpr = (intptr_t*)((ucontext_t*)context)->uc_mcontext.gregs;
-  fprintf(stderr, "at ip=%p sp=%p\n", gpr[REG_RIP], gpr[REG_RSP]);
+  void *sp = (void*)gpr[REG_RSP];
+  void *ip = (void*)gpr[REG_RIP];
+  fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
   if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
     fprintf(stderr, "fatal: stack overflow\n");
   } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
@@ -2270,8 +2329,8 @@ static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
   } else {
     fprintf(stderr, "fatal: segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
   }
-  print_stack_trace(api);
-  abort();
+  sp_print_stack_trace(sp);
+  fatal("aborting");
 }
 
 static api_t *init_api() {
@@ -2315,11 +2374,19 @@ static api_t *init_api() {
   sa.sa_sigaction = sigsegv_handler;
   sigaction(SIGSEGV, &sa, NULL);
 
-#define ALIGN(ptr) (void*)(((uintptr_t)ptr+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
+#define ALIGN(ptr) (void*)(((uintptr_t)(ptr)+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
   _mprotect(ALIGN(api->frame_guard), PAGE_SIZE, PROT_NONE);
+  _mprotect(ALIGN(api->frame+MAX_LEVEL2), PAGE_SIZE, PROT_NONE);
   _mprotect(ALIGN(api->heap[0]), PAGE_SIZE*2, PROT_NONE);
   _mprotect(ALIGN(api->heap[1]), PAGE_SIZE*2, PROT_NONE);
 
+#if 0
+  fprintf(stderr, "hello\n");
+  *(int*)ALIGN(api->heap[0]) = 123;
+  //*(int*)ALIGN(api->frame_guard) = 123;
+  fprintf(stderr, "world\n");
+#endif
+  
   return api;
 }
 
@@ -2328,6 +2395,7 @@ int main(int argc, char **argv) {
   char tmp[1024];
   api_t *api;
   void *R;
+  sp_set_main();
 
   initializing = 1;
   api = init_api();

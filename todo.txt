@@ -1,4 +1,5 @@
 - implement stack trace, using get_meta, instead of marks
+- api->method could probably be replaced with get_meta
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.
 - a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.
