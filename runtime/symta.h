@@ -246,7 +246,7 @@ typedef struct fn_meta_t {
   intptr_t size;    // closure size - the size of environment,
                     // this function closes over.
   void *nargs; // number of arguments
-  void *name;  // function name text
+  char *name;  // function name text
   void *data;  // user-provided metadata
 } fn_meta_t;
 
@@ -255,7 +255,10 @@ typedef struct fn_meta_t {
   LDFXN(meta.nargs, anargs); \
   api->set_meta(addr,&meta);
 
+#define FNMARK(meta,sname) meta.name = (char*)(sname);
+  
 #define MARK(name) Frame.mark = (void*)(name);
+
 #define BPUSH() \
   ++Level; \
   MARK(0); \

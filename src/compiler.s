@@ -1,7 +1,8 @@
 GEnv = No
 GOut = No // where resulting assembly code is stored
-GNs = No // unique name of current function
-GRawInits = No
+GCurFn = No // unique name of current function
+GCurProperFn = No // unique name of current function with prologue
+GRawInits = No // stuff called on module initialization
 GStrings = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
@@ -73,7 +74,7 @@ ssa_quote K X = if X.is_text then ssa_expr K GHoistedTexts.X
                 else if X.is_list then compiler_error "ssa_quote: got list [X]"
                 else ssa_expr K X
 
-ssa_resolve Name = [Name GNs]
+ssa_resolve Name = [Name GCurFn]
 
 ssa_fn_body K F Args Body O Prologue Epilogue =
 | LocalEnv = if Args.is_text
@@ -81,10 +82,10 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
              else [Args.map{A=>[A F]} @GEnv]
 | let GBases   [[]]
       GOut     []
-      GNs      F
+      GCurFn   F
       GEnv     LocalEnv
       GClosure [[]@GClosure]
-  | when Prologue: ssa label GNs
+  | when Prologue: ssa label GCurFn
   | SizeVar = "[F]_s"
   | MetaVar = "[F]_m"
   | when Prologue
@@ -95,7 +96,8 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
       then ssa check_varargs SizeVar 'Empty'
       else ssa check_nargs NArgs SizeVar 'Empty'
   | when no K: K <= ssa_var result
-  | ssa_expr K Body
+  | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
+    else ssa_expr K Body
   | when Epilogue: ssa return K
   | [GOut GClosure.0]
 
@@ -110,7 +112,7 @@ ssa_fn Name K Args Expr O =
 | push Body GFns
 | NParents = Cs.size
 | ssa closure K F NParents
-| for [I C] Cs.i: if C^address >< GNs^address // self?
+| for [I C] Cs.i: if C^address >< GCurFn^address // self?
                   then ssa stor K I \E
                   else ssa copy K I \P C^get_parent_index
 
@@ -153,7 +155,7 @@ ssa_let K Args Vals Xs =
 | NParents = Cs.size
 | P = ssa_var p // parent environment
 | ssa losure P NParents
-| for [I C] Cs.i: if C^address >< GNs^address // self?
+| for [I C] Cs.i: if C^address >< GCurFn^address // self?
                   then ssa stor P I \E
                   else ssa copy P I \P C^get_parent_index
 | E = ssa_var env
@@ -353,10 +355,7 @@ ssa_goto Name =
   | ssa bpop
 | ssa jmp Name
 
-ssa_mark Name =
-| V = ssa_var m
-| ssa_text V Name.1
-| ssa mark V
+ssa_mark Name = push [fnmark "[GCurProperFn]_m" Name.1^ssa_cstring] GRawInits
 
 ssa_fixed1 K Op X = ssa Op K X^ev
 ssa_fixed2 K Op A B = ssa Op K A^ev B^ev

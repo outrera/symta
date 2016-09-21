@@ -155,28 +155,6 @@ static int print_depth = 0;
 #define PRINT_BUFFER_SIZE (1024*1024*2)
 static char print_buffer[PRINT_BUFFER_SIZE];
 
-#define MAX_LEVEL2 (MAX_LEVEL/8)
-
-#if 0
-static void print_stack_trace(api_t *api) {
-  intptr_t s, e;
-  s = Level-1;
-  if (s >= MAX_LEVEL2) s = MAX_LEVEL2-1;
-  e = s - 50;
-  if (e < 0) e = 0;
-  fprintf(stderr, "Stack Trace:\n");
-  while (s-- > e) {
-    intptr_t l = s + 2;
-    void *init = api->frame[l].mark;
-    fprintf(stderr, "  %s\n", print_object(init));
-  }
-  if (s > 0) {
-    fprintf(stderr, "  ...stack is too big...\n");
-  }
-}
-#endif
-
-
 __attribute__ ((noinline)) uintptr_t get__sp() {
   void *stack;
   uintptr_t sp = (uintptr_t)(&stack+3); 
@@ -193,17 +171,15 @@ void sp__set_main(void **sm) {
 
 __attribute__ ((noinline)) void sp_print_stack_trace(void **sp) {
   int sp_count = 0;
-  fn_meta_t *meta;
   fprintf(stderr, "Stack Trace from %p to %p:\n", sp, sp_main);
   for (; sp < sp_main; sp++) {
     if (!is_valid_meta(*sp)) continue;
     fn_meta_t *meta = (fn_meta_t*)get_enclosing_meta(*sp);
     char *name;
     if (!meta) name = "unknown";
-    else {
-      name = "found";
-      //name = text_to_cstring(meta->name);
-    }
+    else if (!meta->name) name = "unnamed";
+    else name = meta->name;
+
     fprintf(stderr, "  %p:%s\n", *sp, name);
     if (++sp_count > 50) {
       fprintf(stderr, "  ...stack is too big...\n");
@@ -2374,6 +2350,7 @@ static api_t *init_api() {
   sa.sa_sigaction = sigsegv_handler;
   sigaction(SIGSEGV, &sa, NULL);
 
+#define MAX_LEVEL2 (MAX_LEVEL/8)
 #define ALIGN(ptr) (void*)(((uintptr_t)(ptr)+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
   _mprotect(ALIGN(api->frame_guard), PAGE_SIZE, PROT_NONE);
   _mprotect(ALIGN(api->frame+MAX_LEVEL2), PAGE_SIZE, PROT_NONE);

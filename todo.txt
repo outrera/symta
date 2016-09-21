@@ -1,4 +1,11 @@
 - implement stack trace, using get_meta, instead of marks
+- `ssa_fn Name K Args Expr O` doesn't really needs name argument
+- DSET shoudln't really set K, when K is dummy, like in:
+  MCALL(dummy,r__32604,m__32541);
+  DSET(r__32602,3,dummy);`
+  LDFXN(dummy,0);
+  DSET(r__32638,5,dummy);
+- get rid of dummy in generated code
 - api->method could probably be replaced with get_meta
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.

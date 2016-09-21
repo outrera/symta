@@ -785,7 +785,22 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 `clock` - realtime clock in seconds (floating point)
 
 `Item^~{Default}` - if Item is No, then return `Default`, otherwise return `Item`
+
 `Item^~{A Default}` - if Item is `A`, then return `B`, otherwise return `Item`
+
+Implementation Primitives and Helpers
+------------------------------
+`_fn Args Body` - anonymous function.
+`_mark TextualName` - gives name to the enclosing _fn; useful in stack traces.
+`_if Cnd Then Else` - same as "if Cnd then Then else Else".
+`_progn @Exprs` - same as "`|` @Exprs".
+`_tag Object` - retrieves numeric tag value for a function.
+`let_ Bindings Body` - Lisp-style `let`, used when `|` is unavailable.
+`_mcall Object Method @Args` - invokes method named `Method` on object `Object`, with @Args
+`_set_unwind_handler Finalizer` - pushesh `Finalizer` to the unwind handler stack.
+`_remove_unwind_handler` - pops finalizer from the unwind handler stack.
+`_nomex Expr` - forbids macroexpansion inside of `Expr` (defined in macro.s).
+`_type Type Var Body` - assumes that `Var` is of type `Type` inside of `Body`.
 
 Thanks
 ------------------------------
