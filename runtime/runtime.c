@@ -93,7 +93,7 @@ static void set_meta(void *ptr, void *meta) {
 }
 
 static void *is_valid_meta(void *ptr) {
-  if ((uintptr_t)ptr > 0xFFFFFFFF) return 0;
+  if ((uintptr_t)ptr > 0xFFFFFFFF || (uintptr_t)ptr&0x3) return 0;
   return metlut[MD_NORM((uintptr_t)ptr)>>16];
 }
 
@@ -176,7 +176,7 @@ __attribute__ ((noinline)) void sp_print_stack_trace(void **sp) {
     if (!is_valid_meta(*sp)) continue;
     fn_meta_t *meta = (fn_meta_t*)get_enclosing_meta(*sp);
     char *name;
-    if (!meta) name = "unknown";
+    if (!meta) continue;
     else if (!meta->name) name = "unnamed";
     else name = meta->name;
 
