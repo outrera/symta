@@ -1,4 +1,5 @@
 - get rid of stack marks
+- provide names for entry() and setup() routines
 - provide source code file + line in stacktrace
 - `ssa_fn Name K Args Expr O` doesn't really needs name argument
 - DSET shoudln't really set K, when K is dummy, like in:
@@ -8,6 +9,7 @@
   DSET(r__32638,5,dummy);
 - get rid of dummy in generated code
 - api->method could probably be replaced with get_meta
+- instead of calling `api->bad_argnum(` we can try reading trap pages
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.
 - a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.

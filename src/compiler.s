@@ -92,9 +92,7 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
     | NArgs = if Args.is_text then -1 else Args.size 
     | ssa fnmeta_stru MetaVar
     | push [fnmeta F MetaVar SizeVar NArgs] GRawInits
-    | if NArgs><-1
-      then ssa check_varargs SizeVar 'Empty'
-      else ssa check_nargs NArgs SizeVar 'Empty'
+    | when NArgs<>-1: ssa check_nargs NArgs
   | when no K: K <= ssa_var result
   | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
     else ssa_expr K Body

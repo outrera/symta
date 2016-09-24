@@ -731,8 +731,8 @@ fin Finalizer Body =
    [_fn [F]
      ['|' [_set_unwind_handler ['&' F]]
           ['=' [R] Body]
-          [F]
           [_remove_unwind_handler]
+          [F]
           R]]]
 
 compile_when @Conds Body =

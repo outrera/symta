@@ -107,9 +107,9 @@
 #define REGS_ARGS(P) P, api
 
 typedef struct frame_t {
-  void *base;  //pointer to heap
-  void *mark;  //current function name
+  void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
   void *lifts; //what should be lifted to parent frame
+  void *onexit; //called on exit
 } frame_t;
 
 #define PAGE_SIZE 4096
@@ -133,7 +133,7 @@ typedef struct api_t {
 
   // runtime's C API
   void (*bad_type)(REGS, char *expected, int arg_index, char *name);
-  void* (*handle_args)(REGS, void *E, intptr_t expected, intptr_t size, void *tag, void *meta);
+  void* (*bad_argnum)(REGS, void *E, intptr_t expected);
   void (*set_meta)(void *addr, void *meta);
   void *(*get_meta)(void *addr);
   char* (*print_object_f)(struct api_t *api, void *object);
@@ -256,12 +256,9 @@ typedef struct fn_meta_t {
   api->set_meta(addr,&meta);
 
 #define FNMARK(meta,sname) meta.name = (char*)(sname);
-  
-#define MARK(name) Frame.mark = (void*)(name);
 
 #define BPUSH() \
   ++Level; \
-  MARK(0); \
   /*fprintf(stderr, "Entering %ld\n", Level);*/ \
   Base = Top;
 #define BPOP() \
@@ -361,8 +358,8 @@ typedef void *(*collector_t)( void *o);
 
 #define FATAL(msg) api->fatal(api, msg);
 
-#define SET_UNWIND_HANDLER(r,h) Frame.mark = h;
-#define REMOVE_UNWIND_HANDLER(r) Frame.mark = 0;
+#define SET_UNWIND_HANDLER(r,h) Frame.onexit = h;
+#define REMOVE_UNWIND_HANDLER(r) Frame.onexit = 0;
 
 typedef struct {
   jmp_buf anchor;
@@ -385,7 +382,8 @@ typedef struct {
     jmp_state *js_; \
     js_ = (jmp_state*)state; \
     while (js_->level != api->level) { \
-      void *h_ = Frame.mark; \
+      void *h_ = Frame.onexit; \
+      Frame.onexit = 0; \
       if (O_TAG(h_) == TAG(T_CLOSURE)) { \
           void *k_; \
           BPUSH(); \
@@ -399,13 +397,9 @@ typedef struct {
     longjmp(js_->anchor, 0); \
   }
 
-#define CHECK_NARGS(expected,size,meta) \
+#define CHECK_NARGS(expected) \
   if (NARGS(E) != FIXNUM(expected)) { \
-    return api->handle_args(REGS_ARGS(P), E, FIXNUM(expected), FIXNUM(size), No, meta); \
-  }
-#define CHECK_VARARGS(size,meta) \
-  if (NARGS(E) < FIXNUM(0)) { \
-    return api->handle_args(REGS_ARGS(P), E, FIXNUM(-1), FIXNUM(size), No, meta); \
+    api->bad_argnum(REGS_ARGS(P), E, FIXNUM(expected)); \
   }
 
 // kludge for FFI identifiers

@@ -950,10 +950,12 @@ BUILTIN_VARARGS("list.text",list_text)
     sep = getArg(1);
     if (!IS_TEXT(sep)) {
       fprintf(stderr, "list.text: separator is not text (%s)\n", print_object(sep));
+      bad_call(REGS_ARGS(P),P);
     }
     sep_size = text_size(sep);
   } else {
     fprintf(stderr, "list.text: bad number of args\n");
+    bad_call(REGS_ARGS(P),P);
   }
 
   words_size = UNFIXNUM(LIST_SIZE(words));
@@ -1257,8 +1259,9 @@ BUILTIN0("stack_trace",stack_trace)
     p = &REF(R,0);
     while (s-- > 1) {
       intptr_t l = s + 1;
-      void *init = api->frame[l].mark;
-      *p++ = init;
+      void *name;
+      TEXT(name, "unknown");
+      *p++ = name;
     }
   }
 RETURNS(R)
@@ -1808,17 +1811,18 @@ print_tail:
 }
 
 //FIXME: if callee wouldnt have messed Top, we could have used it instead of passing E
-static void *handle_args(REGS, void *E, intptr_t expected, intptr_t size, void *tag, void *meta) {
+static void *bad_argnum(REGS, void *E, intptr_t expected) {
   intptr_t got = NARGS(E);
 
   if (UNFIXNUM(expected) < 0) {
     fprintf(stderr, "bad number of arguments: got %ld, expected at least %ld\n",
        UNFIXNUM(got)-1, -UNFIXNUM(expected)-1);
   } else {
-    fprintf(stderr, "bad number of arguments = %ld (expected %ld)\n", UNFIXNUM(got), UNFIXNUM(expected));
+    fprintf(stderr, "bad number of arguments = %ld (expected %ld)\n",
+       UNFIXNUM(got), UNFIXNUM(expected));
   }
   print_stack_trace(api);
-  fatal("during call to `%s`\n", print_object(tag));
+  fatal("aborting\n");
 }
 
 #define GCLevel (api->level+1)
@@ -2287,7 +2291,7 @@ static api_t *init_api() {
   api_t *api = &api_g;
 
   api->bad_type = bad_type;
-  api->handle_args = handle_args;
+  api->bad_argnum = bad_argnum;
   api->set_meta = set_meta;
   api->get_meta = get_meta;
   api->print_object_f = print_object_f;

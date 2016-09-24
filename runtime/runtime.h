@@ -45,31 +45,9 @@
 #define BUILTIN_CLOSURE(dst,code) { CLOSURE(dst, code, 0); }
 
 
-#define BUILTIN_CHECK_NARGS(expected,tag,name) \
-  if (NARGS(E) != FIXNUM(expected)) { \
-    void *meta, *ttag, *t; \
-    LIST_ALLOC(meta, 1); \
-    TEXT(t, name); \
-    REF(meta,0) = t; \
-    if (tag) { \
-      TEXT(ttag, tag); \
-    } else { \
-      ttag = No; \
-    } \
-    return api->handle_args(REGS_ARGS(P), E, FIXNUM(expected), FIXNUM(0), ttag, meta); \
-  }
-#define BUILTIN_CHECK_VARARGS(expected,tag,name) \
+#define BUILTIN_CHECK_VARARGS(expected) \
   if (NARGS(E) < FIXNUM(expected)) { \
-    void *meta, *ttag, *t; \
-    LIST_ALLOC(meta, 1); \
-    TEXT(t, name); \
-    REF(meta,0) = t; \
-    if (tag) { \
-      TEXT(ttag, tag); \
-    } else { \
-      ttag = No; \
-    } \
-    return api->handle_args(REGS_ARGS(P), E, -FIXNUM(expected), FIXNUM(0), ttag, meta); \
+    return api->bad_argnum(REGS_ARGS(P), E, -FIXNUM(expected)); \
   }
 
 #define BUILTIN_SETUP(sname,name,nargs) \
@@ -86,13 +64,13 @@
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R; \
-  BUILTIN_CHECK_NARGS(0,0,sname);
+  CHECK_NARGS(0);
 #define BUILTIN1(sname,name,a_check,a) \
   BUILTIN_SETUP(sname,name,1) \
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a; \
-  BUILTIN_CHECK_NARGS(1,0,sname); \
+  CHECK_NARGS(1); \
   a = getArg(0); \
   a_check(a, 0, sname);
 #define BUILTIN2(sname,name,a_check,a,b_check,b) \
@@ -100,7 +78,7 @@
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a, *b; \
-  BUILTIN_CHECK_NARGS(2,0,sname); \
+  CHECK_NARGS(2); \
   a = getArg(0); \
   a_check(a, 0, sname); \
   b = getArg(1); \
@@ -110,7 +88,7 @@
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R, *a, *b,*c; \
-  BUILTIN_CHECK_NARGS(3,0,sname); \
+  CHECK_NARGS(3); \
   a = getArg(0); \
   a_check(a, 0, sname); \
   b = getArg(1); \
@@ -122,7 +100,7 @@
   static void *b_##name(REGS) { \
   PROLOGUE; \
   void *A, *R; \
-  BUILTIN_CHECK_VARARGS(0,0,sname);
+  BUILTIN_CHECK_VARARGS(0);
 #define RETURNS(r) R = (void*)(r); RETURN(R); }
 #define RETURNS_NO_GC(r) RETURN_NO_GC(r); }
 
