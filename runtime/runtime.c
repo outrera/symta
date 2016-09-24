@@ -11,6 +11,7 @@
 #include <math.h>
 #include <dirent.h>
 
+#include "ctx.h"
 
 // used for debugging
 #define D fprintf(stderr, "%d:%s\n", __LINE__, __FILE__);
@@ -39,10 +40,8 @@ int my_clock_gettime(int clk_id, struct timespec *ts) {
 
 #ifdef WINDOWS
 #include "w/compat.h"
-#include "w/sigaction.h"
 #include "w/mman.h"
 #else
-#include <signal.h>
 #include <sys/mman.h>
 #endif
 
@@ -92,22 +91,6 @@ static void set_meta(void *ptr, void *meta) {
   pt[(iptr&0xFFFF)>>FN_ALIGN] = meta;
 }
 
-static void *is_valid_meta(void *ptr) {
-  if ((uintptr_t)ptr > 0xFFFFFFFF || (uintptr_t)ptr&0x3) return 0;
-  return metlut[MD_NORM((uintptr_t)ptr)>>16];
-}
-
-static void *get_enclosing_meta(void *ptr) {
-  int i;
-  uintptr_t o = ((uintptr_t)ptr)&~3;
-  for (i = 0; i < 1024; i++) {
-    void *meta = get_meta((void*)o);
-    if (meta) return meta;
-    o -= 4;
-  }
-  return 0;
-}
-
 static char *main_lib;
 static void *main_args;
 
@@ -155,41 +138,35 @@ static int print_depth = 0;
 #define PRINT_BUFFER_SIZE (1024*1024*2)
 static char print_buffer[PRINT_BUFFER_SIZE];
 
-__attribute__ ((noinline)) uintptr_t get__sp() {
-  void *stack;
-  uintptr_t sp = (uintptr_t)(&stack+3); 
-  return sp;
-}
-#define getsp() ((void**)get__sp())
-
-static void **sp_main;
-
-void sp__set_main(void **sm) {
-  sp_main = sm;
-}
-#define sp_set_main() {void *d_u__m_m_y; sp__set_main(&d_u__m_m_y);}
-
-__attribute__ ((noinline)) void sp_print_stack_trace(void **sp) {
+int main(int argc, char **argv);
+void print_stack_trace(api_t *api);
+__attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
+  void *fn;
+  fn_meta_t *meta;
+  char *name;
   int sp_count = 0;
-  fprintf(stderr, "Stack Trace from %p to %p:\n", sp, sp_main);
-  for (; sp < sp_main; sp++) {
-    if (!is_valid_meta(*sp)) continue;
-    fn_meta_t *meta = (fn_meta_t*)get_enclosing_meta(*sp);
-    char *name;
-    if (!meta) continue;
+  fprintf(stderr, "Stack Trace:\n");
+  while((fn = ctx_unwind(ctx)) != 0) {
+    if (fn == (void*)main) return;
+    fn_meta_t *meta = (fn_meta_t*)get_meta(fn);
+    if (!meta) name = "unknown"; //continue;
     else if (!meta->name) name = "unnamed";
     else name = meta->name;
-
-    fprintf(stderr, "  %p:%s\n", *sp, name);
+    fprintf(stderr, "  %p:%s\n", fn, name);
     if (++sp_count > 50) {
       fprintf(stderr, "  ...stack is too big...\n");
       return;
     }
   }
-  fprintf(stderr, "  ...hello...\n");
 }
 
-#define print_stack_trace(api) sp_print_stack_trace(getsp());
+void print_stack_trace(api_t *api) {
+  ctx_t ctx;
+  ctx_save(&ctx);
+  ctx_unwind(&ctx);
+  ctx_unwind(&ctx);
+  ctx_print_stack_trace(&ctx);
+}
 
 static void fatal(char *fmt, ...) {
   va_list ap;
@@ -2291,26 +2268,30 @@ static void init_args(api_t *api, int argc, char **argv) {
   }
 }
 
-static void sigsegv_handler(int sig, siginfo_t *si, void *context) {
+static int ctx_error_handler(ctx_error_t *info) {
   api_t *api = &api_g;
-  uint8_t *p = (uint8_t*)si->si_addr;
-  intptr_t *gpr = (intptr_t*)((ucontext_t*)context)->uc_mcontext.gregs;
-  void *sp = (void*)gpr[REG_RSP];
-  void *ip = (void*)gpr[REG_RIP];
+  void *ctx = info->ctx;
+  void *ip = ctx_ip(ctx);
+  void *sp = ctx_sp(ctx);
   fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
-  if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
-    fprintf(stderr, "fatal: stack overflow\n");
-  } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
-    fprintf(stderr, "fatal: out of memory\n");
+  if (info->id == CTXE_ACCESS) {
+    uint8_t *p = (uint8_t*)info->mem;
+    if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
+      fprintf(stderr, "fatal: stack overflow\n");
+    } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
+      fprintf(stderr, "fatal: out of memory\n");
+    } else {
+      fprintf(stderr, "fatal: segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
+    }
   } else {
-    fprintf(stderr, "fatal: segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
+    fprintf(stderr, "fatal: %s\n", info->text);
   }
-  sp_print_stack_trace(sp);
+  ctx_print_stack_trace(ctx);
   fatal("aborting");
+  return CTXE_ABORT;
 }
 
 static api_t *init_api() {
-  struct sigaction sa;
   void *paligned;
   api_t *api = &api_g;
 
@@ -2346,9 +2327,7 @@ static api_t *init_api() {
   ALLOC_DATA(No, T_VOID, 0);
   LIST_ALLOC(Empty, 0);
 
-  sa.sa_flags = SA_SIGINFO;
-  sa.sa_sigaction = sigsegv_handler;
-  sigaction(SIGSEGV, &sa, NULL);
+  ctx_set_error_handler(ctx_error_handler);
 
 #define MAX_LEVEL2 (MAX_LEVEL/8)
 #define ALIGN(ptr) (void*)(((uintptr_t)(ptr)+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
@@ -2372,7 +2351,6 @@ int main(int argc, char **argv) {
   char tmp[1024];
   api_t *api;
   void *R;
-  sp_set_main();
 
   initializing = 1;
   api = init_api();
