@@ -111,6 +111,10 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS *ExceptionInfo) 
     error.id = CTXE_DIV_BY_ZERO;
     error.text = "division by zero";
     break;
+  case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+    error.id = CTXE_DIV_BY_ZERO_FPU;
+    error.text = "division by zero (floating point)";
+    break;
   case EXCEPTION_STACK_OVERFLOW:
     error.id = CTXE_STACK_OVERFLOW;
     error.text = "stack overflow";

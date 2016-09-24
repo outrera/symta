@@ -1143,7 +1143,6 @@ BUILTIN1("float.round",float_round,C_ANY,o)
   LOAD_FLOAT(R, round(fo));
 RETURNS(R)
 
-
 BUILTIN1("int.neg",int_neg,C_ANY,o)
 RETURNS(-(intptr_t)o)
 BUILTIN2("int.`+`",int_add,C_ANY,a,C_INT,b)
@@ -1153,18 +1152,8 @@ RETURNS((intptr_t)a - (intptr_t)b)
 BUILTIN2("int.`*`",int_mul,C_ANY,a,C_INT,b)
 RETURNS(UNFIXNUM(a) * (intptr_t)b)
 BUILTIN2("int.`/`",int_div,C_ANY,a,C_INT,b)
-  if (!b) {
-    fprintf(stderr, "division by zero\n");
-    TEXT(R, "/");
-    bad_call(REGS_ARGS(P),R);
-  }
 RETURNS(FIXNUM((intptr_t)a / (intptr_t)b))
 BUILTIN2("int.`%`",int_rem,C_ANY,a,C_INT,b)
-  if (!b) {
-    fprintf(stderr, "division by zero\n");
-    TEXT(R, "/");
-    bad_call(REGS_ARGS(P),R);
-  }
 RETURNS((intptr_t)a % (intptr_t)b)
 BUILTIN2("int.`**`",int_pow,C_ANY,a,C_INT,b)
 RETURNS(FIXNUM((intptr_t)pow((double)UNFIXNUM(a), (double)UNFIXNUM(b))))
@@ -2273,19 +2262,21 @@ static int ctx_error_handler(ctx_error_t *info) {
   void *ctx = info->ctx;
   void *ip = ctx_ip(ctx);
   void *sp = ctx_sp(ctx);
-  fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
+  fprintf(stderr, "fatal: ");
   if (info->id == CTXE_ACCESS) {
     uint8_t *p = (uint8_t*)info->mem;
     if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
-      fprintf(stderr, "fatal: stack overflow\n");
+      fprintf(stderr, "stack overflow\n");
     } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
-      fprintf(stderr, "fatal: out of memory\n");
+      fprintf(stderr, "out of memory\n");
     } else {
-      fprintf(stderr, "fatal: segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
+      fprintf(stderr, "segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
     }
   } else {
     fprintf(stderr, "fatal: %s\n", info->text);
   }
+  fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
+  ctx_unwind(ctx);
   ctx_print_stack_trace(ctx);
   fatal("aborting");
   return CTXE_ABORT;

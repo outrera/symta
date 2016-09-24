@@ -1,5 +1,5 @@
-- try using some GAS tricks or windows kernel SEH functions
-- implement stack trace, using get_meta, instead of marks
+- get rid of stack marks
+- provide source code file + line in stacktrace
 - `ssa_fn Name K Args Expr O` doesn't really needs name argument
 - DSET shoudln't really set K, when K is dummy, like in:
   MCALL(dummy,r__32604,m__32541);

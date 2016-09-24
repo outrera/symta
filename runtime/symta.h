@@ -167,7 +167,7 @@ typedef void *(*pfun)(REGS);
 
 
 
-//following could proable be useful, when allocating
+//following could probable be useful, when allocating
 // large memory size, that could jump over guard
 #define HEAP_GUARD()
 #define LIFT_GUARD()

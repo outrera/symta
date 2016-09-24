@@ -12,10 +12,12 @@ typedef struct ctx_error_t {
 } ctx_error_t;
 
 // Context error codes
-#define CTXE_OTHER    0x0  /* some unspecified error */
-#define CTXE_ACCESS   0x1  /* memory access violation */
-#define CTXE_DIV_BY_ZERO 0x2
-#define CTXE_STACK_OVERFLOW 0x03
+#define CTXE_OTHER    0x00  /* some unspecified error */
+#define CTXE_ACCESS   0x01  /* memory access violation */
+#define CTXE_DIV_BY_ZERO 0x02
+#define CTXE_DIV_BY_ZERO_FPU 0x03
+#define CTXE_STACK_OVERFLOW 0x04
+
 
 #define CTXE_ABORT    0x0
 #define CTXE_CONTINUE 0x1
