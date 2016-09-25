@@ -153,9 +153,14 @@ read_string R Incut End =
              `n` | L <= ['\n' @L]
              `t` | L <= ['\t' @L]
              `\\` | L <= ['\\' @L]
+             `[` | L <= ['[' @L]
+             `]` | L <= [']' @L]
+             `'` | L <= [`'` @L]
+             `"` | L <= [`"` @L]
              C<&Incut+&End | L <= [C@L]
              No | R.error{'EOF in string'}
-             Else | R.error{"Invalid escape code: [Else]"}
+             Other | if Other><'`' then L <= ['`' @L]
+                     else R.error{"Invalid escape code: [Other]"}
      &End | Ys = [L.flip.text]
           | when End >< '"': Ys <= spliced_string_normalize Ys //"
           | leave Ys

@@ -2,6 +2,7 @@ GEnv = No
 GOut = No // where resulting assembly code is stored
 GCurFn = No // unique name of current function
 GCurProperFn = No // unique name of current function with prologue
+GFnMeta = No
 GRawInits = No // stuff called on module initialization
 GStrings = No
 GFns = No
@@ -14,6 +15,8 @@ GImportLibs = No
 GSrc = [0 0 unknown]
 GAll = @rand all
 
+type fnmeta{name/0 size/0 nargs/0 origin/0}
+  name/Name size/Size /*closure size*/ nargs/Nargs origin/Origin
 
 ssa @As = | push As GOut
           | No
@@ -86,12 +89,9 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
       GEnv     LocalEnv
       GClosure [[]@GClosure]
   | when Prologue: ssa label GCurFn
-  | SizeVar = "[F]_s"
-  | MetaVar = "[F]_m"
   | when Prologue
     | NArgs = if Args.is_text then -1 else Args.size 
-    | ssa fnmeta_stru MetaVar
-    | push [fnmeta F MetaVar SizeVar NArgs] GRawInits
+    | GFnMeta.F <= fnmeta size/"[F]_s" nargs/NArgs
     | when NArgs<>-1: ssa check_nargs NArgs
   | when no K: K <= ssa_var result
   | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
@@ -353,7 +353,7 @@ ssa_goto Name =
   | ssa bpop
 | ssa jmp Name
 
-ssa_mark Name = push [fnmark "[GCurProperFn]_m" Name.1^ssa_cstring] GRawInits
+ssa_mark Name = GFnMeta.GCurProperFn.name <= Name
 
 ssa_fixed1 K Op X = ssa Op K X^ev
 ssa_fixed2 K Op A B = ssa Op K A^ev B^ev
@@ -455,10 +455,19 @@ ssa_load_lib Dst Name =
 | ssa var Dst
 | ssa load_lib Dst Name^ssa_cstring
 
+ssa_fnmeta N Fn Name Size NArgs =
+| LB = '['
+| RB = ']'
+| Meta = "fm[LB][N][RB]"
+//| Meta = "fm\[[N]\]"
+| push [fnmeta Fn Meta Size NArgs] GRawInits
+| when Name: push [fnmark Meta Name.1^ssa_cstring] GRawInits
+
 produce_ssa Entry Expr =
 | let GEnv []
       GOut []
       GFns []
+      GFnMeta (t size/500)
       GRawInits []
       GStrings (t size/500)
       GClosure []
@@ -472,6 +481,11 @@ produce_ssa Entry Expr =
   | Ssa = ssa_expr R Expr
   | ssa return R
   | ssa entry setup
+  | MetaN = 0
+  | for Fn,M GFnMeta:
+    | ssa_fnmeta MetaN Fn M.name M.size M.nargs
+    | !MetaN+1
+  | ssa fnmeta_strc MetaN
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
   | for X GRawInits.flip: push X GOut
   | ssa return_no_gc 0
@@ -482,11 +496,14 @@ produce_ssa Entry Expr =
 GCompiled = No
 
 c Statement = push Statement GCompiled
-cnorm [X@Xs] = c "  [X.upcase]([(map X Xs X.as_text).text{','}]);"
+cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 
 ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
+| LB = '['
+| RB = ']'
+//| push "static fn_meta_t fm\[[NMeta]\];" Decls
 | Imports = t
 | c 'BEGIN_CODE'
 | for X Xs: case X
@@ -517,14 +534,14 @@ ssa_to_c Xs = let GCompiled []
     | Brackets = '[]'
     | Values = (map X Xs X.as_text).text{','}
     | push "static uint8_t [Name][Brackets] = {[Values]};" Decls
-  [fnmeta_stru MetaVar]
-    | push "static fn_meta_t [MetaVar];" Decls
   [ffi_call ResultType Dst F ArgsTypes Args]
     | ArgsText = Args.text{', '}
     | ArgsTypesText = ArgsTypes.text{', '}
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
+  [fnmeta_strc NMeta]
+    | push "static fn_meta_t fm[LB][NMeta][RB];" Decls
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
 | GCompiled <= GCompiled.flip

@@ -246,7 +246,7 @@ typedef struct fn_meta_t {
   intptr_t size;    // closure size - the size of environment,
                     // this function closes over.
   void *nargs; // number of arguments
-  char *name;  // function name text
+  char *name;  // function name text (anonymous, when name is 0)
   void *data;  // user-provided metadata
 } fn_meta_t;
 

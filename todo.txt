@@ -1,5 +1,7 @@
-- get rid of stack marks
 - provide names for entry() and setup() routines
+- meta can be organized as a table
+- superfluous RESOLVE_TYPE(t__13084,b__12986) calls
+- setup() TEXT() calls could be allocated by runtime, optionally collecting text from all modules
 - provide source code file + line in stacktrace
 - `ssa_fn Name K Args Expr O` doesn't really needs name argument
 - DSET shoudln't really set K, when K is dummy, like in:
