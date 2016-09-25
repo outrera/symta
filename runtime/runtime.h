@@ -52,11 +52,10 @@
 
 #define BUILTIN_SETUP(sname,name,nargs) \
   static void *b_##name(REGS); \
-  static fn_meta_t meta_b_##name; \
+  static fn_meta_t meta_b_##name[1] = \
+    {{0,(void*)FIXNUM(nargs),sname,b_##name,0}}; \
   static void setup_b_##name(api_t *api) { \
-    void *p = b_##name; \
-    FNMETA(p,meta_b_##name,0,nargs); \
-    FNMARK(meta_b_##name,sname); \
+    FNMETA_LOAD(meta_b_##name,1); \
   }
 
 #define BUILTIN0(sname, name) \

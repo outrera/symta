@@ -151,7 +151,7 @@ __attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
     fn_meta_t *meta = (fn_meta_t*)get_meta(fn);
     if (!meta) name = "unknown"; //continue;
     else if (!meta->name) name = "unnamed";
-    else name = meta->name;
+    else name = (char*)meta->name;
     fprintf(stderr, "  %p:%s\n", fn, name);
     if (++sp_count > 50) {
       fprintf(stderr, "  ...stack is too big...\n");
@@ -2277,7 +2277,7 @@ static int ctx_error_handler(ctx_error_t *info) {
       fprintf(stderr, "segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
     }
   } else {
-    fprintf(stderr, "fatal: %s\n", info->text);
+    fprintf(stderr, "%s\n", info->text);
   }
   fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
   ctx_unwind(ctx);
@@ -2286,13 +2286,20 @@ static int ctx_error_handler(ctx_error_t *info) {
   return CTXE_ABORT;
 }
 
+static void add_meta(fn_meta_t *metatbl, int count) {
+  int i;
+  for (i = 0; i < count; i++) {
+    set_meta(metatbl[i].fn, &metatbl[i]);
+  }
+}
+
 static api_t *init_api() {
   void *paligned;
   api_t *api = &api_g;
 
   api->bad_type = bad_type;
   api->bad_argnum = bad_argnum;
-  api->set_meta = set_meta;
+  api->add_meta = add_meta;
   api->get_meta = get_meta;
   api->print_object_f = print_object_f;
   api->gc_lifts = gc_lifts;

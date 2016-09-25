@@ -455,10 +455,9 @@ ssa_load_lib Dst Name =
 | ssa var Dst
 | ssa load_lib Dst Name^ssa_cstring
 
-ssa_fnmeta N Fn Name Size NArgs =
-| Meta = "fm\[[N]\]"
-| push [fnmeta Fn Meta Size NArgs] GRawInits
-| when Name: push [fnmark Meta Name.1^ssa_cstring] GRawInits
+ssa_fnmeta_entry Fn Name Size NArgs =
+| NameBytes = if Name then Name.1^ssa_cstring else 0
+| [Size NArgs NameBytes Fn]
 
 produce_ssa Entry Expr =
 | let GEnv []
@@ -478,11 +477,9 @@ produce_ssa Entry Expr =
   | Ssa = ssa_expr R Expr
   | ssa return R
   | ssa entry setup
-  | MetaN = 0
-  | for Fn,M GFnMeta:
-    | ssa_fnmeta MetaN Fn M.name M.size M.nargs
-    | !MetaN+1
-  | ssa fnmeta_strc MetaN
+  | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs
+  | ssa fnmeta_decl fmtbl Ms
+  | push [fnmeta_load fmtbl Ms.size] GRawInits
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
   | for X GRawInits.flip: push X GOut
   | ssa return_no_gc 0
@@ -498,6 +495,7 @@ cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
+| MetaDecl = ""
 | Imports = t
 | c 'BEGIN_CODE'
 | for X Xs: case X
@@ -534,11 +532,15 @@ ssa_to_c Xs = let GCompiled []
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
-  [fnmeta_strc NMeta]
-    | push "static fn_meta_t fm\[[NMeta]\];" Decls
+  [fnmeta_decl Name Ms]
+    | Head = "static fn_meta_t [Name]\[[Ms.size]\] = {\n"
+    | Body = map [Size NArgs Name Fn] Ms:
+      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],0}"
+    | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
 | GCompiled <= GCompiled.flip
+| push MetaDecl GCompiled
 | for D Decls: push D GCompiled
 | push '#include "runtime.h"' GCompiled
 | GCompiled.text{'\n'}

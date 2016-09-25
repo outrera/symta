@@ -106,6 +106,16 @@
 #define REGS void *P, struct api_t *api
 #define REGS_ARGS(P) P, api
 
+typedef struct fn_meta_t { //function metadata
+  intptr_t size;    // closure size - the size of environment,
+                    // this function closes over.
+  void *nargs; // number of arguments
+  void *name;  // function name text (anonymous, when name is 0)
+  void *fn;
+  void *data;  // user-provided metadata
+} fn_meta_t;
+
+
 typedef struct frame_t {
   void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
   void *lifts; //what should be lifted to parent frame
@@ -134,7 +144,7 @@ typedef struct api_t {
   // runtime's C API
   void (*bad_type)(REGS, char *expected, int arg_index, char *name);
   void* (*bad_argnum)(REGS, void *E, intptr_t expected);
-  void (*set_meta)(void *addr, void *meta);
+  void (*add_meta)(fn_meta_t *metatbl, int count);
   void *(*get_meta)(void *addr);
   char* (*print_object_f)(struct api_t *api, void *object);
   void (*gc_lifts)();
@@ -241,21 +251,7 @@ typedef void *(*pfun)(REGS);
 #define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
 #define VAR(name) void *name;
 
-
-typedef struct fn_meta_t {
-  intptr_t size;    // closure size - the size of environment,
-                    // this function closes over.
-  void *nargs; // number of arguments
-  char *name;  // function name text (anonymous, when name is 0)
-  void *data;  // user-provided metadata
-} fn_meta_t;
-
-#define FNMETA(addr,meta,asize,anargs) \
-  meta.size = asize; \
-  LDFXN(meta.nargs, anargs); \
-  api->set_meta(addr,&meta);
-
-#define FNMARK(meta,sname) meta.name = (char*)(sname);
+#define FNMETA_LOAD(tbl,tblsize) api->add_meta(tbl,tblsize);
 
 #define BPUSH() \
   ++Level; \
