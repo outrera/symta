@@ -674,6 +674,11 @@ expand_block_helper R A B =
              else [(expand_match B [[A R]]
                                  [_fatal "couldnt match [B] to [A]"] No)]
 
+supply_meta Object Source =
+| when Source.is_meta and not Object.is_meta:
+  | Object <= meta Object Source.meta_
+| Object
+
 expand_block Xs =
 | when Xs.size >< 1 and not case Xs.0 [`=` @Zs] 1: leave Xs.0
 | Ms = []
@@ -683,10 +688,18 @@ expand_block Xs =
   Else | push X Ys
 | less Ms.end: push Ms.flip^make_multimethod Ys
 | Xs <= Ys.flip
-| Xs <= map X Xs: expand_block_item X
+| Xs <= map X Xs:
+  | Src = when X.is_meta: X.meta_
+  | Rs = let GSrc (if got Src then Src else GSrc)
+         | expand_block_item X
+  | when X.is_meta: Rs <= map R Rs: meta R X.meta_
+  | Rs
 | Xs <= Xs.join
 | R = []
-| for [A B] Xs.flip: R <= expand_block_helper R A B
+| for X Xs.flip:
+  | [A B] = X
+  | when B.is_list: supply_meta !B X
+  | R <= expand_block_helper R A B
 | R <= [_progn @R]
 | Bs = Xs.keep{X => X.0.is_keyword}
 | when Bs.size: R <= [let_ (map B Bs [B.0 No]) R]
@@ -860,14 +873,14 @@ normalize_nesting O =
 | case O [X] | if X.is_keyword then O else normalize_nesting X
          X | X
 
-mex Expr =
+mex ExprIn =
 | when no GMacros: mex_error 'lib_path got clobbered again'
-| Expr <= normalize_nesting Expr
+| Expr = normalize_nesting ExprIn
 | when Expr.is_text
   | case Expr^handle_extern [Pkg Name]: leave: mex_extern Pkg Name
   | when not Expr.is_keyword and got GMacros.Expr: Expr <= GMacros.Expr.expander
 | less Expr.is_list: leave Expr
-| let GExpansionDepth GExpansionDepth+1: case Expr
+| R = let GExpansionDepth GExpansionDepth+1: case Expr
   [_fn As Body] | [_fn As Body^mex]
   [_set Place Value] | [_set Place (if Value.is_keyword then [_quote Value] else mex Value)]
   [_label Name] | Expr
@@ -879,9 +892,9 @@ mex Expr =
   [] | Expr
   [X@Xs] | Src = when Expr.is_meta: Expr.meta_ 
          | let GSrc (if got Src then Src else GSrc)
-           | Result = mex_normal X Xs
-           | when got Src and Result.is_list: Result <= meta Result Src
-           | Result
+           | mex_normal X Xs
+| when R.is_list: supply_meta !R ExprIn
+| R
 
 macroexpand Expr Macros ModuleCompiler ModuleFolders =
 | let GMacros Macros

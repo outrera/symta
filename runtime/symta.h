@@ -112,7 +112,7 @@ typedef struct fn_meta_t { //function metadata
   void *nargs; // number of arguments
   void *name;  // function name text (anonymous, when name is 0)
   void *fn;
-  void *data;  // user-provided metadata
+  void *origin;  // user-provided metadata
 } fn_meta_t;
 
 

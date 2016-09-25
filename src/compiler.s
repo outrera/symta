@@ -91,7 +91,7 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
   | when Prologue: ssa label GCurFn
   | when Prologue
     | NArgs = if Args.is_text then -1 else Args.size 
-    | GFnMeta.F <= fnmeta size/"[F]_s" nargs/NArgs
+    | GFnMeta.F <= fnmeta size/"[F]_s" nargs/NArgs origin/GSrc
     | when NArgs<>-1: ssa check_nargs NArgs
   | when no K: K <= ssa_var result
   | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
@@ -261,7 +261,7 @@ uniquify_let Xs =
 
 uniquify_form Expr =
 | Src = Expr.meta_
-| let GSrc (if got Src then Src else GSrc)
+| R = let GSrc (if got Src then Src else GSrc)
   | case Expr
     [_fn As @Body]
       | Bs = if As.is_text then [As] else As
@@ -280,6 +280,8 @@ uniquify_form Expr =
     [_call @Xs] Xs^uniquify_form
     Xs | Xs <= uniquify_let Xs
        | Xs.map{&uniquify_expr}
+| when got Src: R <= meta R Src
+| R
 
 uniquify_name S = for Closure GUniquifyStack: for X Closure: when X.0 >< S: leave X.1
 
@@ -397,7 +399,9 @@ ssa_ffi_call K Type F As =
 | ssa ffi_call ResultType R F AsTypes Vs
 | if ResultType >< void then ssa move K 0 else ssa "ffi_from_[ResultType]" K R
 
-ssa_form K Xs = case Xs
+ssa_form K Xs =
+| Src = Xs.meta_
+| let GSrc (if got Src then Src else GSrc): case Xs
   [_fn As Body] | ssa_fn 'n'.rand K As Body Xs
   [_if Cnd Then Else] | ssa_if K Cnd Then Else
   [_quote X @Xs] | ssa_quote K X
@@ -455,9 +459,10 @@ ssa_load_lib Dst Name =
 | ssa var Dst
 | ssa load_lib Dst Name^ssa_cstring
 
-ssa_fnmeta_entry Fn Name Size NArgs =
+ssa_fnmeta_entry Fn Name Size NArgs Origin =
+| OrigBytes = ssa_cstring "[Origin.2]:[Origin.0]:[Origin.1]"
 | NameBytes = if Name then Name.1^ssa_cstring else 0
-| [Size NArgs NameBytes Fn]
+| [Size NArgs NameBytes Fn OrigBytes]
 
 produce_ssa Entry Expr =
 | let GEnv []
@@ -474,10 +479,10 @@ produce_ssa Entry Expr =
   | ssa entry Entry
   | R = ssa_var result
   | uniquify !Expr
-  | Ssa = ssa_expr R Expr
+  | ssa_expr R Expr
   | ssa return R
   | ssa entry setup
-  | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs
+  | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
   | ssa fnmeta_decl fmtbl Ms
   | push [fnmeta_load fmtbl Ms.size] GRawInits
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
@@ -534,8 +539,8 @@ ssa_to_c Xs = let GCompiled []
     | c "  [Call]"
   [fnmeta_decl Name Ms]
     | Head = "static fn_meta_t [Name]\[[Ms.size]\] = {\n"
-    | Body = map [Size NArgs Name Fn] Ms:
-      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],0}"
+    | Body = map [Size NArgs Name Fn Origin] Ms:
+      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Origin]}"
     | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
