@@ -456,10 +456,7 @@ ssa_load_lib Dst Name =
 | ssa load_lib Dst Name^ssa_cstring
 
 ssa_fnmeta N Fn Name Size NArgs =
-| LB = '['
-| RB = ']'
-| Meta = "fm[LB][N][RB]"
-//| Meta = "fm\[[N]\]"
+| Meta = "fm\[[N]\]"
 | push [fnmeta Fn Meta Size NArgs] GRawInits
 | when Name: push [fnmark Meta Name.1^ssa_cstring] GRawInits
 
@@ -501,9 +498,6 @@ cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
-| LB = '['
-| RB = ']'
-//| push "static fn_meta_t fm\[[NMeta]\];" Decls
 | Imports = t
 | c 'BEGIN_CODE'
 | for X Xs: case X
@@ -541,7 +535,7 @@ ssa_to_c Xs = let GCompiled []
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
   [fnmeta_strc NMeta]
-    | push "static fn_meta_t fm[LB][NMeta][RB];" Decls
+    | push "static fn_meta_t fm\[[NMeta]\];" Decls
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
 | GCompiled <= GCompiled.flip
