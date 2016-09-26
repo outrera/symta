@@ -2288,7 +2288,7 @@ static int ctx_error_handler(ctx_error_t *info) {
   } else {
     fprintf(stderr, "%s\n", info->text);
   }
-  fprintf(stderr, "hello at ip=%p sp=%p\n", ip, sp);
+  fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
   ctx_print_stack_trace(ctx);
   fatal("aborting");
   return CTXE_ABORT;

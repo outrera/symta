@@ -1,7 +1,6 @@
-- provide names for entry() and setup() routines
 - superfluous RESOLVE_TYPE(t__13084,b__12986) calls
-- TEXT() calls in setup() could be allocated by runtime, optionally collecting text from all modules
-- `ssa_fn Name K Args Expr O` doesn't really needs name argument
+- TEXT() calls in setup() could be reduced to a single runtime call, optionally collecting text from all modules
+- `ssa_fn Name K Args Expr O` doesn't really need the name argument
 - DSET shoudln't really set K, when K is dummy, like in:
   MCALL(dummy,r__32604,m__32541);
   DSET(r__32602,3,dummy);`

@@ -409,7 +409,7 @@ ssa_form K Xs =
   [_progn @Xs] | ssa_progn K Xs
   [_label Name] | ssa_label Name
   [_goto Name] | ssa_goto Name
-  [_mark Name] | ssa_mark Name
+  [_mark Name] | ssa_mark Name.1
   [_data Type @Xs] | ssa_data K Type Xs
   [_subtype Super Sub] | ssa_subtype K Super Sub
   [_dget Src Index] | ssa_dget K Src Index
@@ -461,8 +461,15 @@ ssa_load_lib Dst Name =
 
 ssa_fnmeta_entry Fn Name Size NArgs Origin =
 | OrigBytes = ssa_cstring "[Origin.2]"
-| NameBytes = if Name then Name.1^ssa_cstring else 0
+| NameBytes = if Name then Name^ssa_cstring else 0
 | [Size NArgs NameBytes Fn Origin.0 Origin.1 OrigBytes]
+
+find_closes_meta Expr =
+| if Expr.is_meta then Expr.meta_
+  else if Expr.is_list then
+   | for X Expr: when got!it find_closes_meta X: leave it
+   | No
+  else No
 
 produce_ssa Entry Expr =
 | let GEnv []
@@ -477,11 +484,15 @@ produce_ssa Entry Expr =
       GResolvedMethods (t size/500)
       GImportLibs (t)
   | ssa entry Entry
+  | Origin = find_closes_meta Expr
+  | less got Origin: Origin <= [-1 -1 unknown]
   | R = ssa_var result
   | uniquify !Expr
   | ssa_expr R Expr
   | ssa return R
   | ssa entry setup
+  | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
+  | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
   | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
   | ssa fnmeta_decl fmtbl Ms
   | push [fnmeta_load fmtbl Ms.size] GRawInits

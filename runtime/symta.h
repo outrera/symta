@@ -439,5 +439,6 @@ typedef struct {
 #define FFI_SET(type,ptr,off,val) ((type*)(ptr))[UNFIXNUM(off)] = (type)UNFIXNUM(val);
 
 void *entry(REGS);
+void *setup(REGS);
 
 #endif //SYMTA_H
