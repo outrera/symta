@@ -152,7 +152,8 @@ __attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
     if (!meta) name = "unknown"; //continue;
     else if (!meta->name) name = "unnamed";
     else name = (char*)meta->name;
-    fprintf(stderr, "  %p:%s\n", fn, name);
+    fprintf(stderr, "  %p:%s:%d:%d:%s\n",
+      fn, name, meta->row, meta->col, (char*)meta->origin);
     if (++sp_count > 50) {
       fprintf(stderr, "  ...stack is too big...\n");
       return;

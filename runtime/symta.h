@@ -112,8 +112,10 @@ typedef struct fn_meta_t { //function metadata
   void *nargs; // number of arguments
   void *name;  // function name text (anonymous, when name is 0)
   void *fn;
+  int32_t row;
+  int32_t col;
   void *origin;  // user-provided metadata
-} fn_meta_t;
+}  __attribute__((packed)) fn_meta_t;
 
 
 typedef struct frame_t {

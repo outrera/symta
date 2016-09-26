@@ -460,9 +460,9 @@ ssa_load_lib Dst Name =
 | ssa load_lib Dst Name^ssa_cstring
 
 ssa_fnmeta_entry Fn Name Size NArgs Origin =
-| OrigBytes = ssa_cstring "[Origin.2]:[Origin.0]:[Origin.1]"
+| OrigBytes = ssa_cstring "[Origin.2]"
 | NameBytes = if Name then Name.1^ssa_cstring else 0
-| [Size NArgs NameBytes Fn OrigBytes]
+| [Size NArgs NameBytes Fn Origin.0 Origin.1 OrigBytes]
 
 produce_ssa Entry Expr =
 | let GEnv []
@@ -539,8 +539,8 @@ ssa_to_c Xs = let GCompiled []
     | c "  [Call]"
   [fnmeta_decl Name Ms]
     | Head = "static fn_meta_t [Name]\[[Ms.size]\] = {\n"
-    | Body = map [Size NArgs Name Fn Origin] Ms:
-      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Origin]}"
+    | Body = map [Size NArgs Name Fn Row Col Origin] Ms:
+      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
     | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
