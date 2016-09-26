@@ -143,17 +143,25 @@ void print_stack_trace(api_t *api);
 __attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
   void *fn;
   fn_meta_t *meta;
-  char *name;
+  int row, col;
+  char *name, *origin;
   int sp_count = 0;
   fprintf(stderr, "Stack Trace:\n");
   while((fn = ctx_unwind(ctx)) != 0) {
     if (fn == (void*)main) return;
-    fn_meta_t *meta = (fn_meta_t*)get_meta(fn);
-    if (!meta) name = "unknown"; //continue;
-    else if (!meta->name) name = "unnamed";
-    else name = (char*)meta->name;
-    fprintf(stderr, "  %p:%s:%d:%d:%s\n",
-      fn, name, meta->row, meta->col, (char*)meta->origin);
+    meta = (fn_meta_t*)get_meta(fn);
+    if (!meta) {
+      name = "???"; //continue;
+      row = -1;
+      col = -1;
+      origin = "???";
+    } else {
+      name = meta->name ? (char*)meta->name : "unnamed";
+      origin = meta->origin ? (char*)meta->origin : "";
+      row = meta->row;
+      col = meta->col;
+    }
+    fprintf(stderr, "  %p:%s:%d,%d,%s\n", fn, name, row, col, origin);
     if (++sp_count > 50) {
       fprintf(stderr, "  ...stack is too big...\n");
       return;
@@ -2280,8 +2288,7 @@ static int ctx_error_handler(ctx_error_t *info) {
   } else {
     fprintf(stderr, "%s\n", info->text);
   }
-  fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
-  ctx_unwind(ctx);
+  fprintf(stderr, "hello at ip=%p sp=%p\n", ip, sp);
   ctx_print_stack_trace(ctx);
   fatal("aborting");
   return CTXE_ABORT;
