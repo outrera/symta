@@ -1,4 +1,3 @@
-- provide source code file + line in stacktrace
 - provide names for entry() and setup() routines
 - superfluous RESOLVE_TYPE(t__13084,b__12986) calls
 - TEXT() calls in setup() could be allocated by runtime, optionally collecting text from all modules
