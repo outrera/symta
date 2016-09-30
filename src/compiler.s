@@ -5,6 +5,7 @@ GCurProperFn = No // unique name of current function with prologue
 GFnMeta = No
 GRawInits = No // stuff called on module initialization
 GStrings = No
+GRTypes = No // resolved types
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
@@ -181,9 +182,11 @@ ssa_apply K F As =
   | if F.is_keyword then ssa call K H else ssa call_tagged K H
 
 resolve_type Name =
+| when got!it GRTypes.Name: leave it
 | TypeNameBytes = ssa_cstring Name
-| TypeVar = ssa_global t
+| TypeVar = ssa_global ty
 | push [resolve_type TypeVar TypeNameBytes] GRawInits
+| GRTypes.Name <= TypeVar
 | TypeVar
 
 resolve_method Name =
@@ -478,6 +481,7 @@ produce_ssa Entry Expr =
       GFnMeta (t size/500)
       GRawInits []
       GStrings (t size/500)
+      GRTypes (t size/500)
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
