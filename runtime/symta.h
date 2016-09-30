@@ -209,6 +209,7 @@ typedef void *(*pfun)(REGS);
   ALLOC_NO_CODE(dst,count); \
   dst = ADD_TAG(dst,tag);
 
+//ARgList
 #define ARL(dst,size) ALLOC_BASIC(dst,FIXNUM(size),size)
 
 #define LIST_ALLOC(dst,size) \
@@ -220,7 +221,8 @@ typedef void *(*pfun)(REGS);
 #define RESOLVE_TYPE(dst,name) \
   dst = (void*)(intptr_t)api->resolve_type(api, (char*)(name));
 #define RESOLVE_METHOD(dst,name) dst = api->resolve_method(api, name);
-#define SET_TYPE_SIZE_AND_NAME(tag,size,name) api->set_type_size_and_name(api,tag,size,name);
+#define SET_TYPE_PARAMS(tag,size,name) \
+  api->set_type_size_and_name(api,(intptr_t)(tag),size,name);
 #define DMET(method,type,handler) api->set_method(api,method,type,handler);
 #define SUBTYPE(super,sub) api->add_subtype(api,(intptr_t)(super),(intptr_t)(sub));
 

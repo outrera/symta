@@ -6,6 +6,7 @@ GFnMeta = No
 GRawInits = No // stuff called on module initialization
 GStrings = No
 GRTypes = No // resolved types
+GTexts = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
@@ -313,11 +314,8 @@ ssa_list K Xs =
 
 ssa_data K Type Xs =
 | Size = Xs.size
-| BytesName = ssa_cstring Type.1
-| TypeVar = ssa_global t
-| let GOut []
-  | ssa type TypeVar BytesName BytesName Size
-  | for X GOut.flip: push X GRawInits
+| TypeVar = resolve_type Type.1
+| push [set_type_params TypeVar Size Type.1^ssa_text] GRawInits
 | ssa alloc_data K TypeVar Size
 | for [I X] Xs.i: ssa dinit K I X^ev
 
@@ -371,12 +369,12 @@ ssa_alloc K N =
 ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
-ssa_text K S =
-| TextBytes = ssa_cstring S
+ssa_text String =
+//| when got!it GTexts.String: leave it
 | TextVar = ssa_global t
-| push [text TextVar TextBytes] GRawInits
-| ssa move K TextVar
-//| ssa text K S^ssa_cstring
+| push [text TextVar String^ssa_cstring] GRawInits
+//| GTexts.String <= TextVar
+| TextVar
 
 ssa_ffi_var Type Name =
 | V = @rand v
@@ -420,7 +418,7 @@ ssa_form K Xs =
   [_dmet Method Type Handler] | ssa_dmet K Method Type Handler
   [_mcall O Method @As] | ssa_apply_method K Method O As
   [_list @Xs] | ssa_list K Xs
-  [_text X] | ssa_text K X
+  [_text X] | ssa move K X^ssa_text
   [_alloc N] | ssa_alloc K N
   [_store Base Off Value] | ssa_store Base Off Value
   [_tagged Tag X] | ssa_tagged K Tag X
@@ -482,6 +480,7 @@ produce_ssa Entry Expr =
       GRawInits []
       GStrings (t size/500)
       GRTypes (t size/500)
+      GTexts (t size/500)
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
@@ -525,12 +524,6 @@ ssa_to_c Xs = let GCompiled []
   [global Name] | push "static void *[Name];" Decls
   [closure Place Name Size] | push "#define [Name]_s [Size]" Decls
                             | cnorm X
-  [type Place Name TagName Size]
-    | TName = @rand n
-    | c "  RESOLVE_TYPE([Place],[Name]);"
-    | c "  VAR([TName]);"
-    | c "  TEXT([TName],[TagName]);"
-    | c "  SET_TYPE_SIZE_AND_NAME((intptr_t)[Place],[Size],[TName]);"
   [load_lib Dst LibCStr] | c "  LOAD_LIB([Dst],[LibCStr]);"
   [import Dst Lib Symbol LibExports SymbolCStr]
     | Key = "[Lib]::[Symbol]"
