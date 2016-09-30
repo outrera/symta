@@ -6,6 +6,7 @@ GFnMeta = No
 GRawInits = No // stuff called on module initialization
 GStrings = No
 GRTypes = No // resolved types
+GImports = No
 GTexts = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
@@ -342,9 +343,13 @@ ssa_dmet K MethodName TypeName Handler =
 ssa_import K Lib Symbol =
 | Lib <= Lib.1
 | Symbol <= Symbol.1
-| G = ssa_global i
-| push [import G Lib Symbol GImportLibs.Lib Symbol^ssa_cstring] GRawInits
-| ssa move K G
+| Key = "[Lib]::[Symbol]"
+| Im = GImports.Key
+| when no Im:
+  | Im <= ssa_global im
+  | SymbolText = Symbol^ssa_text
+  | push [find_export Im SymbolText GImportLibs.Lib] GRawInits
+| ssa move K Im
 
 ssa_label Name = ssa local Name
 
@@ -369,10 +374,13 @@ ssa_alloc K N =
 ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
+//FIXME: commented lines below need text-inits to be
+//       hoistied to the beginning of setup
 ssa_text String =
 //| when got!it GTexts.String: leave it
 | TextVar = ssa_global t
-| push [text TextVar String^ssa_cstring] GRawInits
+| StringBytes = String^ssa_cstring
+| push [text TextVar StringBytes] GRawInits
 //| GTexts.String <= TextVar
 | TextVar
 
@@ -481,6 +489,7 @@ produce_ssa Entry Expr =
       GStrings (t size/500)
       GRTypes (t size/500)
       GTexts (t size/500)
+      GImports (t size/500)
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
@@ -525,16 +534,6 @@ ssa_to_c Xs = let GCompiled []
   [closure Place Name Size] | push "#define [Name]_s [Size]" Decls
                             | cnorm X
   [load_lib Dst LibCStr] | c "  LOAD_LIB([Dst],[LibCStr]);"
-  [import Dst Lib Symbol LibExports SymbolCStr]
-    | Key = "[Lib]::[Symbol]"
-    | Import = Imports.Key
-    | if got Import
-      then c "  MOVE([Dst], [Import]);"
-      else | SymbolText = @rand s
-           | c "  VAR([SymbolText]);"
-           | c "  TEXT([SymbolText],[SymbolCStr]);"
-           | c "  FIND_EXPORT([Dst],[SymbolText],[LibExports]);"
-           | Imports.Key <= Dst
   [bytes Name Xs]
     | Brackets = '[]'
     | Values = (map X Xs X.as_text).text{','}

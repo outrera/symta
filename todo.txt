@@ -1,3 +1,4 @@
+- replace `push [...] GRawInits` with proper function
 - TEXT() calls in setup() could be reduced to a single runtime call, optionally collecting text from all modules; the main problem is that ssa_to_c use TEXT(), which should be moved to ssa generator
 - replace CHECK_NARGS with page trap
 - RESOLVE_METHOD() could be a single call to API
