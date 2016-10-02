@@ -3,7 +3,7 @@ GOut = No // where resulting assembly code is stored
 GCurFn = No // unique name of current function
 GCurProperFn = No // unique name of current function with prologue
 GFnMeta = No
-GRawInits = No // stuff called on module initialization
+GInits = No // stuff called on module initialization
 GStrings = No
 GRTypes = No // resolved types
 GImports = No
@@ -23,6 +23,9 @@ type fnmeta{name/0 size/0 nargs/0 origin/0}
 
 ssa @As = | push As GOut
           | No
+
+ssaI @As = | push As GInits
+           | No
 
 get_parent_index Parent =
 | P = GClosure.0.locate{E => Parent >< E}
@@ -187,7 +190,7 @@ resolve_type Name =
 | when got!it GRTypes.Name: leave it
 | TypeNameBytes = ssa_cstring Name
 | TypeVar = ssa_global ty
-| push [resolve_type TypeVar TypeNameBytes] GRawInits
+| ssaI resolve_type TypeVar TypeNameBytes
 | GRTypes.Name <= TypeVar
 | TypeVar
 
@@ -196,7 +199,7 @@ resolve_method Name =
 | when got M: leave M
 | M <= ssa_global m
 | GResolvedMethods.Name <= M
-| push [resolve_method M Name^ssa_cstring] GRawInits
+| ssaI resolve_method M Name^ssa_cstring
 | M
 
 ssa_apply_method K Name O As =
@@ -316,7 +319,7 @@ ssa_list K Xs =
 ssa_data K Type Xs =
 | Size = Xs.size
 | TypeVar = resolve_type Type.1
-| push [set_type_params TypeVar Size Type.1^ssa_text] GRawInits
+| ssaI set_type_params TypeVar Size Type.1^ssa_text
 | ssa alloc_data K TypeVar Size
 | for [I X] Xs.i: ssa dinit K I X^ev
 
@@ -348,7 +351,7 @@ ssa_import K Lib Symbol =
 | when no Im:
   | Im <= ssa_global im
   | SymbolText = Symbol^ssa_text
-  | push [find_export Im SymbolText GImportLibs.Lib] GRawInits
+  | ssaI find_export Im SymbolText GImportLibs.Lib
 | ssa move K Im
 
 ssa_label Name = ssa local Name
@@ -380,7 +383,7 @@ ssa_text String =
 //| when got!it GTexts.String: leave it
 | TextVar = ssa_global t
 | StringBytes = String^ssa_cstring
-| push [text TextVar StringBytes] GRawInits
+| ssaI text TextVar StringBytes
 //| GTexts.String <= TextVar
 | TextVar
 
@@ -485,7 +488,7 @@ produce_ssa Entry Expr =
       GOut []
       GFns []
       GFnMeta (t size/500)
-      GRawInits []
+      GInits []
       GStrings (t size/500)
       GRTypes (t size/500)
       GTexts (t size/500)
@@ -507,9 +510,9 @@ produce_ssa Entry Expr =
   | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
   | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
   | ssa fnmeta_decl fmtbl Ms
-  | push [fnmeta_load fmtbl Ms.size] GRawInits
+  | ssaI fnmeta_load fmtbl Ms.size
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
-  | for X GRawInits.flip: push X GOut
+  | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
   | Rs = [GOut@GFns].flip.join.flip
   //| Rs <= peephole_optimize Rs
