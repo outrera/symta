@@ -1,4 +1,5 @@
 - TEXT() calls in setup() could be reduced to a single runtime call, optionally collecting text from all modules; the main problem is that ssa_to_c use TEXT(), which should be moved to ssa generator
+- get rid of ssa_global, which should really be replaced by tables
 - replace CHECK_NARGS with page trap
 - RESOLVE_METHOD() could be a single call to API
 - `ssa_fn Name K Args Expr O` doesn't really need the name argument

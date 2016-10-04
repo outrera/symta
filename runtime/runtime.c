@@ -2294,6 +2294,15 @@ static int ctx_error_handler(ctx_error_t *info) {
   return CTXE_ABORT;
 }
 
+static void init_texts(api_t *api, void *txtbl, int count) {
+  int i;
+  void **ts = (void**)txtbl;
+  for (i = 0; i < count; i++) {
+    void *bytes = ts[i];
+    TEXT(ts[i], bytes);
+  }
+}
+
 static void add_meta(fn_meta_t *metatbl, int count) {
   int i;
   for (i = 0; i < count; i++) {
@@ -2301,12 +2310,14 @@ static void add_meta(fn_meta_t *metatbl, int count) {
   }
 }
 
+
 static api_t *init_api() {
   void *paligned;
   api_t *api = &api_g;
 
   api->bad_type = bad_type;
   api->bad_argnum = bad_argnum;
+  api->init_texts = init_texts;
   api->add_meta = add_meta;
   api->get_meta = get_meta;
   api->print_object_f = print_object_f;

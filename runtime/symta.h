@@ -146,6 +146,7 @@ typedef struct api_t {
   // runtime's C API
   void (*bad_type)(REGS, char *expected, int arg_index, char *name);
   void* (*bad_argnum)(REGS, void *E, intptr_t expected);
+  void (*init_texts)(struct api_t *api, void *txtbl, int count);
   void (*add_meta)(fn_meta_t *metatbl, int count);
   void *(*get_meta)(void *addr);
   char* (*print_object_f)(struct api_t *api, void *object);
@@ -216,6 +217,10 @@ typedef void *(*pfun)(REGS);
   ARL(dst,size); \
   dst = ADD_TAG(dst, T_LIST);
 
+  
+#define INIT_TEXTS(tbl,tblsize) api->init_texts(api,tbl,tblsize)
+#define FNMETA_LOAD(tbl,tblsize) api->add_meta(tbl,tblsize);  
+
 #define LOAD_LIB(dst,name) dst = api->load_lib(api,(char*)(name));
 #define FIND_EXPORT(dst,symbol,lib) dst = api->find_export(api,symbol,lib);
 #define RESOLVE_TYPE(dst,name) \
@@ -254,8 +259,6 @@ typedef void *(*pfun)(REGS);
 #define DECL_LABEL(name) static void *name(REGS);
 #define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
 #define VAR(name) void *name;
-
-#define FNMETA_LOAD(tbl,tblsize) api->add_meta(tbl,tblsize);
 
 #define BPUSH() \
   ++Level; \

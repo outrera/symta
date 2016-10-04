@@ -8,6 +8,8 @@ GStrings = No
 GRTypes = No // resolved types
 GImports = No
 GTexts = No
+GTextsMap = No
+GTextsCount = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
@@ -380,12 +382,13 @@ ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 //FIXME: commented lines below need text-inits to be
 //       hoistied to the beginning of setup
 ssa_text String =
-//| when got!it GTexts.String: leave it
-| TextVar = ssa_global t
+//| when got!it GTextsMap.String: leave it
+| Tx = "tx\[[GTextsCount]\]"
+| !GTextsCount+1
 | StringBytes = String^ssa_cstring
-| ssaI text TextVar StringBytes
-//| GTexts.String <= TextVar
-| TextVar
+| push StringBytes GTexts
+//| GTextsMap.String <= Tx
+| Tx
 
 ssa_ffi_var Type Name =
 | V = @rand v
@@ -491,7 +494,9 @@ produce_ssa Entry Expr =
       GInits []
       GStrings (t size/500)
       GRTypes (t size/500)
-      GTexts (t size/500)
+      GTexts []
+      GTextsMap (t size/500)
+      GTextsCount 0
       GImports (t size/500)
       GClosure []
       GBases [[]]
@@ -508,9 +513,11 @@ produce_ssa Entry Expr =
   | ssa entry setup
   | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
   | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
+  | ssa txtbl_decl tx GTexts.flip
+  | ssa init_texts tx GTexts.size
   | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
   | ssa fnmeta_decl fmtbl Ms
-  | ssaI fnmeta_load fmtbl Ms.size
+  | ssa fnmeta_load fmtbl Ms.size
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
   | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
@@ -527,6 +534,7 @@ ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
 | MetaDecl = ""
+| TextDecl = ""
 | Imports = t
 | c 'BEGIN_CODE'
 | for X Xs: case X
@@ -547,6 +555,9 @@ ssa_to_c Xs = let GCompiled []
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
+  [txtbl_decl Name Ts]
+    | Head = "static void *[Name]\[[Ts.size]\] = {\n"
+    | TextDecl <= [Head Ts.text{',\n'} "};\n"].text
   [fnmeta_decl Name Ms]
     | Head = "static fn_meta_t [Name]\[[Ms.size]\] = {\n"
     | Body = map [Size NArgs Name Fn Row Col Origin] Ms:
@@ -554,10 +565,12 @@ ssa_to_c Xs = let GCompiled []
     | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
-| GCompiled <= GCompiled.flip
-| push MetaDecl GCompiled
-| for D Decls: push D GCompiled
-| push '#include "runtime.h"' GCompiled
+| GCompiled <=
+   ['#include "runtime.h"'
+    @Decls.flip
+    TextDecl
+    MetaDecl
+    @GCompiled.flip]
 | GCompiled.text{'\n'}
 
 ssa_produce_file Src =
