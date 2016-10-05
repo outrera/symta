@@ -99,7 +99,7 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
   | when Prologue: ssa label GCurFn
   | when Prologue
     | NArgs = if Args.is_text then -1 else Args.size 
-    | GFnMeta.F <= fnmeta size/"[F]_s" nargs/NArgs origin/GSrc
+    | GFnMeta.F <= fnmeta nargs/NArgs origin/GSrc
     | when NArgs<>-1: ssa check_nargs NArgs
   | when no K: K <= ssa_var result
   | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
@@ -118,6 +118,7 @@ ssa_fn Name K Args Expr O =
 | push Body GFns
 | NParents = Cs.size
 | ssa closure K F NParents
+| GFnMeta.F.size <= NParents
 | for [I C] Cs.i: if C^address >< GCurFn^address // self?
                   then ssa stor K I \E
                   else ssa copy K I \P C^get_parent_index
@@ -542,8 +543,6 @@ ssa_to_c Xs = let GCompiled []
   [label Name] | push "DECL_LABEL([Name])" Decls
                | c "LABEL([Name])"
   [global Name] | push "static void *[Name];" Decls
-  [closure Place Name Size] | push "#define [Name]_s [Size]" Decls
-                            | cnorm X
   [load_lib Dst LibCStr] | c "  LOAD_LIB([Dst],[LibCStr]);"
   [bytes Name Xs]
     | Brackets = '[]'

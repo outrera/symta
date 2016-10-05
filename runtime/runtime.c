@@ -2217,7 +2217,7 @@ static void init_builtins(api_t *api) {
 
   for (i = 0; i < MAX_METHODS; i++) {
     ALLOC_BASIC(methods[i], FIXNUM(MAX_TYPES), MAX_TYPES);
-    Level = i&1;
+    Level = i&1; //ensures even memory consumption among two heaps
   }
   Level = 1;
 

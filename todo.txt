@@ -1,5 +1,5 @@
 - get rid of ssa_global, which should really be replaced by tables
-- replace CHECK_NARGS with page trap
+- replace CHECK_NARGS with page trap; metatable includes expected number of args
 - RESOLVE_METHOD() could be a single call to API
 - `ssa_fn Name K Args Expr O` doesn't really need the name argument
 - DSET shoudln't really set K, when K is dummy, like in:
