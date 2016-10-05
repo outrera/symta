@@ -2012,7 +2012,7 @@ static void fatal_error_chars(api_t *api, char *msg) {
 static void setup_0() {}
 
 #define METHOD_FN(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void) \
-  multi = api->resolve_method(api, name); \
+  multi = resolve_method(api, name); \
   if (m_int) {BUILTIN_CLOSURE(multi[T_INT], m_int); \
               setup_##m_int(api);} \
   if (m_float) {BUILTIN_CLOSURE(multi[T_FLOAT], m_float); \
@@ -2033,13 +2033,13 @@ static void setup_0() {}
                setup_##m_void(api);}
 
 #define METHOD_FN1(name, type, fn) \
-  multi = api->resolve_method(api, name); \
+  multi = resolve_method(api, name); \
   BUILTIN_CLOSURE(multi[type], fn); \
   if (type == T_TEXT) {BUILTIN_CLOSURE(multi[T_FIXTEXT], fn); \
                        setup_##fn(api);}
 
 #define METHOD_VAL(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void, m_bytes) \
-  multi = api->resolve_method(api, name); \
+  multi = resolve_method(api, name); \
   multi[T_INT] = m_int;\
   multi[T_FLOAT] = m_float; \
   multi[T_FIXTEXT] = m_fixtext; \
@@ -2303,6 +2303,14 @@ static void init_texts(api_t *api, void *txtbl, int count) {
   }
 }
 
+static void init_meths(api_t *api, void *metbl, int count) {
+  int i;
+  void **ts = (void**)metbl;
+  for (i = 0; i < count; i++) {
+    ts[i] = resolve_method(api, (char*)ts[i]);
+  }
+}
+
 static void add_meta(fn_meta_t *metatbl, int count) {
   int i;
   for (i = 0; i < count; i++) {
@@ -2318,6 +2326,7 @@ static api_t *init_api() {
   api->bad_type = bad_type;
   api->bad_argnum = bad_argnum;
   api->init_texts = init_texts;
+  api->init_meths = init_meths;
   api->add_meta = add_meta;
   api->get_meta = get_meta;
   api->print_object_f = print_object_f;
@@ -2325,7 +2334,6 @@ static api_t *init_api() {
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
   api->fatal_chars = fatal_error_chars;
-  api->resolve_method = resolve_method;
   api->resolve_type = resolve_type;
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;

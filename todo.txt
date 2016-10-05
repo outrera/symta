@@ -1,6 +1,6 @@
+- RESOLVE_METHOD() could be a single call to API
 - get rid of ssa_global, which should really be replaced by tables
 - replace CHECK_NARGS with page trap; metatable includes expected number of args
-- RESOLVE_METHOD() could be a single call to API
 - `ssa_fn Name K Args Expr O` doesn't really need the name argument
 - DSET shoudln't really set K, when K is dummy, like in:
   MCALL(dummy,r__32604,m__32541);
@@ -9,7 +9,6 @@
   DSET(r__32638,5,dummy);
 - get rid of dummy in generated code
 - api->method could probably be replaced with get_meta
-- instead of calling `api->bad_argnum(` we can try reading trap pages
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.
 - a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.

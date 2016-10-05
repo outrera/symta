@@ -147,6 +147,7 @@ typedef struct api_t {
   void (*bad_type)(REGS, char *expected, int arg_index, char *name);
   void* (*bad_argnum)(REGS, void *E, intptr_t expected);
   void (*init_texts)(struct api_t *api, void *txtbl, int count);
+  void (*init_meths)(struct api_t *api, void *metbl, int count);
   void (*add_meta)(fn_meta_t *metatbl, int count);
   void *(*get_meta)(void *addr);
   char* (*print_object_f)(struct api_t *api, void *object);
@@ -154,7 +155,6 @@ typedef struct api_t {
   void *(*alloc_text)(char *s);
   void (*fatal)(struct api_t *api, void *msg);
   void (*fatal_chars)(struct api_t *api, char *msg);
-  void **(*resolve_method)(struct api_t *api, char *name);
   int (*resolve_type)(struct api_t *api, char *name);
   void (*add_subtype)(struct api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(struct api_t *api, intptr_t tag, intptr_t size, void *name);
@@ -218,14 +218,14 @@ typedef void *(*pfun)(REGS);
   dst = ADD_TAG(dst, T_LIST);
 
   
-#define INIT_TEXTS(tbl,tblsize) api->init_texts(api,tbl,tblsize)
-#define FNMETA_LOAD(tbl,tblsize) api->add_meta(tbl,tblsize);  
+#define INIT_TEXTS(tbl,tblsize) api->init_texts(api,tbl,tblsize);
+#define INIT_METHS(tbl,tblsize) api->init_meths(api,tbl,tblsize);
+#define FNMETA_LOAD(tbl,tblsize) api->add_meta(tbl,tblsize);
 
 #define LOAD_LIB(dst,name) dst = api->load_lib(api,(char*)(name));
 #define FIND_EXPORT(dst,symbol,lib) dst = api->find_export(api,symbol,lib);
 #define RESOLVE_TYPE(dst,name) \
   dst = (void*)(intptr_t)api->resolve_type(api, (char*)(name));
-#define RESOLVE_METHOD(dst,name) dst = api->resolve_method(api, name);
 #define SET_TYPE_PARAMS(tag,size,name) \
   api->set_type_size_and_name(api,(intptr_t)(tag),size,name);
 #define DMET(method,type,handler) api->set_method(api,method,type,handler);

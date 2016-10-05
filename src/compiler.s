@@ -10,13 +10,14 @@ GImports = No
 GTexts = No
 GTextsMap = No
 GTextsCount = No
+GMethods = No //resolved methods
+GMethodsCount = No
+GImportLibs = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
 GUniquifyStack = No
 GHoistedTexts = No
-GResolvedMethods = No
-GImportLibs = No
 GSrc = [0 0 unknown]
 GAll = @rand all
 
@@ -198,12 +199,12 @@ resolve_type Name =
 | TypeVar
 
 resolve_method Name =
-| M = GResolvedMethods.Name
-| when got M: leave M
-| M <= ssa_global m
-| GResolvedMethods.Name <= M
-| ssaI resolve_method M Name^ssa_cstring
-| M
+| when got!it GMethods.Name: leave it.1
+| N = GMethodsCount
+| R = "mt\[[N]\]"
+| !GMethodsCount+1
+| GMethods.Name <= [N R Name^ssa_cstring]
+| R
 
 ssa_apply_method K Name O As =
 | ssa bpush
@@ -498,12 +499,13 @@ produce_ssa Entry Expr =
       GTexts []
       GTextsMap (t size/500)
       GTextsCount 0
+      GMethods (t size/500)
+      GMethodsCount 0
+      GImportLibs (t)
       GImports (t size/500)
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
-      GResolvedMethods (t size/500)
-      GImportLibs (t)
   | ssa entry Entry
   | Origin = find_closes_meta Expr
   | less got Origin: Origin <= [-1 -1 unknown]
@@ -514,6 +516,10 @@ produce_ssa Entry Expr =
   | ssa entry setup
   | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
   | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
+  | Meths = map Name,[Index SN CStr] GMethods: Index,CStr
+  | Meths = Meths.sort{?0 < ??0}{?1}
+  | ssa metbl_decl mt Meths
+  | ssa init_meths mt Meths.size
   | ssa txtbl_decl tx GTexts.flip
   | ssa init_texts tx GTexts.size
   | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
@@ -534,8 +540,9 @@ cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
-| MetaDecl = ""
 | TextDecl = ""
+| MethDecl = ""
+| MetaDecl = ""
 | Imports = t
 | c 'BEGIN_CODE'
 | for X Xs: case X
@@ -554,12 +561,15 @@ ssa_to_c Xs = let GCompiled []
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
-  [txtbl_decl Name Ts]
-    | Head = "static void *[Name]\[[Ts.size]\] = {\n"
-    | TextDecl <= [Head Ts.text{',\n'} "};\n"].text
-  [fnmeta_decl Name Ms]
-    | Head = "static fn_meta_t [Name]\[[Ms.size]\] = {\n"
-    | Body = map [Size NArgs Name Fn Row Col Origin] Ms:
+  [metbl_decl Name Xs]
+    | Head = "static void *[Name]\[[Xs.size]\] = {\n"
+    | MethDecl <= [Head Xs.text{',\n'} "};\n"].text
+  [txtbl_decl Name Xs]
+    | Head = "static void *[Name]\[[Xs.size]\] = {\n"
+    | TextDecl <= [Head Xs.text{',\n'} "};\n"].text
+  [fnmeta_decl Name Xs]
+    | Head = "static fn_meta_t [Name]\[[Xs.size]\] = {\n"
+    | Body = map [Size NArgs Name Fn Row Col Origin] Xs:
       | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
     | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
@@ -568,6 +578,7 @@ ssa_to_c Xs = let GCompiled []
    ['#include "runtime.h"'
     @Decls.flip
     TextDecl
+    MethDecl
     MetaDecl
     @GCompiled.flip]
 | GCompiled.text{'\n'}
