@@ -1,13 +1,10 @@
-- RESOLVE_METHOD() could be a single call to API
+- globals like im__3852 should be refactored into import table
+- globals like ty__3937 should be refactored into type table
+- ssa_to_c should get all tables declaration line as the first argument
+- init all tables with a single call
 - get rid of ssa_global, which should really be replaced by tables
 - replace CHECK_NARGS with page trap; metatable includes expected number of args
 - `ssa_fn Name K Args Expr O` doesn't really need the name argument
-- DSET shoudln't really set K, when K is dummy, like in:
-  MCALL(dummy,r__32604,m__32541);
-  DSET(r__32602,3,dummy);`
-  LDFXN(dummy,0);
-  DSET(r__32638,5,dummy);
-- get rid of dummy in generated code
 - api->method could probably be replaced with get_meta
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.

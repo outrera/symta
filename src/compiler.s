@@ -224,7 +224,7 @@ ssa_set K Place Value =
 // FIXME: _label should be allowed only inside of _progn
 ssa_progn K Xs =
 | when Xs.end: Xs <= [[]]
-| D = 'dummy' //ssa_var dummy
+| D = 'dummy'
 | for X Xs: case X [_label Name] | GBases <= [[Name @GBases.head] @GBases.tail]
 | till Xs.end
   | X = pop Xs
@@ -338,8 +338,10 @@ ssa_dget K Src Off =
 ssa_dset K Dst Off Value =
 | less Off.is_int: bad "dset: offset must be integer"
 | D = ev Dst
-| ssa_expr K Value
-| ssa dset D Off K
+| V = ssa_var r
+| ssa_expr V Value
+| ssa dset D Off V
+| ssa move K V
 
 ssa_dmet K MethodName TypeName Handler =
 | MethodVar = MethodName.1^resolve_method
@@ -381,15 +383,13 @@ ssa_alloc K N =
 ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
-//FIXME: commented lines below need text-inits to be
-//       hoistied to the beginning of setup
 ssa_text String =
-//| when got!it GTextsMap.String: leave it
+| when got!it GTextsMap.String: leave it
 | Tx = "tx\[[GTextsCount]\]"
 | !GTextsCount+1
 | StringBytes = String^ssa_cstring
 | push StringBytes GTexts
-//| GTextsMap.String <= Tx
+| GTextsMap.String <= Tx
 | Tx
 
 ssa_ffi_var Type Name =
@@ -488,6 +488,14 @@ find_closes_meta Expr =
    | No
   else No
 
+peephole_optimize Xs =
+| Ys = []
+| for X Xs: case X
+   [move dummy V] |
+   [ldarg dummy Base Pos] |
+   Else | push X Ys
+| Ys.flip
+
 produce_ssa Entry Expr =
 | let GEnv []
       GOut []
@@ -529,7 +537,7 @@ produce_ssa Entry Expr =
   | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
   | Rs = [GOut@GFns].flip.join.flip
-  //| Rs <= peephole_optimize Rs
+  | Rs <= peephole_optimize Rs
   | Rs
 
 GCompiled = No
