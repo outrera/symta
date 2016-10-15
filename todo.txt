@@ -1,5 +1,4 @@
 - globals like im__3852 should be refactored into import table
-- globals like ty__3937 should be refactored into type table
 - ssa_to_c should get all tables declaration line as the first argument
 - init all tables with a single call
 - get rid of ssa_global, which should really be replaced by tables

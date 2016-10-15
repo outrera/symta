@@ -55,7 +55,7 @@
   static fn_meta_t meta_b_##name[1] = \
     {{0,(void*)FIXNUM(nargs),sname,b_##name,0,0,"builtin"}}; \
   static void setup_b_##name(api_t *api) { \
-    FNMETA_LOAD(meta_b_##name,1); \
+    set_meta(meta_b_##name[0].fn, meta_b_##name); \
   }
 
 #define BUILTIN0(sname, name) \

@@ -210,7 +210,7 @@ static void *collect_data(void *o);
 
 static int initializing = 1;
 
-static int resolve_type(api_t *api, char *name) {
+static intptr_t resolve_type(api_t *api, char *name) {
   int i, j;
   for (i = 0; i < types_used; i++)
     if (!strcmp(typenames[i], name))
@@ -2072,23 +2072,23 @@ static void init_types(api_t *api) {
   TEXT(n_text, "text");
   TEXT(n_void, "void");
 
-  api->resolve_type(api, "int");
-  api->resolve_type(api, "float");
-  api->resolve_type(api, "_fixtext_");
-  api->resolve_type(api, "_data_");
-  api->resolve_type(api, "fn");
-  api->resolve_type(api, "_list_");
-  api->resolve_type(api, "_view_");
-  api->resolve_type(api, "_cons_");
-  api->resolve_type(api, "_");
-  api->resolve_type(api, "_text_");
-  api->resolve_type(api, "void");
-  api->resolve_type(api, "list");
-  api->resolve_type(api, "text");
-  api->resolve_type(api, "hard_list");
-  api->resolve_type(api, "_name_");
-  api->resolve_type(api, "_name_text_");
-  api->resolve_type(api, "_bytes_");
+  resolve_type(api, "int");
+  resolve_type(api, "float");
+  resolve_type(api, "_fixtext_");
+  resolve_type(api, "_data_");
+  resolve_type(api, "fn");
+  resolve_type(api, "_list_");
+  resolve_type(api, "_view_");
+  resolve_type(api, "_cons_");
+  resolve_type(api, "_");
+  resolve_type(api, "_text_");
+  resolve_type(api, "void");
+  resolve_type(api, "list");
+  resolve_type(api, "text");
+  resolve_type(api, "hard_list");
+  resolve_type(api, "_name_");
+  resolve_type(api, "_name_text_");
+  resolve_type(api, "_bytes_");
 
   METHOD_VAL("_size", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   METHOD_VAL("_name", n_int, n_float, n_fn, n_list, n_text, n_text, n_list, n_list, n_void, n_list);
@@ -2294,6 +2294,15 @@ static int ctx_error_handler(ctx_error_t *info) {
   return CTXE_ABORT;
 }
 
+
+static void init_metadata(void *metatbl, int count) {
+  int i;
+  fn_meta_t *ms = (fn_meta_t*)metatbl;
+  for (i = 0; i < count; i++) {
+    set_meta(ms[i].fn, &ms[i]);
+  }
+}
+
 static void init_texts(api_t *api, void *txtbl, int count) {
   int i;
   void **ts = (void**)txtbl;
@@ -2303,7 +2312,7 @@ static void init_texts(api_t *api, void *txtbl, int count) {
   }
 }
 
-static void init_meths(api_t *api, void *metbl, int count) {
+static void init_methods(api_t *api, void *metbl, int count) {
   int i;
   void **ts = (void**)metbl;
   for (i = 0; i < count; i++) {
@@ -2311,13 +2320,21 @@ static void init_meths(api_t *api, void *metbl, int count) {
   }
 }
 
-static void add_meta(fn_meta_t *metatbl, int count) {
+static void resolve_types(api_t *api, void *types, int count) {
   int i;
+  void **ts = (void**)types;
   for (i = 0; i < count; i++) {
-    set_meta(metatbl[i].fn, &metatbl[i]);
+    ts[i] = (void*)resolve_type(api, (char*)ts[i]);
   }
 }
 
+void tables_init(struct api_t *api, void *tables) {
+  tot_entry_t *ts = (tot_entry_t*)tables;
+  init_metadata(ts[0].table, ts[0].size);
+  resolve_types(api,ts[1].table, ts[1].size);
+  init_texts(api,ts[2].table, ts[2].size);
+  init_methods(api,ts[3].table, ts[3].size);
+}
 
 static api_t *init_api() {
   void *paligned;
@@ -2325,16 +2342,12 @@ static api_t *init_api() {
 
   api->bad_type = bad_type;
   api->bad_argnum = bad_argnum;
-  api->init_texts = init_texts;
-  api->init_meths = init_meths;
-  api->add_meta = add_meta;
-  api->get_meta = get_meta;
+  api->tables_init = tables_init;
   api->print_object_f = print_object_f;
   api->gc_lifts = gc_lifts;
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
   api->fatal_chars = fatal_error_chars;
-  api->resolve_type = resolve_type;
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;
   api->set_method = set_method;

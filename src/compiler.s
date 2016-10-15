@@ -6,6 +6,7 @@ GFnMeta = No
 GInits = No // stuff called on module initialization
 GStrings = No
 GRTypes = No // resolved types
+GRTypesCount = No
 GImports = No
 GTexts = No
 GTextsMap = No
@@ -191,12 +192,12 @@ ssa_apply K F As =
   | if F.is_keyword then ssa call K H else ssa call_tagged K H
 
 resolve_type Name =
-| when got!it GRTypes.Name: leave it
-| TypeNameBytes = ssa_cstring Name
-| TypeVar = ssa_global ty
-| ssaI resolve_type TypeVar TypeNameBytes
-| GRTypes.Name <= TypeVar
-| TypeVar
+| when got!it GRTypes.Name: leave it.1
+| N = GRTypesCount
+| R = "ty\[[N]\]"
+| !GRTypesCount+1
+| GRTypes.Name <= [N R Name^ssa_cstring]
+| R
 
 resolve_method Name =
 | when got!it GMethods.Name: leave it.1
@@ -504,6 +505,7 @@ produce_ssa Entry Expr =
       GInits []
       GStrings (t size/500)
       GRTypes (t size/500)
+      GRTypesCount 0
       GTexts []
       GTextsMap (t size/500)
       GTextsCount 0
@@ -524,34 +526,48 @@ produce_ssa Entry Expr =
   | ssa entry setup
   | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
   | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
+  | Types = map Name,[Index SN CStr] GRTypes: Index,CStr
+  | Types = Types.sort{?0 < ??0}{?1}
   | Meths = map Name,[Index SN CStr] GMethods: Index,CStr
   | Meths = Meths.sort{?0 < ??0}{?1}
-  | ssa metbl_decl mt Meths
-  | ssa init_meths mt Meths.size
-  | ssa txtbl_decl tx GTexts.flip
-  | ssa init_texts tx GTexts.size
-  | Ms = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
-  | ssa fnmeta_decl fmtbl Ms
-  | ssa fnmeta_load fmtbl Ms.size
+  | Metas = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
+  | Header = [header tbls fmtbl,Metas [mt,Meths tx,GTexts.flip ty,Types]]
+  | ssa tables_init tbls
   | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
   | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
   | Rs = [GOut@GFns].flip.join.flip
   | Rs <= peephole_optimize Rs
-  | Rs
+  | [Header @Rs]
 
 GCompiled = No
 
 c Statement = push Statement GCompiled
 cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 
+ctable Type Name Xs =
+| Head = "static [Type] [Name]\[[Xs.size]\] = {\n"
+| [Head Xs.text{',\n'} "};\n"].text
+
+ssa_to_c_do_header Header =
+| [HeaderId TotName [MetaName MetaEntries] Tables] = Header
+| TableDecls = []
+| ToT = [] //table of tables
+| for [Name Xs] Tables:
+  | push ctable{'void*' Name Xs} TableDecls
+  | push Xs.size,Name ToT
+| MetaXs = map [Size NArgs Name Fn Row Col Origin] MetaEntries:
+  | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
+| push ctable{'fn_meta_t' MetaName MetaXs} TableDecls
+| push MetaXs.size,MetaName ToT
+| TotTable = map [Size TableName] ToT: " {[Size],[TableName]}"
+| [@TableDecls ctable{'tot_entry_t' TotName TotTable}]
+
 ssa_to_c Xs = let GCompiled []
 | Statics = []
 | Decls = []
-| TextDecl = ""
-| MethDecl = ""
-| MetaDecl = ""
 | Imports = t
+| TableDecls = ssa_to_c_do_header: pop Xs
 | c 'BEGIN_CODE'
 | for X Xs: case X
   [entry Name] | c "ENTRY([Name])"
@@ -569,25 +585,12 @@ ssa_to_c Xs = let GCompiled []
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
     | when got Dst: Call <= "[Dst] = [Call]"
     | c "  [Call]"
-  [metbl_decl Name Xs]
-    | Head = "static void *[Name]\[[Xs.size]\] = {\n"
-    | MethDecl <= [Head Xs.text{',\n'} "};\n"].text
-  [txtbl_decl Name Xs]
-    | Head = "static void *[Name]\[[Xs.size]\] = {\n"
-    | TextDecl <= [Head Xs.text{',\n'} "};\n"].text
-  [fnmeta_decl Name Xs]
-    | Head = "static fn_meta_t [Name]\[[Xs.size]\] = {\n"
-    | Body = map [Size NArgs Name Fn Row Col Origin] Xs:
-      | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
-    | MetaDecl <= [Head Body.text{',\n'} "};\n"].text
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
 | GCompiled <=
-   ['#include "runtime.h"'
+   ['#include "symta.h"'
     @Decls.flip
-    TextDecl
-    MethDecl
-    MetaDecl
+    @TableDecls
     @GCompiled.flip]
 | GCompiled.text{'\n'}
 
