@@ -7,13 +7,16 @@ GInits = No // stuff called on module initialization
 GStrings = No
 GRTypes = No // resolved types
 GRTypesCount = No
+GTypeParams = No
 GImports = No
+GImportsCount = No
 GTexts = No
 GTextsMap = No
 GTextsCount = No
 GMethods = No //resolved methods
 GMethodsCount = No
 GImportLibs = No
+GImportLibsCount = No
 GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
@@ -78,8 +81,6 @@ ssa_cstring Str =
   | ssa bytes Name Str^cstring_bytes
 
 ssa_var Name = as V Name.rand: ssa var V
-
-ssa_global Name = as V Name.rand: ssa global V
 
 ev X = as R 'r'^ssa_var: ssa_expr R X
 
@@ -207,6 +208,19 @@ resolve_method Name =
 | GMethods.Name <= [N R Name^ssa_cstring]
 | R
 
+ssa_import K Lib Symbol =
+| Lib <= Lib.1
+| Symbol <= Symbol.1
+| Key = "[Lib]::[Symbol]"
+| Im = GImports.Key
+| when no Im:
+  | N = GImportsCount
+  | R = "im\[[N]\]"
+  | !GImportsCount+1
+  | Im <= [N R Key GImportLibs.Lib Symbol^ssa_cstring]
+  | GImports.Key <= Im
+| ssa move K Im.1
+
 ssa_apply_method K Name O As =
 | ssa bpush
 | let GBases [[] @GBases]: named block
@@ -260,7 +274,10 @@ uniquify_let Xs =
     | V = pop Vs
     | case V
         [_import [_quote X] [_quote Y]]
-          | when no GImportLibs.X: GImportLibs.X <= @rand lib
+          | when no GImportLibs.X:
+            | N = GImportLibsCount
+            | !GImportLibsCount+1
+            | GImportLibs.X <= N
           | when got Used.A
             | push A NewAs
             | push V NewVs
@@ -323,8 +340,11 @@ ssa_list K Xs =
 
 ssa_data K Type Xs =
 | Size = Xs.size
-| TypeVar = resolve_type Type.1
-| ssaI set_type_params TypeVar Size Type.1^ssa_text
+| TypeName = Type.1
+| TypeVar = resolve_type TypeName
+| when no GTypeParams.TypeName:
+  | GTypeParams.TypeName <= 1
+  | ssaI set_type_params TypeVar Size Type.1^ssa_text
 | ssa alloc_data K TypeVar Size
 | for [I X] Xs.i: ssa dinit K I X^ev
 
@@ -349,17 +369,6 @@ ssa_dmet K MethodName TypeName Handler =
 | TypeVar = resolve_type TypeName.1
 | ssa dmet MethodVar TypeVar Handler^ev
 | ssa move K 0
-
-ssa_import K Lib Symbol =
-| Lib <= Lib.1
-| Symbol <= Symbol.1
-| Key = "[Lib]::[Symbol]"
-| Im = GImports.Key
-| when no Im:
-  | Im <= ssa_global im
-  | SymbolText = Symbol^ssa_text
-  | ssaI find_export Im SymbolText GImportLibs.Lib
-| ssa move K Im
 
 ssa_label Name = ssa local Name
 
@@ -473,10 +482,6 @@ ssa_atom K X =
 
 ssa_expr K X = if X.is_list then ssa_form K X else ssa_atom K X
 
-ssa_load_lib Dst Name =
-| ssa var Dst
-| ssa load_lib Dst Name^ssa_cstring
-
 ssa_fnmeta_entry Fn Name Size NArgs Origin =
 | OrigBytes = ssa_cstring "[Origin.2]"
 | NameBytes = if Name then Name^ssa_cstring else 0
@@ -506,13 +511,16 @@ produce_ssa Entry Expr =
       GStrings (t size/500)
       GRTypes (t size/500)
       GRTypesCount 0
+      GTypeParams (t size/500)
       GTexts []
       GTextsMap (t size/500)
       GTextsCount 0
       GMethods (t size/500)
       GMethodsCount 0
       GImportLibs (t)
+      GImportLibsCount 0
       GImports (t size/500)
+      GImportsCount 0
       GClosure []
       GBases [[]]
       GHoistedTexts (t size/1000)
@@ -524,6 +532,8 @@ produce_ssa Entry Expr =
   | ssa_expr R Expr
   | ssa return R
   | ssa entry setup
+  | Libs = map K,N GImportLibs [K^ssa_cstring N]
+  | Libs = Libs.sort{?1<??1}{?0}
   | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
   | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
   | Types = map Name,[Index SN CStr] GRTypes: Index,CStr
@@ -531,9 +541,11 @@ produce_ssa Entry Expr =
   | Meths = map Name,[Index SN CStr] GMethods: Index,CStr
   | Meths = Meths.sort{?0 < ??0}{?1}
   | Metas = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
-  | Header = [header tbls fmtbl,Metas [mt,Meths tx,GTexts.flip ty,Types]]
+  | Imps = map Name,[N R Key Lib Symbol] GImports: [N Lib Symbol]
+  | Imps = Imps.sort{?0 < ??0}
+  | Header = [header tbls fmtbl,Metas
+              [tx,GTexts.flip ty,Types mt,Meths libs,Libs imlib,Imps{?1} im,Imps{?2}]]
   | ssa tables_init tbls
-  | for [Name Dst] GImportLibs: ssa_load_lib Dst Name
   | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
   | Rs = [GOut@GFns].flip.join.flip
@@ -547,21 +559,20 @@ cnorm [X@Xs] = c "  [X.upcase]([(map X Xs "[X]").text{','}]);"
 
 ctable Type Name Xs =
 | Head = "static [Type] [Name]\[[Xs.size]\] = {\n"
+| Xs = map X Xs: if X.is_text then X else "(void*)[X]"
 | [Head Xs.text{',\n'} "};\n"].text
 
 ssa_to_c_do_header Header =
 | [HeaderId TotName [MetaName MetaEntries] Tables] = Header
-| TableDecls = []
-| ToT = [] //table of tables
+| MetaXs = map [Size NArgs Name Fn Row Col Origin] MetaEntries:
+  | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
+| TableDecls = [ctable{'fn_meta_t' MetaName MetaXs}]
+| ToT = [MetaXs.size,MetaName] //table of tables
 | for [Name Xs] Tables:
   | push ctable{'void*' Name Xs} TableDecls
   | push Xs.size,Name ToT
-| MetaXs = map [Size NArgs Name Fn Row Col Origin] MetaEntries:
-  | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
-| push ctable{'fn_meta_t' MetaName MetaXs} TableDecls
-| push MetaXs.size,MetaName ToT
-| TotTable = map [Size TableName] ToT: " {[Size],[TableName]}"
-| [@TableDecls ctable{'tot_entry_t' TotName TotTable}]
+| TotTable = map [Size TableName] ToT.flip: " {[Size],[TableName]}"
+| [@TableDecls.flip ctable{'tot_entry_t' TotName TotTable}]
 
 ssa_to_c Xs = let GCompiled []
 | Statics = []
@@ -573,7 +584,6 @@ ssa_to_c Xs = let GCompiled []
   [entry Name] | c "ENTRY([Name])"
   [label Name] | push "DECL_LABEL([Name])" Decls
                | c "LABEL([Name])"
-  [global Name] | push "static void *[Name];" Decls
   [load_lib Dst LibCStr] | c "  LOAD_LIB([Dst],[LibCStr]);"
   [bytes Name Xs]
     | Brackets = '[]'

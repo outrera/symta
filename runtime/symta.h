@@ -155,8 +155,6 @@ typedef struct api_t {
   void (*add_subtype)(struct api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(struct api_t *api, intptr_t tag, intptr_t size, void *name);
   void (*set_method)(struct api_t *api, void *method, void *type, void *handler);
-  void *(*find_export)(struct api_t *api, void *name, void *exports);
-  void *(*load_lib)(struct api_t *api, char *name);
   char *(*text_chars)(struct api_t *api, void *text);
 
   void *collectors[MAX_TYPES];
@@ -219,8 +217,6 @@ typedef struct tot_entry_t {
 }  __attribute__((packed)) tot_entry_t;
 #define TABLES_INIT(tables) api->tables_init(api,tables);
 
-#define LOAD_LIB(dst,name) dst = api->load_lib(api,(char*)(name));
-#define FIND_EXPORT(dst,symbol,lib) dst = api->find_export(api,symbol,lib);
 #define SET_TYPE_PARAMS(tag,size,name) \
   api->set_type_size_and_name(api,(intptr_t)(tag),size,name);
 #define DMET(method,type,handler) api->set_method(api,method,type,handler);

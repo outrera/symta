@@ -2328,12 +2328,30 @@ static void resolve_types(api_t *api, void *types, int count) {
   }
 }
 
+static void load_libs(api_t *api, void **libs, int nlibs, void **imlibs,
+                      int nimlibs, void **im, int nimports) {
+  int i;
+  void *name;
+  for (i = 0; i < nlibs; i++) {
+    libs[i] = (void*)load_lib(api, (char*)libs[i]);
+  }
+
+  for (i = 0; i < nimports; i++) {
+    TEXT(name,((char*)im[i]));
+    im[i] = (void*)find_export(api,name,libs[(intptr_t)imlibs[i]]);
+  }
+}
+
+
 void tables_init(struct api_t *api, void *tables) {
   tot_entry_t *ts = (tot_entry_t*)tables;
   init_metadata(ts[0].table, ts[0].size);
-  resolve_types(api,ts[1].table, ts[1].size);
-  init_texts(api,ts[2].table, ts[2].size);
+  init_texts(api,ts[1].table, ts[1].size);
+  resolve_types(api,ts[2].table, ts[2].size);
   init_methods(api,ts[3].table, ts[3].size);
+  load_libs(api,(void**)ts[4].table, ts[4].size
+               ,(void**)ts[5].table, ts[5].size
+               ,(void**)ts[6].table, ts[6].size);
 }
 
 static api_t *init_api() {
@@ -2351,8 +2369,6 @@ static api_t *init_api() {
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;
   api->set_method = set_method;
-  api->find_export = find_export;
-  api->load_lib = load_lib;
   api->text_chars = text_chars;
 
 #define BASE_HEAD_SIZE 1

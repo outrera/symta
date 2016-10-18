@@ -1,12 +1,18 @@
-- globals like im__3852 should be refactored into import table
-- ssa_to_c should get all tables declaration line as the first argument
-- init all tables with a single call
+- globals like im__3852 should be refactored into tables_init, receiving a list of `lib:imported_symbol` entries, sorted by `lib`, so that LOAD_LIB wont be called to many times. That way runtime will be doing most of the work
 - get rid of ssa_global, which should really be replaced by tables
+- SET_TYPE_PARAMS gets duplicated
+- TEXT and alloc_text should be moved to runtime
+- LIFT() could be optimized a little
+- MCALL could be optimized,, if resolved method tables entries are be shifted by -16, by avoid invoking O_CODE at runtime.
+- missing meta info for some symbols:
+  0000000064799369:unnamed:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
+  0000000065CC3EC2:hard_list.map:0,0,unknown
+  0000000065CDA031:_.{}:0,0,unknown
+  0000000064790C45:produce_ssa:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
 - replace CHECK_NARGS with page trap; metatable includes expected number of args
 - `ssa_fn Name K Args Expr O` doesn't really need the name argument
 - api->method could probably be replaced with get_meta
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
-- Resolved method tables could be shifted by -16, avoid invoking O_CODE at runtime.
 - a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.
 - make method tables sparse to reduce memory overhead
 - `:` should work inside of `{}`
