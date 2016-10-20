@@ -31,8 +31,9 @@
 #define REF1(base,off) (*(uint8_t*)(O_PTR(base)+(off)))
 #define REF4(base,off) (*(uint32_t*)(O_PTR(base)+(off)*4))
 #define REF(base,off) (*(void**)(O_PTR(base)+(off)*sizeof(void*)))
+#define O_FRAME(x) ((frame_t*)REF(x,-1))
+#define O_LEVEL(x) (O_FRAME(x)-api->frames)
 #define O_CODE(x) REF(x,-2)
-#define O_LEVEL(x) ((uintptr_t)REF(x,-1))
 #define O_FN(x) ((pfun)O_CODE(x))
 
 #define NARGS(x) ((intptr_t)O_CODE(x))
@@ -122,16 +123,13 @@ typedef struct frame_t {
   void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
   void *lifts; //what should be lifted to parent frame
   void *onexit; //called on exit
+  void **top;
 } frame_t;
 
-#define PAGE_SIZE 4096
-
 typedef struct api_t {
-  frame_t frame[MAX_LEVEL];
-  uint8_t frame_guard[PAGE_SIZE*2];
   void *top[2]; // heap top
 
-  intptr_t level; // stack frame depth
+  frame_t *frame; // current frame
 
   void *method; // current method, we execute
 
@@ -159,6 +157,7 @@ typedef struct api_t {
 
   void *collectors[MAX_TYPES];
 
+  frame_t frames[MAX_LEVEL]; // stack frames should come directly before the heap
   void *heap[2][HEAP_SIZE];
 } api_t;
 
@@ -166,12 +165,11 @@ typedef void *(*pfun)(REGS);
 
 #define No api->void_
 #define Empty api->empty_
-#define Frame api->frame[Level]
-#define Lifts Frame.lifts
-#define Top api->top[Level&1]
-#define Base Frame.base
-#define Level api->level
-
+#define Frame api->frame
+#define Lifts Frame->lifts
+#define Top (*Frame->top)
+#define Base Frame->base
+#define Level (api->frame-api->frames)
 
 
 //HEAP_GUARD could probable be useful, when allocating large
@@ -183,13 +181,13 @@ typedef void *(*pfun)(REGS);
   dst = (void**)Top - (uintptr_t)(count); \
   Top = (void**)dst - OBJ_HEAD_SIZE; \
   *((void**)Top+0) = (void*)(code); \
-  *((void**)Top+1) = (void*)Level;
+  *((void**)Top+1) = Frame;
 
 #define ALLOC_NO_CODE(dst,count) \
   HEAP_GUARD(); \
   dst = (void**)Top - (uintptr_t)(count); \
   Top = (void**)dst - 1; \
-  *((void**)Top+0) = (void*)Level;
+  *((void**)Top+0) = Frame;
 
 #define CLOSURE(dst,code,count) \
   ALLOC_BASIC(dst,code,count); \
@@ -250,13 +248,13 @@ typedef struct tot_entry_t {
 #define VAR(name) void *name;
 
 #define BPUSH() \
-  ++Level; \
+  ++Frame; \
   /*fprintf(stderr, "Entering %ld\n", Level);*/ \
   Base = Top;
 #define BPOP() \
   /*fprintf(stderr, "Leaving %ld\n", Level);*/ \
   Top = Base; \
-  --Level;
+  --Frame;
 #define CALL(k,f) k = O_FN(f)(REGS_ARGS(f));
 #define MCALL_NO_SAVE(k,o,m) \
    { \
@@ -282,16 +280,16 @@ typedef struct tot_entry_t {
     } \
   }
 typedef void *(*collector_t)( void *o);
-#define GC_PARAM(dst,o,gclevel,pre,post) \
+#define GC_PARAM(dst,o,gcframe,pre,post) \
   { \
     void *o_ = (void*)(o); \
     if (IMMEDIATE(o_)) { \
       dst = o_; \
     } else { \
-      uintptr_t level_ = O_LEVEL(o_); \
-      if (level_ != gclevel) { \
-        if (level_ > HEAP_SIZE) { \
-          dst = (void*)level_; \
+      frame_t *frame_ = O_FRAME(o_); \
+      if (frame_ != gcframe) { \
+        if (frame_ > (frame_t*)api->heap) { \
+          dst = frame_; \
         } else { \
           dst = o_; \
         } \
@@ -305,7 +303,7 @@ typedef void *(*collector_t)( void *o);
 #define GC(dst,value) \
   /*fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);*/ \
   if (Lifts) api->gc_lifts(); \
-  GC_PARAM(dst, value, Level, --Level, ++Level);
+  GC_PARAM(dst, value, Frame, --Frame, ++Frame);
 #define RETURN_NO_POP(value) \
    GC(value,value); \
    return (void*)(value);
@@ -326,7 +324,7 @@ typedef void *(*collector_t)( void *o);
     void **p_ = (void**)(base)+(pos); \
     if (IMMEDIATE(value)) { \
       *p_ = (value); \
-    } else if (O_LEVEL(value) <= O_LEVEL(base)) { \
+    } else if (O_FRAME(value) <= O_FRAME(base)) { \
       *p_ = (void*)((uintptr_t)(value) & ~LIFT_FLAG); \
     } else { \
       *p_ = (void*)((uintptr_t)(value) | LIFT_FLAG); \
@@ -348,12 +346,12 @@ typedef void *(*collector_t)( void *o);
 
 #define FATAL(msg) api->fatal(api, msg);
 
-#define SET_UNWIND_HANDLER(r,h) Frame.onexit = h;
-#define REMOVE_UNWIND_HANDLER(r) Frame.onexit = 0;
+#define SET_UNWIND_HANDLER(r,h) Frame->onexit = h;
+#define REMOVE_UNWIND_HANDLER(r) Frame->onexit = 0;
 
 typedef struct {
   jmp_buf anchor;
-  intptr_t level;
+  frame_t *frame;
   api_t *api;
 } jmp_state;
 
@@ -361,7 +359,7 @@ typedef struct {
     jmp_state *js_; \
     ALLOC_BASIC(api->jmp_return, 0, ((sizeof(jmp_state)+ALIGN_MASK)>>ALIGN_BITS)); \
     js_ = (jmp_state*)api->jmp_return; \
-    js_->level = api->level; \
+    js_->frame = api->frame; \
     js_->api = api; \
     setjmp(js_->anchor); \
     api = js_->api; \
@@ -371,9 +369,9 @@ typedef struct {
 #define LONGJMP(state,value) { \
     jmp_state *js_; \
     js_ = (jmp_state*)state; \
-    while (js_->level != api->level) { \
-      void *h_ = Frame.onexit; \
-      Frame.onexit = 0; \
+    while (js_->frame != api->frame) { \
+      void *h_ = Frame->onexit; \
+      Frame->onexit = 0; \
       if (O_TAG(h_) == TAG(T_CLOSURE)) { \
           void *k_; \
           BPUSH(); \

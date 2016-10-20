@@ -1,6 +1,9 @@
 #ifndef _CTX_H_
 #define _CTX_H_
 
+// page size
+#define CTX_PGSZ 4096
+
 /* Execution context related functions. */
 
 typedef struct ctx_t {unsigned char data[2560];} ctx_t;

@@ -477,7 +477,7 @@ static uintptr_t show_runtime_info(api_t *api) {
   uintptr_t heap1_used = get_heap_used(1);
   uintptr_t total_reserved = runtime_reserved0+runtime_reserved1;
   fprintf(stderr, "-------------\n");
-  fprintf(stderr, "level: %ld\n", api->level-1);
+  fprintf(stderr, "level: %ld\n", Level-1);
   fprintf(stderr, "usage: %ld = %ld+%ld\n"
          , heap0_used+heap1_used-total_reserved
          , heap0_used-runtime_reserved0
@@ -1259,7 +1259,8 @@ BUILTIN0("rtstat",rtstat)
 RETURNS(0)
 
 BUILTIN0("stack_trace",stack_trace)
-  void **p;
+  fatal("FIXME: implement stack_trace");
+  /*void **p;
   intptr_t s = Level-1;
   if (s == 0) {
     R = Empty;
@@ -1272,7 +1273,7 @@ BUILTIN0("stack_trace",stack_trace)
       TEXT(name, "unknown");
       *p++ = name;
     }
-  }
+  }*/
 RETURNS(R)
 
 BUILTIN1("inspect",inspect,C_ANY,o)
@@ -1834,8 +1835,10 @@ static void *bad_argnum(REGS, void *E, intptr_t expected) {
   fatal("aborting\n");
 }
 
-#define GCLevel (api->level+1)
-#define GC_REC(dst,value) GC_PARAM(dst,value,GCLevel,;,;)
+#define GCFrame (api->frame+1)
+#define GC_REC(dst,value) GC_PARAM(dst,value,GCFrame,;,;)
+
+//if frame field points to heap, instead of stack, then it is already moved
 #define MARK_MOVED(o,p) REF(o,-1) = p
 
 static void *gc_arglist(void *o) {
@@ -1861,7 +1864,7 @@ static void *collect_immediate(void *o) {
 
 static void *collect_closure(void *o) {
   int i, size;
-  uintptr_t level;
+  frame_t *frame;
   void *p, *q;
   void *fixed_size, *dummy;
   api_t *api = &api_g;
@@ -1870,13 +1873,13 @@ static void *collect_closure(void *o) {
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
     q = REF(o,i);
-    level = O_LEVEL(q);
-    if (level == GCLevel) {
+    frame = O_FRAME(q);
+    if (frame == GCFrame) {
       q = gc_arglist(q);
     } else {
-      if (level > HEAP_SIZE) {
+      if (frame > (frame_t*)api->heap) {
         // already moved
-        q = (void*)level;
+        q = frame;
       }
     }
     STOR(p, i, q);
@@ -1962,7 +1965,7 @@ static void gc_lifts() {
   Lifts = 0;
 
   lifted = (void**)Top;
-  --Level;
+  --Frame; // move to the frame below, where we will be lifting it to
 
   lifted_count = 0;
   ys = Lifts;
@@ -1982,7 +1985,7 @@ static void gc_lifts() {
     void **p = (void**)*lifted++;
     *p = (void*)*lifted++;
     if (ON_CURRENT_LEVEL(p)) {
-      // object got lifted to the level of it's holder
+      // object got lifted to the frame of it's holder
       //fprintf(stderr, "lifted!\n");
     } else { // needs future lifting
       *p = (void*)((uintptr_t)*p | LIFT_FLAG);
@@ -1994,7 +1997,7 @@ static void gc_lifts() {
     //fprintf(stderr,"max_lifted=%d\n", max_lifted);
   }
   Lifts = ys;
-  ++Level;
+  ++Frame;
 }
 
 static void fatal_error(api_t *api, void *msg) {
@@ -2217,10 +2220,10 @@ static void init_builtins(api_t *api) {
 
   for (i = 0; i < MAX_METHODS; i++) {
     ALLOC_BASIC(methods[i], FIXNUM(MAX_TYPES), MAX_TYPES);
-    Level = i&1; //ensures even memory consumption among two heaps
+    Frame = &api->frames[i&1]; //ensures even memory consumption among two heaps
   }
-  Level = 1;
-
+  Frame = api->frames+1;
+  
   init_types(api);
 }
 
@@ -2278,7 +2281,7 @@ static int ctx_error_handler(ctx_error_t *info) {
   fprintf(stderr, "fatal: ");
   if (info->id == CTXE_ACCESS) {
     uint8_t *p = (uint8_t*)info->mem;
-    if ((uint8_t*)api <= p && p < api->frame_guard+PAGE_SIZE*2) {
+    if ((uint8_t*)api->frames <= p && p < (uint8_t*)api->heap+CTX_PGSZ*2) {
       fprintf(stderr, "stack overflow\n");
     } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
       fprintf(stderr, "out of memory\n");
@@ -2355,6 +2358,7 @@ void tables_init(struct api_t *api, void *tables) {
 }
 
 static api_t *init_api() {
+  int i;
   void *paligned;
   api_t *api = &api_g;
 
@@ -2372,12 +2376,16 @@ static api_t *init_api() {
   api->text_chars = text_chars;
 
 #define BASE_HEAD_SIZE 1
-  api->frame[0].base = api->heap[0] + HEAP_SIZE;
-  api->top[0] = (void**)api->frame[0].base - BASE_HEAD_SIZE;
-  api->frame[1].base = api->heap[1] + HEAP_SIZE;
-  api->top[1] = (void**)api->frame[1].base - BASE_HEAD_SIZE;
+  api->frames[0].base = api->heap[0] + HEAP_SIZE;
+  api->top[0] = (void**)api->frames[0].base - BASE_HEAD_SIZE;
+  api->frames[1].base = api->heap[1] + HEAP_SIZE;
+  api->top[1] = (void**)api->frames[1].base - BASE_HEAD_SIZE;
 
-  api->level = 0;
+  Frame = api->frames;
+  
+  for (i=0; i < MAX_LEVEL; i++) {
+    api->frames[i].top = &api->top[i&1];
+  }
 
   BUILTIN_CLOSURE(undefined, b_undefined);
   BUILTIN_CLOSURE(sink, b_sink);
@@ -2387,12 +2395,9 @@ static api_t *init_api() {
 
   ctx_set_error_handler(ctx_error_handler);
 
-#define MAX_LEVEL2 (MAX_LEVEL/8)
-#define ALIGN(ptr) (void*)(((uintptr_t)(ptr)+PAGE_SIZE-1)/PAGE_SIZE*PAGE_SIZE)
-  _mprotect(ALIGN(api->frame_guard), PAGE_SIZE, PROT_NONE);
-  _mprotect(ALIGN(api->frame+MAX_LEVEL2), PAGE_SIZE, PROT_NONE);
-  _mprotect(ALIGN(api->heap[0]), PAGE_SIZE*2, PROT_NONE);
-  _mprotect(ALIGN(api->heap[1]), PAGE_SIZE*2, PROT_NONE);
+#define ALIGN(ptr) (void*)(((uintptr_t)(ptr)+CTX_PGSZ-1)/CTX_PGSZ*CTX_PGSZ)
+  _mprotect(ALIGN(api->heap[0]), CTX_PGSZ*2, PROT_NONE);
+  _mprotect(ALIGN(api->heap[1]), CTX_PGSZ*2, PROT_NONE);
 
 #if 0
   fprintf(stderr, "hello\n");

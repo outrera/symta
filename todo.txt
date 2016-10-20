@@ -1,5 +1,3 @@
-- LIFT() could be optimized a little
-- MCALL could be optimized,, if resolved method tables entries are be shifted by -16, by avoid invoking O_CODE at runtime.
 - missing meta info for some symbols:
   0000000064799369:unnamed:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
   0000000065CC3EC2:hard_list.map:0,0,unknown
