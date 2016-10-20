@@ -3,8 +3,7 @@
   0000000065CC3EC2:hard_list.map:0,0,unknown
   0000000065CDA031:_.{}:0,0,unknown
   0000000064790C45:produce_ssa:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
-- replace CHECK_NARGS with page trap; metatable includes expected number of args
-- `ssa_fn Name K Args Expr O` doesn't really need the name argument
+- CHECK_NARGS could be replaced with page trap; metatable includes expected number of args
 - api->method could probably be replaced with get_meta
 - Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
 - a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.

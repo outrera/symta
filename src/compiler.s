@@ -115,7 +115,7 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
 // a single argument to a function could be passed in register, while a closure would be created if required
 // a single reference closure could be itself held in a register
 // for now we just capture required parent's closure
-ssa_fn Name K Args Expr O =
+ssa_fn K Args Expr O =
 | F = @rand f
 | [Body Cs] = ssa_fn_body No F Args Expr O 1 1
 | push Body GFns
@@ -429,7 +429,7 @@ ssa_ffi_call K Type F As =
 ssa_form K Xs =
 | Src = Xs.meta_
 | let GSrc (if got Src then Src else GSrc): case Xs
-  [_fn As Body] | ssa_fn 'n'.rand K As Body Xs
+  [_fn As Body] | ssa_fn K As Body Xs
   [_if Cnd Then Else] | ssa_if K Cnd Then Else
   [_quote X @Xs] | ssa_quote K X
   [_set Place Value] | ssa_set K Place Value
