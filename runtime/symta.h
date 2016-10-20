@@ -120,15 +120,13 @@ typedef struct fn_meta_t { //function metadata
 
 
 typedef struct frame_t {
+  void **top;
   void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
   void *lifts; //what should be lifted to parent frame
   void *onexit; //called on exit
-  void **top;
 } frame_t;
 
 typedef struct api_t {
-  void *top[2]; // heap top
-
   frame_t *frame; // current frame
 
   void *method; // current method, we execute
@@ -156,7 +154,7 @@ typedef struct api_t {
   char *(*text_chars)(struct api_t *api, void *text);
 
   void *collectors[MAX_TYPES];
-
+  void *top[2]; // heap top
   frame_t frames[MAX_LEVEL]; // stack frames should come directly before the heap
   void *heap[2][HEAP_SIZE];
 } api_t;
