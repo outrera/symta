@@ -1,20 +1,23 @@
+- `leave` from lambda
+- for loop, with proper breaking (needs local macros and probably interpreter)
+- `more` instead of `continue`
+- proper documentation for non-local return
+- a way to disable CHECK_NARGS for production code
+- SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
 - missing meta info for some symbols:
   0000000064799369:unnamed:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
   0000000065CC3EC2:hard_list.map:0,0,unknown
   0000000065CDA031:_.{}:0,0,unknown
   0000000064790C45:produce_ssa:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
-- CHECK_NARGS could be replaced with page trap; metatable includes expected number of args
-- api->method could probably be replaced with get_meta
-- Join all these "static uint8_t b__16335[]" into single array, to make parsing faster
-- a way to disable CHECK_NARGS. Currently it is used by GC to extract closure size. Use setup to store this size inside some hashtable accessible by function pointer.
-- make method tables sparse to reduce memory overhead
+- Move all these "static uint8_t b__16335[]" into separately loadable string table to speedup compilation
+  That will also make it possible to localize the application, without recompiling it.
 - `:` should work inside of `{}`
-- for loop, with proper breaking (needs local macros and probably interpreter)
-- "stack overflow" and and "out of memory" error messages waste a lot of code and CPU time
+- "case C" and `when C` should require `:`, otherwise it is too confusing
+- api->method could probably be replaced with get_meta
+- make method tables sparse to reduce memory overhead
 - instead of _label and _goto allow calling label as a function with optional return value
 - when label jumps above variable introduction, notify user
 - `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys. Just use something similar to `++` and `+=`. Although `++` is already used.
-- "case C" should require `:`
 - Array slicing (could be implemented through a{} calling different method when used with `:`). Currently SoM has 192:28 proportion of List.Index to List.(expr). Consider Python's approach
   a[start:end] # items start through end-1
   a[start:]    # items start through the rest of the array
@@ -24,15 +27,8 @@
   a[-1]    # last item in the array
   a[-2:]   # last two items in the array
   a[:-2]   # everything except the last two items
-- `mark` could implemented differently, using stacktrace
-- frame_t can be allocated at call site in C's stack
-- `more` instead of `continue`
-- return from lambda
-- Non-local return
-- error/exception catching (using non-local return)
 - types should allow keywords initing fields by default; rethink the whole keywords syntax; because lowercase letter type constructor already conflict with lowercase letter in function calls. I.e. make keywords to be uppercase
 - array fields should provide special `!`, which uses init, instead of allocating new memory.
-- SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
 - list of all functions that use specific method
 - unless export table changes, no recompilation of dependent files should be required
 - a way to simply include other symta file directly, as part of macro facility. I.e. `include` should be macro

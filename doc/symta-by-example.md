@@ -789,6 +789,26 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 `Item^~{A Default}` - if Item is `A`, then return `B`, otherwise return `Item`
 
 
+Operators available inside of `case` macro 
+------------------------------
+
+For the full semantics see `expand_hole` function in macro.s
+
+`&Expr` - matches to the result of evaluating Expr
+
+`A+B` - either `A` or `B`
+
+`-X` - not `X`
+
+`@Xs` - any number of chars
+
+`A<B` - mathches to both `B` and `A`, sequentially
+
+`A,B,C,...,N` - matches a list (same as [A B C ... N])
+
+`R<Object.method{@Args}` - binds `R` the the result of calling `method` on the `Object`
+
+
 Implementation Primitives and Helpers
 ------------------------------
 
@@ -813,6 +833,7 @@ Implementation Primitives and Helpers
 `_nomex Expr` - forbids macroexpansion inside of `Expr` (defined in macro.s).
 
 `_type Type Var Body` - assumes that `Var` is of type `Type` inside of `Body`.
+
 
 Thanks
 ------------------------------

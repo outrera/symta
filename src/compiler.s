@@ -4,6 +4,7 @@ GCurFn = No // unique name of current function
 GCurProperFn = No // unique name of current function with prologue
 GFnMeta = No
 GInits = No // stuff called on module initialization
+GBytes = No
 GStrings = No
 GRTypes = No // resolved types
 GRTypesCount = No
@@ -78,7 +79,7 @@ ssa_cstring Str =
 | when got!it GStrings.Str: leave it
 | as Name 'b'.rand:
   | GStrings.Str <= Name
-  | ssa bytes Name Str^cstring_bytes
+  | push [Name Str^cstring_bytes] GBytes
 
 ssa_var Name = as V Name.rand: ssa var V
 
@@ -496,10 +497,18 @@ find_closes_meta Expr =
 
 peephole_optimize Xs =
 | Ys = []
-| for X Xs: case X
-   [move dummy V] |
-   [ldarg dummy Base Pos] |
-   Else | push X Ys
+| till Xs.end:
+  | X = pop Xs
+  | case X
+    [move dummy V] |
+    [ldarg dummy Base Pos] |
+    [var V]
+      | case Xs
+        [[move &V T] [starg A B &V] @Zs]
+          | push [starg A B T] Ys
+          | Xs <= Zs
+        Else | push X Ys
+    Else | push X Ys
 | Ys.flip
 
 produce_ssa Entry Expr =
@@ -508,6 +517,7 @@ produce_ssa Entry Expr =
       GFns []
       GFnMeta (t size/500)
       GInits []
+      GBytes []
       GStrings (t size/500)
       GRTypes (t size/500)
       GRTypesCount 0
@@ -543,7 +553,7 @@ produce_ssa Entry Expr =
   | Metas = map Fn,M GFnMeta: ssa_fnmeta_entry Fn M.name M.size M.nargs M.origin
   | Imps = map Name,[N R Key Lib Symbol] GImports: [N Lib Symbol]
   | Imps = Imps.sort{?0 < ??0}
-  | Header = [header tbls fmtbl,Metas
+  | Header = [header GBytes tbls fmtbl,Metas
               [tx,GTexts.flip ty,Types mt,Meths libs,Libs imlib,Imps{?1} im,Imps{?2}]]
   | ssa tables_init tbls
   | for X GInits.flip: push X GOut
@@ -563,7 +573,7 @@ ctable Type Name Xs =
 | [Head Xs.text{',\n'} "};\n"].text
 
 ssa_to_c_do_header Header =
-| [HeaderId TotName [MetaName MetaEntries] Tables] = Header
+| [HeaderId Bytes TotName [MetaName MetaEntries] Tables] = Header
 | MetaXs = map [Size NArgs Name Fn Row Col Origin] MetaEntries:
   | " {[Size],(void*)FIXNUM([NArgs]),[Name],[Fn],[Row],[Col],[Origin]}"
 | TableDecls = [ctable{'fn_meta_t' MetaName MetaXs}]
@@ -572,7 +582,12 @@ ssa_to_c_do_header Header =
   | push ctable{'void*' Name Xs} TableDecls
   | push Xs.size,Name ToT
 | TotTable = map [Size TableName] ToT.flip: " {[Size],[TableName]}"
-| [@TableDecls.flip ctable{'tot_entry_t' TotName TotTable}]
+| ByteDelcs = []
+| for Name,Xs Bytes
+  | Brackets = '[]'
+  | Values = (map X Xs X.as_text).text{','}
+  | push "static uint8_t [Name][Brackets] = {[Values]};" ByteDelcs
+| [@ByteDelcs @TableDecls.flip ctable{'tot_entry_t' TotName TotTable}]
 
 ssa_to_c Xs = let GCompiled []
 | Statics = []
@@ -585,10 +600,6 @@ ssa_to_c Xs = let GCompiled []
   [label Name] | push "DECL_LABEL([Name])" Decls
                | c "LABEL([Name])"
   [load_lib Dst LibCStr] | c "  LOAD_LIB([Dst],[LibCStr]);"
-  [bytes Name Xs]
-    | Brackets = '[]'
-    | Values = (map X Xs X.as_text).text{','}
-    | push "static uint8_t [Name][Brackets] = {[Values]};" Decls
   [ffi_call ResultType Dst F ArgsTypes Args]
     | ArgsText = Args.text{', '}
     | ArgsTypesText = ArgsTypes.text{', '}
