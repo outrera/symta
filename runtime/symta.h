@@ -174,11 +174,9 @@ typedef void *(*pfun)(REGS);
 
 
 
-//following could probable be useful, when allocating
-// large memory size, that could jump over guard
+//HEAP_GUARD could probable be useful, when allocating large
+// memory size, that could otherwise jump over guard page
 #define HEAP_GUARD()
-#define LIFT_GUARD()
-
 
 #define ALLOC_BASIC(dst,code,count) \
   HEAP_GUARD(); \
@@ -317,7 +315,6 @@ typedef void *(*collector_t)( void *o);
    return (void*)(value);
 #define RETURN_NO_GC(value) return (void*)(value);
 #define LIFTS_CONS(dst,head,tail) \
-  LIFT_GUARD(); \
   Top=(void**)Top-2; \
   *((void**)Top+0) = (head); \
   *((void**)Top+1) = (tail); \
@@ -343,9 +340,8 @@ typedef void *(*collector_t)( void *o);
 #define COPY(dst,dst_off,src,src_off) REF(dst,dst_off) = REF(src,src_off)
 #define MOVE(dst,src) dst = (void*)(src)
 #define TAGGED(dst,src,tag) dst = ADD_TAG(src,tag)
-#define DATA_SET(dst,dst_off,src) LIFT(&REF(dst,0),dst_off,src)
 #define DGET(dst,src,off) dst = REF(src, off)
-#define DSET(dst,off,src) DATA_SET(dst, off, src)
+#define DSET(dst,off,src) LIFT(&REF(dst,0),off,src)
 #define DINIT(dst,off,src) REF(dst, off) = src
 //untagged store
 #define UTSTOR(dst,off,src) *(void**)((uint8_t*)(dst)+(uint64_t)(off)) = src

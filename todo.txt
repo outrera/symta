@@ -1,7 +1,3 @@
-- globals like im__3852 should be refactored into tables_init, receiving a list of `lib:imported_symbol` entries, sorted by `lib`, so that LOAD_LIB wont be called to many times. That way runtime will be doing most of the work
-- get rid of ssa_global, which should really be replaced by tables
-- SET_TYPE_PARAMS gets duplicated
-- TEXT and alloc_text should be moved to runtime
 - LIFT() could be optimized a little
 - MCALL could be optimized,, if resolved method tables entries are be shifted by -16, by avoid invoking O_CODE at runtime.
 - missing meta info for some symbols:
