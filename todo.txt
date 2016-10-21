@@ -1,23 +1,10 @@
 - `leave` from lambda
 - for loop, with proper breaking (needs local macros and probably interpreter)
 - `more` instead of `continue`
-- proper documentation for non-local return
-- a way to disable CHECK_NARGS for production code
-- SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
-- missing meta info for some symbols:
-  0000000064799369:unnamed:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
-  0000000065CC3EC2:hard_list.map:0,0,unknown
-  0000000065CDA031:_.{}:0,0,unknown
-  0000000064790C45:produce_ssa:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
-- Move all these "static uint8_t b__16335[]" into separately loadable string table to speedup compilation
-  That will also make it possible to localize the application, without recompiling it.
-- `:` should work inside of `{}`
-- "case C" and `when C` should require `:`, otherwise it is too confusing
-- api->method could probably be replaced with get_meta
-- make method tables sparse to reduce memory overhead
-- instead of _label and _goto allow calling label as a function with optional return value
-- when label jumps above variable introduction, notify user
+- recompile dependent modules only when exports list changes
 - `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys. Just use something similar to `++` and `+=`. Although `++` is already used.
+- types should allow keywords initing fields by default; rethink the whole keywords syntax; because lowercase letter type constructor already conflict with lowercase letter in function calls. I.e. make keywords to be uppercase
+- proper documentation for non-local return
 - Array slicing (could be implemented through a{} calling different method when used with `:`). Currently SoM has 192:28 proportion of List.Index to List.(expr). Consider Python's approach
   a[start:end] # items start through end-1
   a[start:]    # items start through the rest of the array
@@ -27,35 +14,45 @@
   a[-1]    # last item in the array
   a[-2:]   # last two items in the array
   a[:-2]   # everything except the last two items
-- types should allow keywords initing fields by default; rethink the whole keywords syntax; because lowercase letter type constructor already conflict with lowercase letter in function calls. I.e. make keywords to be uppercase
+- More-efficient hash tables, because K.hash%Bs.size is known to be arithmetic expression
+- `:` should work inside of `{}`
+- "case C" and `when C` should require `:`, otherwise it is too confusing.
+  Alternatively `and` and `or` should have usual binary op syntax, otherwise they are too confusing
+- Move all these "static uint8_t b__16335[]" into separately loadable string table to speedup compilation
+  That will also make it possible to localize the application, without recompiling it.
+- fast arithmetics, when all arithmetic operands being checked for FIXNUM at call site
+- inline insertion of C/C++-style code, interfacing with FFI, which in the end could be used to reimplement runtime.c
+- a way to quickly set all object fields to 0
+- a way to disable CHECK_NARGS for production code
+- Interpreter. Especially useful when C compiler is unavailable for bootstrap and for scripting.
+- SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
+  - missing meta info for some symbols:
+  0000000064799369:unnamed:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
+  0000000065CC3EC2:hard_list.map:0,0,unknown
+  0000000065CDA031:_.{}:0,0,unknown
+  0000000064790C45:produce_ssa:502,23,C:/Users/nikita/Documents/git/symta/src/compiler.s
+- api->method could probably be replaced with get_meta
+- make method tables sparse to reduce memory overhead: instead of NTypes*NMethods table, cache most recent types->methods at the call place.
+- when jumps goes over variable introduction, notify user
 - array fields should provide special `!`, which uses init, instead of allocating new memory.
-- list of all functions that use specific method
+- list of all functions that use specific function
 - unless export table changes, no recompilation of dependent files should be required
 - a way to simply include other symta file directly, as part of macro facility. I.e. `include` should be macro
-- instead of NTypes*NMethods table, cache most recent types->methods at the call place.
 - better way to read items from byte arrays. Also consider bit arrays
 - symbols starting with digit, like `4players`, should be printed with "``" quotes
 - tab character in text breaks parser
 - `when 123: 456;` gives parser error "bad call: () `.` 0", under parse_semicolon
-- `and` and `or` should have usual binary op syntax, otherwise they are too confusing
 - `when got!it Expr: process it` should work with if
 - confusing and non uniform absence of  `:` in `when Condition | action`
-- `bad number of argument` should provide the function name
-- recompile dependent modules only when exports list changes
 - rename `leave` to `lift, that is shorter and better describes what is being done to value. We are lifting control and result value back to the caller.
-- a way to quickly set all object fields to 0
-- interpreter. Especially useful when C compiler is unavailable for bootstrap and for scripting.
 - unknown variable at top level doesn't provide location, just "unknown:0,0: undefined variable `XYZ`"
 - a way to declare argument type for fast field access and to avoid `Me=type` comments
-- Inline C/C++ code for FFI
 - Source location in stack traces. So when a wrong method on `No` object gets called, we can get the location immediately.
 - proper heap allocation, instead of enheap, allowing moving any type to heap.
 - enheap related stuff should be part of runtime to maximize efficiency
 - the `_.enheap` returns base type, instead of returning derived type object; provide a way to access complete object inside called method
 - Dynamic malloc and free, when say "P = freeable: point X Y" allocates point inside of inside of user provided pool. There should be an easy way to move existing object into pool and from pool.
-- More-efficient hash tables
 - proper I/O streams, so that output of underlying could be redirected or suppressed.
 - Networking
 - some potential problems with class inheritance, like no base class data fields: adding `items` field in widget leads to subtle error
 - variables are exported by value, instead of by reference, so they cannot be modified
-- are variable sized arglists really necessary? They are hard to implement efficiently

@@ -519,10 +519,24 @@ expand_lambda As Body =
 | when Name: R <= [let_ [[Name 0]] [`|` [_set Name R] [`&` Name]]]
 | R
 
-`=>` As Body = expand_lambda As [`|` Body]
+has_head Head Xs =
+| if Xs.is_list and Xs.size then
+    if Xs.0><Head then 1
+    else Xs.any{X=>has_head Head X}
+  else 0
+
+supply_leave Name Body =
+| less has_head leave Body: leave Body
+| less got Name: Name <= 'lmb_'.rand
+| [default_leave_ Name (expand_named Name Body)]
+  
+`=>` As Body =
+| Body <= supply_leave No Body
+| expand_lambda As [`|` Body]
 
 expand_block_item_fn Name As Body =
-| Body <= [_progn [_mark Name] [default_leave_ Name (expand_named Name Body)]]
+| Body <= supply_leave Name Body
+| Body <= [_progn [_mark Name] Body]
 | [Name (expand_lambda As Body)]
 
 expand_destructuring Value Bs Body =
@@ -620,7 +634,7 @@ expand_block_item_method Type Name Args Body =
                                     ($\Me = As.0)
                                     (_type Type $\Me Body)
     Else | mex_error "bad arglist for _; should be: Method Args"
-| Body <= form: default_leave_ Name $(expand_named Name Body)
+| Body <= supply_leave Name Body
 | [No [_dmet Name Type [`=>` Args [_progn [_mark "[Type].[Name]"] Body]]]]
 
 expand_block_item Expr =

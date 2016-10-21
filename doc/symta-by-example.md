@@ -826,7 +826,7 @@ Implementation Primitives and Helpers
 
 `_mcall Object Method @Args` - invokes method named `Method` on object `Object`, with @Args
 
-`_set_unwind_handler Finalizer` - pushesh `Finalizer` to the unwind handler stack.
+`_set_unwind_handler Finalizer` - pushes `Finalizer` to the unwind handler stack.
 
 `_remove_unwind_handler` - pops finalizer from the unwind handler stack.
 
@@ -834,6 +834,7 @@ Implementation Primitives and Helpers
 
 `_type Type Var Body` - assumes that `Var` is of type `Type` inside of `Body`.
 
+`_fatal Msg` - fatal error; `Msg` will be show in console together with stack trace.
 
 Thanks
 ------------------------------
