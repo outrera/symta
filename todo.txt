@@ -1,4 +1,5 @@
-- `break` and `pass` (instead of continue). With map pass taking optional value to be stored
+- `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
+- `done` with value.
 - recompile dependent modules only when exports list changes
 - `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys.  The `++` and `--` are already used, so we have to remap them to ^+ and ^-. Bitwise-AND should be remapped to ^*, because AND has many properties of multiplications. Same way ^< and ^> will look nice as bitwise shifts. These are defined reader.s and macro.s
     `^^` A B = [_mcall A '^^' B]

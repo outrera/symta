@@ -302,6 +302,17 @@ while not Xs.end and got !it pop Xs: say it //pints 0 1 2 3
 
 Here we process values of `Xs` until `No` is encountered or Xs is over. This syntax is more flexible, than usual anaphoric macros available in Lisp-based languages or Rust's `while let Some(elem) = iterator.next()`
 
+Finally, there is C-style for loop:
+```
+for (I=0; I<10; !I+1)
+| when I><4: pass
+| when I><7: done
+| say I
+```
+
+This example prints numbers from 0 to 6, skipping 4. Note that that words `pass` and `done` are used instead of usual hard-to-type `continue` and `break`. The variable `I=0`, declared for the loop, is not available outside of it, as opposed ot C.
+
+
 Object Oriented Programming
 ------------------------------
 Symta has unique approach to type system. The most striking difference is that Symta mixes class-based and prototype-based OOP approaches. Compared to other dynamic languages, Symta's method calls are a lot more efficient, due to use of vtables, instead of hash-tables; yet Symta allows putting methods and values into a hash-table and using it like Lua, Python or JavaScript do.
@@ -798,6 +809,15 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `map (I=0; I<N; !I+1): process I` - same as above, but collects the result of `process I`
 
+
+Loop control macros mexlets (available inside of `while`, `till` and `for`)
+------------------------------
+
+`pass` -- continue iterating loop
+
+`done` -- break out of loop
+
+
 Operators available inside of `case` macro 
 ------------------------------
 
@@ -839,7 +859,11 @@ Implementation Primitives and Helpers
 
 `_remove_unwind_handler` - pops finalizer from the unwind handler stack.
 
-`_nomex Expr` - forbids macroexpansion inside of `Expr` (defined in macro.s).
+`mex Expr` - macroexpands `Expr`, inside of macro
+
+`_nomex Expr` - forbids macroexpansion inside of `Expr` (defined in macro.s). Usually attaced to the result of `mex`
+
+`mexlet Expr Value Body` - during macroexpansion of `Body` replaces all occurences of `Expr` with `Value`
 
 `_type Type Var Body` - assumes that `Var` is of type `Type` inside of `Body`.
 

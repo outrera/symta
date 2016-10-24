@@ -7,6 +7,7 @@ GModuleFolders = No
 GSrc = [0 0 unknown]
 GTypes = No
 GVarsTypes = []
+GMexLets = No
 
 mex_error Message =
 | [Row Col Orig] = GSrc
@@ -202,15 +203,41 @@ not @Xs = [_if Xs 0 1]
 when @Xs = [_if Xs.lead Xs.last No]
 less @Xs = [_if Xs.lead No Xs.last]
 
-expand_while Head Body =
+has_head Head Xs =
+| if Xs.is_list and Xs.size then
+    if Xs.0><Head then 1
+    else Xs.any{X=>has_head Head X}
+  else 0
+
+mexlet Expr Value Body =
+| case Expr
+  [Head] | Prev = GMexLets.Head
+         | GMexLets.Head <= Value
+         | Body <= [_nomex Body^mex]
+         | GMexLets.Head <= Prev
+         | Body
+  Else | mex_error "mexlet: bad expr=[Expr]"
+
+expand_loop Head Post Body =
 | L = @rand l
+| Post = if got Post then [Post] else []
+| Break = []
+| when Body^has_head{pass}:
+  | Pass = @rand pass
+  | Body <= [mexlet [pass] [_goto Pass] Body]
+  | push [_label Pass] Post
+| when Body^has_head{done}:
+  | Done = @rand done
+  | Body <= [mexlet [done] [_goto Done] Body]
+  | push [_label Done] Break
 | [_progn [_label L]
           [_if Head
-               [_progn Body [_goto L]]
-               No]]
+               [_progn Body @Post [_goto L]]
+               No]
+          @Break]
 
-while @As = expand_while As.lead As.last
-till @As = expand_while [not As.lead] As.last
+while @As = expand_loop As.lead No As.last
+till @As = expand_loop [not As.lead] No As.last
 
 times Var Count Body =
 | I = if got Var then Var else @rand 'I'
@@ -269,7 +296,7 @@ map @As = case As
 for @As = case As
   [Item Items Body] | expand_map_for times Item Items Body
   [[`;` Entry Cond Post] Body]
-    | ['|' Entry [while Cond ['|' Body Post]]]
+    | ['|' Entry (expand_loop Cond Post Body)]
   Else
     | mex_error "`for` has bad syntax [As]"
 
@@ -536,12 +563,6 @@ expand_lambda As Body =
 | R = [_fn A B]
 | when Name: R <= [let_ [[Name 0]] [`|` [_set Name R] [`&` Name]]]
 | R
-
-has_head Head Xs =
-| if Xs.is_list and Xs.size then
-    if Xs.0><Head then 1
-    else Xs.any{X=>has_head Head X}
-  else 0
 
 supply_leave Name Body =
 | less has_head leave Body: leave Body
@@ -873,7 +894,10 @@ normalize_arg X =
 
 mex_normal X Xs =
 | when GExpansionDepth > GExpansionDepthLimit: mex_error "macroexpansion depth exceed at [[X@Xs]]"
-| Macro = when X.is_keyword: GMacros.X
+| Macro = when X.is_keyword:
+  | R = GMexLets.X
+  | when got R: leave: mex R
+  | GMacros.X
 | when X.is_text: case X^handle_extern [Pkg Sym]: when Sym.is_keyword:
   | M = load_symbol Pkg Sym
   | if M.is_macro
@@ -935,6 +959,7 @@ macroexpand Expr Macros ModuleCompiler ModuleFolders =
       GModuleCompiler ModuleCompiler
       GModuleFolders ModuleFolders
       GTypes (t)
+      GMexLets (t)
   | R = mex Expr
   | R
 
@@ -963,7 +988,7 @@ same A B = form A^address >< B^address
 
 on @Xs X = [X @Xs]
 
-export macroexpand 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
+export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
        'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
        '+' '-' '*' '/' '%' '**' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>' '!!'
