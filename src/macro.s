@@ -254,8 +254,26 @@ expand_map_for Type Item Items Body =
           ['|' ['=' [Item] [_mcall Xs '.' I]]
                Body]]]
 
-map Item Items Body = expand_map_for dup Item Items Body
-for Item Items Body = expand_map_for times Item Items Body
+map @As = case As
+  [Item Items Body] | expand_map_for dup Item Items Body
+  [[`;` Entry Cond Post] Body]
+    | Xs = @rand 'Xs'
+    | ['|' ['=' [Xs] [_list]]
+           Entry
+           [while Cond ['|' [push Body Xs] Post]]
+           [_mcall Xs flip]]
+  Else
+    | mex_error "`map` has bad syntax [As]"
+
+
+for @As = case As
+  [Item Items Body] | expand_map_for times Item Items Body
+  [[`;` Entry Cond Post] Body]
+    | ['|' Entry [while Cond ['|' Body Post]]]
+  Else
+    | mex_error "`for` has bad syntax [As]"
+
+//for (`;` (`=` (I) (123)) ((`<` I 110)) ((`!!` `+` (`!` I) 1))) (say I)
 
 expand_quoted_list Xs =
 | Ys = map X Xs: if X.is_list then expand_quoted_list X else [_quote X]

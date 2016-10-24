@@ -638,7 +638,11 @@ As you probably noticed, Ruby's code has a lot of annoying boilerplate, like ``a
 
 Core Library
 ------------------------------
-This section provides a quick reference of the content of cors_.s and rt_.s files.
+This section provides a quick reference of the content of the Symta's standard library, defined in cors_.s, rt_.s and macro.s files.
+
+`f A B ... C: g D E ... F` - same as `f A B ... C (g D E ... F)`, but also binds sub expressions, like `when got!it get_value: process it`
+
+`&function_name` - gets value of a function, instead of calling it
 
 ``t Key0(Value1) Key1(Value1) ... KeyN(ValueN)`` - new hashtable
 
@@ -659,6 +663,8 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 `main_root` - directory where the program executable resides
 
 `as Name Value Expr` - binds `Value` to `Name`, during evaluation of `Expr`; returns `Name`
+
+`as Value Expr` - as as above, but without Name being available inside of `Expr`
 
 `list.flip` - reverse elements of a list
 
@@ -788,6 +794,9 @@ This section provides a quick reference of the content of cors_.s and rt_.s file
 
 `Item^~{A Default}` - if Item is `A`, then return `B`, otherwise return `Item`
 
+`for (I=0; I<N; !I+1): process I` - C-style for-loop, equivalent to `I=0; while I<N | process I; !I+1`
+
+`map (I=0; I<N; !I+1): process I` - same as above, but collects the result of `process I`
 
 Operators available inside of `case` macro 
 ------------------------------

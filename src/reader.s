@@ -316,7 +316,9 @@ parse_semicolon =
 | L = parse_tokens GInput.take{P}
 | R = parse_tokens GInput.drop{P+1}
 | GInput <= []
-| GOutput <= if R.0^token_is{`;`} then [@R.tail.flip L M] else [R L M]
+| GOutput <= if R.size and R.0^token_is{`;`}
+             then [@R.tail.flip L M]
+             else [R L M]
 | No
 
 parse_xs =
