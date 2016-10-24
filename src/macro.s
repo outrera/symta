@@ -287,7 +287,7 @@ map @As = case As
     | Xs = @rand 'Xs'
     | ['|' ['=' [Xs] [_list]]
            Entry
-           [while Cond ['|' [push Body Xs] Post]]
+           (expand_loop Cond Post [push Body Xs])
            [_mcall Xs flip]]
   Else
     | mex_error "`map` has bad syntax [As]"
@@ -299,8 +299,6 @@ for @As = case As
     | ['|' Entry (expand_loop Cond Post Body)]
   Else
     | mex_error "`for` has bad syntax [As]"
-
-//for (`;` (`=` (I) (123)) ((`<` I 110)) ((`!!` `+` (`!` I) 1))) (say I)
 
 expand_quoted_list Xs =
 | Ys = map X Xs: if X.is_list then expand_quoted_list X else [_quote X]
