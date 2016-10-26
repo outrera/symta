@@ -562,11 +562,13 @@ expand_lambda As Body =
 | when Name: R <= [let_ [[Name 0]] [`|` [_set Name R] [`&` Name]]]
 | R
 
+default_leave_ Name Body = let GDefaultLeave Name [_nomex Body^mex]
+
 supply_leave Name Body =
 | less has_head leave Body: leave Body
 | less got Name: Name <= 'lmb_'.rand
 | [default_leave_ Name (expand_named Name Body)]
-  
+
 `=>` As Body =
 | Body <= supply_leave No Body
 | expand_lambda As [`|` Body]
@@ -762,8 +764,6 @@ expand_block Xs =
 
 let_ @As = [_call [_fn (map B As.0 B.0) [_progn @As.tail]]
                   @(map B As.0 B.1)]
-
-default_leave_ Name Body = let GDefaultLeave Name [_nomex Body^mex]
 
 leave @As = case As
   [Name Value] | expand_leave Name Value

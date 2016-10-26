@@ -816,7 +816,7 @@ table.xs Is = Is{$?}
 list.hash =
 | H = 0
 | for X Me: H <= H</1 -- X.hash
-| H
+| if H<0 then -H else H
 
 list.clear Value = times I $size: Me.I <= Value
 

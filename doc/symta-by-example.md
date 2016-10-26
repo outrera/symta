@@ -773,15 +773,15 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `list.rand` - random element from a list
 
-`A ^^ B` - bitwise and
+`A %* B` - bitwise and
 
-`A ++ B` - bitwise inclusive or
+`A %+ B` - bitwise inclusive or
 
-`A -- B` - bitwise eXclusive or (XOR)
+`A %- B` - bitwise eXclusive or (XOR)
 
-`Integer </ Count` - bitwise shift left
+`Integer %< Count` - bitwise shift left
 
-`Integer /> Count` - bitwise shift right
+`Integer %> Count` - bitwise shift right
 
 `int.sign` - sign of a value
 

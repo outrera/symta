@@ -1,15 +1,19 @@
-- `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
-- `done` with value.
-- recompile dependent modules only when exports list changes
-- `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys.  The `++` and `--` are already used, so we have to remap them to ^+ and ^-. Bitwise-AND should be remapped to ^*, because AND has many properties of multiplications. Same way ^< and ^> will look nice as bitwise shifts. These are defined reader.s and macro.s
+- methods like `table.del` are missing source code location
+- `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys.  The `++` and `--` are already used, so we have to remap them to ^+ and ^-. Bitwise-AND should be remapped to ^*, because AND has many properties of multiplications. Same way ^< and ^> will look nice as bitwise shifts. These are defined runtime.c, reader.s and macro.s
     `^^` A B = [_mcall A '^^' B]
     `--` A B = [_mcall A '--' B]
     `++` A B = [_mcall A '++' B]
     `</` A B = [_mcall A '</' B]
     `/>` A B = [_mcall A '/>' B]
+  ^^ = %* (bitwise and)
+  ++ = %+ (bitwise inclusive or)
+  -- = %- (bitwise eXclusive or XOR)
+  </ = %< (shift left)
+  /> = %> (shift right)
 - Consider using `++` and `--` to advance view (by modifying it, instead of creating new one). That way code using C++ pointers inside of array can be translated to Symta without that much fuzz.
 - Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`
-- Xs+N
+- `done` and `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
+- recompile dependent modules only when exports list changes
 - Proper file interface with catching, representing files as usual lists:
   file{Name}.utf8
   file{Name}.get{Offset Length}
@@ -26,6 +30,7 @@
   a[-1]    # last item in the array
   a[-2:]   # last two items in the array
   a[:-2]   # everything except the last two items
+- optimize `ssa losure`, which is not required in most cases.
 - More-efficient hash tables, because K.hash%Bs.size is known to be arithmetic expression
 - `:` should work inside of `{}`
 - "case C" and `when C` should require `:`, otherwise it is too confusing.
@@ -36,6 +41,8 @@
 - inline insertion of C/C++-style code, interfacing with FFI, which in the end could be used to reimplement runtime.c
 - a way to quickly set all object fields to 0
 - a way to disable CHECK_NARGS for production code
+- expand_match should not do is_list, when called fron lambda arglist matching, as it is known to be is_list
+- messages like `couldnt match args list`, should be part of runtime, or maybe _core
 - Interpreter. Especially useful when C compiler is unavailable for bootstrap and for scripting.
 - SYMTA_DEBUG should be define by compiler, based on command line options; watch for already compiled dependencies. Everything should be recompiled from scratch, when such option changes.
   - missing meta info for some symbols:

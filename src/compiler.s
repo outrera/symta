@@ -63,7 +63,7 @@ ssa_symbol K X Value =
          | ssa var Base
          | ssa load Base \P Parent
        | when Pos >< GAll
-         | when got Value: bad "cant set [X]"
+         | when got Value: compiler_error "cant set [X]"
          | ssa tagged K Base \T_LIST
          | leave No
        | when no Value: leave (ssa ldarg K Base Pos)
@@ -71,7 +71,7 @@ ssa_symbol K X Value =
          then ssa starg Base Pos Value
          else ssa lift Base Pos Value // must be copied into parent environment
      Else
-       | bad "unknown symbol: [X]"
+       | compiler_error "unknown symbol `[X]` (compiler bug)"
 
 cstring_bytes S = [@S.list.map{C => C.code} 0]
 
@@ -137,9 +137,9 @@ ssa_if K Cnd Then Else =
 | ssa_expr K Then
 | ssa local EndLabel
 
-//FIXME: currently hoisting may clobber sime toplevel syms;
+//FIXME: currently hoisting may clobber some toplevel syms;
 //       make new syms valid only downstream
-ssa_hoist_decls Expr Hoist = // C/C++ style declaration hoisting
+ssa_hoist_decls Expr Hoist = // combine layered lets into single one
 | less Expr.is_list: leave Expr
 | case Expr
      [_fn @Xs] | Expr
@@ -183,7 +183,7 @@ ssa_let K Args Vals Xs =
 | ssa move \E SaveE
 
 ssa_apply K F As =
-| case F [_fn Bs @Body]: leave: ssa_let K Bs As Body
+| case F [_fn Bs @Body]: less Bs.is_text: leave: ssa_let K Bs As Body
 | ssa bpush
 | let GBases [[] @GBases]
   | H = ev F
@@ -246,7 +246,7 @@ ssa_progn K Xs =
   | X = pop Xs
   | when Xs.end: D <= K
   | ssa_expr D X
-  | when Xs.end and case X [_label@Zs] 1: ssa move D 'No'
+  | when Xs.end and case X [_label@Zs] 1: ssa_atom D No
 
 compiler_error Msg =
 | [Row Col Orig] = GSrc
@@ -327,7 +327,7 @@ uniquify_expr Expr = if Expr.is_list
                      then uniquify_form Expr
                      else uniquify_atom Expr
 
-uniquify Expr =
+uniquify Expr = //gives each variables unique name
 | let GUniquifyStack []
   | R = uniquify_expr Expr
   | [[_fn (map [K V] GHoistedTexts V) R] @(map [K V] GHoistedTexts [_text K])]
@@ -354,11 +354,11 @@ ssa_subtype K Super Sub =
 | ssa move K 0
 
 ssa_dget K Src Off =
-| less Off.is_int: bad "dget: offset must be integer"
+| less Off.is_int: compiler_error "dget: offset must be integer"
 | ssa dget K Src^ev Off
 
 ssa_dset K Dst Off Value =
-| less Off.is_int: bad "dset: offset must be integer"
+| less Off.is_int: compiler_error "dset: offset must be integer"
 | D = ev Dst
 | V = ssa_var r
 | ssa_expr V Value
@@ -375,7 +375,7 @@ ssa_label Name = ssa local Name
 
 ssa_goto Name =
 | N = GBases.locate{B => got B.locate{?><Name}}
-| when no N: bad "cant find label [Name]"
+| when no N: compiler_error "cant find label [Name]"
 | times I N
   | ssa gc (ssa_var d) 0 // FIXME: have to GC, since base-pop wont LIFT
   | ssa bpop
@@ -417,7 +417,7 @@ ssa_ffi_call K Type F As =
             ptr | 'voidp_'
             T | T
 | [ResultType @AsTypes] = Type
-| less As.size >< AsTypes.size: bad "argument number doesn't match signature"
+| less As.size >< AsTypes.size: compiler_error "argument number doesn't match signature"
 | R = less ResultType >< void: ssa_ffi_var ResultType r
 | ATs = AsTypes
 | Vs = map A As | AType = pop ATs
@@ -470,7 +470,7 @@ ssa_form K Xs =
                               | ssa move K 0
   [F @As] | ssa_apply K F As
   [] | ssa_atom K No
-  Else | bad "special form: [Xs]"
+  Else | compiler_error "special form: [Xs]"
 
 ssa_atom K X =
 | if X.is_int then
@@ -479,7 +479,7 @@ ssa_atom K X =
   else if X.is_text then ssa_symbol K X No
   else if X >< No then ssa move K 'No'
   else if X.is_float then ssa load_float K X
-  else bad "bad atom: [X]"
+  else compiler_error "bad atom: [X]"
 
 ssa_expr K X = if X.is_list then ssa_form K X else ssa_atom K X
 
@@ -496,19 +496,25 @@ find_closes_meta Expr =
   else No
 
 peephole_optimize Xs =
+| Vs = t size/2000
+| Cs = t size/2000
+| for X Xs: when X.is_list and X.size:
+  if X.0><var then Vs.(X.1) <= 1
+  else for A X.tail: when A.is_text and got Vs.A: Cs.A <= Cs.A^~{0}+1
 | Ys = []
 | till Xs.end:
   | X = pop Xs
   | case X
-    [move dummy V] |
-    [ldarg dummy Base Pos] |
+    [move dummy V] | pass
+    [ldarg dummy Base Pos] | pass
     [var V]
       | case Xs
         [[move &V T] [starg A B &V] @Zs]
-          | push [starg A B T] Ys
-          | Xs <= Zs
-        Else | push X Ys
-    Else | push X Ys
+          | when Cs.V><2
+            | push [starg A B T] Ys
+            | Xs <= Zs
+            | pass
+  | push X Ys
 | Ys.flip
 
 produce_ssa Entry Expr =
