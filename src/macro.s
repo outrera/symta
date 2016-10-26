@@ -674,7 +674,9 @@ expand_block_item_method Type Name Args Body =
                                     (_type Type $\Me Body)
     Else | mex_error "bad arglist for _; should be: Method Args"
 | Body <= supply_leave Name Body
-| [No [_dmet Name Type [`=>` Args [_progn [_mark "[Type].[Name]"] Body]]]]
+| Fn = [`=>` Args [_progn [_mark "[Type].[Name]"] Body]]
+| Fn <= meta Fn GSrc
+| [No [_dmet Name Type Fn]]
 
 expand_block_item Expr =
 | Y = case Expr

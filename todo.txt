@@ -1,4 +1,3 @@
-- methods like `table.del` are missing source code location
 - `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys.  The `++` and `--` are already used, so we have to remap them to ^+ and ^-. Bitwise-AND should be remapped to ^*, because AND has many properties of multiplications. Same way ^< and ^> will look nice as bitwise shifts. These are defined runtime.c, reader.s and macro.s
     `^^` A B = [_mcall A '^^' B]
     `--` A B = [_mcall A '--' B]
@@ -12,6 +11,7 @@
   /> = %> (shift right)
 - Consider using `++` and `--` to advance view (by modifying it, instead of creating new one). That way code using C++ pointers inside of array can be translated to Symta without that much fuzz.
 - Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`
+- `pop` is relatively inefficient, so should be replaced by pointer
 - `done` and `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
 - recompile dependent modules only when exports list changes
 - Proper file interface with catching, representing files as usual lists:
