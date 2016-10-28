@@ -365,7 +365,7 @@ let @As =
 `*` A B = [_mcall A '*' B]
 `/` A B = [_mcall A '/' B]
 `%` A B = [_mcall A '%' B]
-`**` A B = [_mcall A '**' B]
+`^^` A B = [_mcall A '^^' B]
 `<` A B = [_mcall A '<' B]
 `>` A B = [_mcall A '>' B]
 `<<` A B = [_mcall A '<<' B]
@@ -390,11 +390,11 @@ let @As =
   | ~A.~B <= ~G
 | ~G
 
-`*,` A B = [_mcall A '*,' B]
-`+,` A B = [_mcall A '+,' B]
-`-,` A B = [_mcall A '-,' B]
-`<,` A B = [_mcall A '<,' B]
-`>,` A B = [_mcall A '>,' B]
+`&&&` A B = [_mcall A '&&&' B]
+`+++` A B = [_mcall A '+++' B]
+`---` A B = [_mcall A '---' B]
+`<<<` A B = [_mcall A '<<<' B]
+`>>>` A B = [_mcall A '>>>' B]
 
 
 expand_colon_r E Found =
@@ -991,6 +991,6 @@ on @Xs X = [X @Xs]
 export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
        'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
-       '+' '-' '*' '/' '%' '**' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>' '!!'
-       '*,' '+,' '-,' '<,' '>,' 'cons' 'uncons' 'same' 'on'
+       '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>' '!!'
+       '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
        'ffi_begin' 'ffi' 'min' 'max' 'swap' '~' 'have' 'source_' 'compile_when' '"'

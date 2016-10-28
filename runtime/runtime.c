@@ -1053,7 +1053,7 @@ BUILTIN2("float.`/`",float_div,C_ANY,a,C_FLOAT,b)
   if (fb == 0.0) fb = FLT_MIN;
   LOAD_FLOAT(R,fa/fb);
 RETURNS(R)
-BUILTIN2("float.`**`",float_pow,C_ANY,a,C_FLOAT,b)
+BUILTIN2("float.`^^`",float_pow,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
@@ -1166,7 +1166,7 @@ BUILTIN2("int.`/`",int_div,C_ANY,a,C_INT,b)
 RETURNS(FIXNUM((intptr_t)a / (intptr_t)b))
 BUILTIN2("int.`%`",int_rem,C_ANY,a,C_INT,b)
 RETURNS((intptr_t)a % (intptr_t)b)
-BUILTIN2("int.`**`",int_pow,C_ANY,a,C_INT,b)
+BUILTIN2("int.`^^`",int_pow,C_ANY,a,C_INT,b)
 RETURNS(FIXNUM((intptr_t)pow((double)UNFIXNUM(a), (double)UNFIXNUM(b))))
 BUILTIN2("int.`><`",int_eq,C_ANY,a,C_ANY,b)
 RETURNS(FIXNUM(a == b))
@@ -1180,15 +1180,15 @@ BUILTIN2("int.`<<`",int_lte,C_ANY,a,C_INT,b)
 RETURNS(FIXNUM((intptr_t)a <= (intptr_t)b))
 BUILTIN2("int.`>>`",int_gte,C_ANY,a,C_INT,b)
 RETURNS(FIXNUM((intptr_t)a >= (intptr_t)b))
-BUILTIN2("int.`*,`",int_mask,C_ANY,a,C_INT,b)
+BUILTIN2("int.`&&&`",int_mask,C_ANY,a,C_INT,b)
 RETURNS((uintptr_t)a & (uintptr_t)b)
-BUILTIN2("int.`-,`",int_ior,C_ANY,a,C_INT,b)
+BUILTIN2("int.`---`",int_ior,C_ANY,a,C_INT,b)
 RETURNS((uintptr_t)a | (uintptr_t)b)
-BUILTIN2("int.`+,`",int_xor,C_ANY,a,C_INT,b)
+BUILTIN2("int.`+++`",int_xor,C_ANY,a,C_INT,b)
 RETURNS((uintptr_t)a ^ (uintptr_t)b)
-BUILTIN2("int.`<,`",int_shl,C_ANY,a,C_INT,b)
+BUILTIN2("int.`<<<`",int_shl,C_ANY,a,C_INT,b)
 RETURNS((intptr_t)a<<UNFIXNUM(b))
-BUILTIN2("int.`>,`",int_shr,C_ANY,a,C_INT,b)
+BUILTIN2("int.`>>>`",int_shr,C_ANY,a,C_INT,b)
 RETURNS(((intptr_t)a>>UNFIXNUM(b))&~TAGL_MASK)
 BUILTIN1("int.end",int_end,C_ANY,o)
 RETURNS(FIXNUM(1))
@@ -2106,18 +2106,18 @@ static void init_types(api_t *api) {
   METHOD_FN("*", b_int_mul, b_float_mul, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("/", b_int_div, b_float_div, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("%", b_int_rem, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("**", b_int_pow, b_float_pow, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN("^^", b_int_pow, b_float_pow, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("><", b_int_eq, b_float_eq, b_fn_eq, 0, b_fixtext_eq, b_text_eq, 0, 0, b_void_eq);
   METHOD_FN("<>", b_int_ne, b_float_ne, b_fn_ne, 0, b_fixtext_ne, b_text_ne, 0, 0, b_void_ne);
   METHOD_FN("<", b_int_lt, b_float_lt, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN(">", b_int_gt, b_float_gt, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("<<", b_int_lte, b_float_lte, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN(">>", b_int_gte, b_float_gte, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("^,", b_int_mask, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("+,", b_int_ior, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("-,", b_int_xor, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("<,", b_int_shl, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN(">,", b_int_shr, 0, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN("&&&", b_int_mask, 0, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN("---", b_int_ior, 0, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN("+++", b_int_xor, 0, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN("<<<", b_int_shl, 0, 0, 0, 0, 0, 0, 0, 0);
+  METHOD_FN(">>>", b_int_shr, 0, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("head", 0, 0, 0, b_list_head, 0, 0, b_view_head, b_cons_head, 0);
   METHOD_FN("tail", 0, 0, 0, b_list_tail, 0, 0, b_view_tail, b_cons_tail, 0);
   METHOD_FN("take", 0, 0, 0, b_list_take, 0, 0, b_view_take, 0, 0);

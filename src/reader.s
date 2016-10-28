@@ -50,7 +50,7 @@ init_tokenizer =
 | HeadChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_?~"
 | TailChar = "[HeadChar][Digit]"
 | Ls = \(`+` `-` `*` `/` `%` `^` `.` `->` `|` `;` `,` `:` `=` `=>` `<=`
-         `-,` `+,` `*,` `<,` `>,` `**` `..`
+         `---` `+++` `&&&` `<<<` `>>>` `^^` `..`
          `><` `<>` `<` `>` `<<` `>>`
          `\\` `$` `@` `&` `!`
          (() end)
@@ -277,13 +277,13 @@ parse_prefix =
 | O = parse_op [negate `\\` `@` `&` `!`] or leave (parse_suffix)
 | when O^token_is{negate}: leave O^parse_negate
 | [O (parse_prefix or parser_error "no operand for" O)]
-parse_pow = parse_binary &parse_prefix [`**`]
+parse_pow = parse_binary &parse_prefix [`^^`]
 parse_mul = parse_binary &parse_pow [`*` `/` `%`]
 parse_add = parse_binary &parse_mul [`+` `-`]
 parse_dots = parse_binary &parse_add [`..`]
-parse_b_shift = parse_binary &parse_dots [`<,` `>,`]
-parse_b_and = parse_binary &parse_b_shift [`*,`]
-parse_b_xor = parse_binary &parse_b_and [`+,` `-,`]
+parse_b_shift = parse_binary &parse_dots [`<<<` `>>>`]
+parse_b_and = parse_binary &parse_b_shift [`&&&`]
+parse_b_xor = parse_binary &parse_b_and [`+++` `---`]
 parse_comma = parse_binary  &parse_b_xor [`,`]
 parse_bool = parse_binary &parse_comma [`><` `<>` `<` `>` `<<` `>>`]
 

@@ -92,7 +92,7 @@ say "addition: [A+B]"
 say "multiplication: [A*B]"
 say "division: [B/A]"
 say "remainder: [B%A]"
-say "exponentiation: [A**3]"
+say "exponentiation: [A^^3]"
 say "average: [(A+B)/2]" // change operator precedence by using `(` and `)`
 A <= 789 // assign a new value to A
 say "Now A contains [A]"
@@ -773,15 +773,15 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `list.rand` - random element from a list
 
-`A %* B` - bitwise and
+`A &&& B` - bitwise and
 
-`A %+ B` - bitwise inclusive or
+`A --- B` - bitwise inclusive or
 
-`A %- B` - bitwise eXclusive or (XOR)
+`A +++ B` - bitwise eXclusive or (XOR)
 
-`Integer %< Count` - bitwise shift left
+`Integer <<< N` - shift `Integer` left by `N` bits
 
-`Integer %> Count` - bitwise shift right
+`Integer >>> N` - shift `Integer` right by `N` bits
 
 `int.sign` - sign of a value
 
