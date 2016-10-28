@@ -4,13 +4,14 @@
     `++` A B = [_mcall A '++' B]
     `</` A B = [_mcall A '</' B]
     `/>` A B = [_mcall A '/>' B]
-  ^^ = %* (bitwise and)
-  ++ = %+ (bitwise inclusive or)
-  -- = %- (bitwise eXclusive or XOR)
-  </ = %< (shift left)
-  /> = %> (shift right)
+  ^^ = *, (bitwise and)
+  -- = +, (bitwise eXclusive or XOR)
+  ++ = -, (bitwise inclusive or)
+  </ = <, (shift left)
+  /> = >, (shift right)
+  (A.m<,N.a)*,Mask*,Gold
 - Consider using `++` and `--` to advance view (by modifying it, instead of creating new one). That way code using C++ pointers inside of array can be translated to Symta without that much fuzz.
-- Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`
+- Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`. Note: watch for `**` used as multiplication, rename it to `^^`.
 - `pop` is relatively inefficient, so should be replaced by pointer
 - `done` and `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
 - recompile dependent modules only when exports list changes
