@@ -283,9 +283,8 @@ parse_add = parse_binary &parse_mul [`+` `-`]
 parse_dots = parse_binary &parse_add [`..`]
 parse_b_shift = parse_binary &parse_dots [`<,` `>,`]
 parse_b_and = parse_binary &parse_b_shift [`*,`]
-parse_b_xor = parse_binary &parse_b_and [`+,`]
-parse_b_or = parse_binary &parse_b_xor [`-,`]
-parse_comma = parse_binary  &parse_b_or [`,`]
+parse_b_xor = parse_binary &parse_b_and [`+,` `-,`]
+parse_comma = parse_binary  &parse_b_xor [`,`]
 parse_bool = parse_binary &parse_comma [`><` `<>` `<` `>` `<<` `>>`]
 
 parse_logic =
