@@ -654,6 +654,7 @@ This section provides a quick reference of the content of the Symta's standard l
 `f A B ... C: g D E ... F` - same as `f A B ... C (g D E ... F)`, but also binds sub expressions, like `when got!it get_value: process it`
 
 `&function_name` - gets value of a function, instead of calling it
+`&FunctionName` - calls a function, referenced by `FunctionName`
 
 ``t Key0(Value1) Key1(Value1) ... KeyN(ValueN)`` - new hashtable
 
