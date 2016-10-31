@@ -29,7 +29,7 @@ ot_merge$_ [X<1.is_int @1.all{(same ? X)}] = X
 
 ot_get O L P T =
 | if T.is_int then T,O,L // Value,Origin,Dimension
-  else | !L / 2
+  else | L /= 2
        | PD = P / L
        | I = ot_p2i PD
        | PM = P % L
@@ -39,7 +39,7 @@ ot_set L P V T =
 | if T.is_int then
      if L < 2 or same V T then V
      else ot_set L P V: dup I 8 T // create new cube node
-  else | !L / 2
+  else | L /= 2
        | PD = P / L
        | I = ot_p2i PD
        | PM = P % L
@@ -60,11 +60,11 @@ octree.at P =
 | L = $size
 | T = $root
 | till T.is_int
-  | !L / 2
+  | L /= 2
   | PD = P / L
   | I = ot_p2i PD
   | PM = P % L
-  | !O + PD*L
+  | O += PD*L
   | P <= PM
   | T <= T.I
 | T
@@ -92,7 +92,7 @@ octree.getPilar X Y =
 | while Z < Size
   | S,O,L = $get{X,Y,Z}
   | Xs <= [L,S @Xs]
-  | !Z + L
+  | Z += L
 | on Xs.flip | @r$_ [@H A,V B,&V @T] => [@H @[A+B,V @T]^r]
 
 octree.height X Y = $size - $getPilar{X Y}.last.0

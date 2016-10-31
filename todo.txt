@@ -4,12 +4,13 @@
 - replace `not` with `!`
 - replace `<=` with `~`
 - replace `and` with `&&`
-- repalce `or` with `||`
+- replace `or` with `||`
 - optimize and fix ssa_form, so that will report wrong number of arguments
 - optimize No, by initing it to a well known memory location
 - only symbols referenced inside of a closure should be allocated on heap.
 - inline C-code
 - inline optimizations for arithmetic and comparions operators, array size and array indexing
+- a way to reference some memory location
 - lexical targets for for optimizations in Spell of Mastery
   1670: =
   1268: <=
@@ -27,6 +28,7 @@
   89: size
   83: or (can be replaced with -- or `an`)
   54: f{Arg} ({[A-Ba-b0-9]\+}')
+  54: push
   53: ^
   41: &
   40: !.*+1

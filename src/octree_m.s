@@ -19,7 +19,7 @@ genOctNeibFn Name N V =
           | when rects_overlap [$@Basis2d L L] ~R
             | ~Ns.~H <= ~Q
             | push ~Q Qs
-        | !~N + ~Q.2
+        | ~N += ~Q.2
       | Qs
     | [~Q]^| @r $$0
              [~Q<[~S [$@Basis] L] @Qs] => `|`

@@ -4,15 +4,10 @@ type queue{Size} xs a b
 queue.end = $a >< $b
 
 queue.push Item =
-| $xs.$b <= Item
-| !$b+1
+| $xs.($b++) <= Item
 | when $b >< $xs.size: $b <= 0
 
-queue.pop =
-| Item = $xs.$a
-| !$a+1
-| when $a >< $xs.size: $a <= 0
-| Item
+queue.pop = as $xs.($a++): when $a >< $xs.size: $a <= 0
 
 queue.reset = $a <= $b
 

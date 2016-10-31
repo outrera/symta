@@ -122,9 +122,9 @@ build RootFolder SrcFolder dst/0 =
 | when SrcFolder.file:
   | SrcFolder <= SrcFolder.url.0
   | SrcPref <= ""
-| normalize_folder !RootFolder
-| normalize_folder !SrcFolder
-| normalize_folder !DstFolder
+| RootFolder <= normalize_folder RootFolder
+| SrcFolder <= normalize_folder SrcFolder
+| DstFolder <= normalize_folder DstFolder
 | when DstFolder.0 <> '/' and DstFolder.1 <> ':':
   | DstFolder <= "[get_work_folder]/[DstFolder]"
 | let GRootFolder RootFolder

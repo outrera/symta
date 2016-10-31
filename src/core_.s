@@ -176,9 +176,7 @@ bytes.bytes = Me
 
 list.bytes =
 | N = $size
-| Ys = N.bytes
-| times I N: Ys.I <= pop Me
-| Ys
+| as Ys N.bytes: times I N: Ys.I <= pop Me
 
 list.utf8 = $bytes.utf8
 

@@ -11,7 +11,7 @@ component engine/'gasoline'
 component serial [custom] count
 serial.new Id =
 | ecs_array_set $array Id $count
-| !$count+1
+| $count++
 
 ECS = ecs 1024
 

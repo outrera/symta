@@ -195,17 +195,15 @@ ssa_apply K F As =
 
 resolve_type Name =
 | when got!it GRTypes.Name: leave it.1
-| N = GRTypesCount
+| N = GRTypesCount++
 | R = "ty\[[N]\]"
-| !GRTypesCount+1
 | GRTypes.Name <= [N R Name^ssa_cstring]
 | R
 
 resolve_method Name =
 | when got!it GMethods.Name: leave it.1
-| N = GMethodsCount
+| N = GMethodsCount++
 | R = "mt\[[N]\]"
-| !GMethodsCount+1
 | GMethods.Name <= [N R Name^ssa_cstring]
 | R
 
@@ -215,9 +213,8 @@ ssa_import K Lib Symbol =
 | Key = "[Lib]::[Symbol]"
 | Im = GImports.Key
 | when no Im:
-  | N = GImportsCount
+  | N = GImportsCount++
   | R = "im\[[N]\]"
-  | !GImportsCount+1
   | Im <= [N R Key GImportLibs.Lib Symbol^ssa_cstring]
   | GImports.Key <= Im
 | ssa move K Im.1
@@ -275,10 +272,7 @@ uniquify_let Xs =
     | V = pop Vs
     | case V
         [_import [_quote X] [_quote Y]]
-          | when no GImportLibs.X:
-            | N = GImportLibsCount
-            | !GImportLibsCount+1
-            | GImportLibs.X <= N
+          | when no GImportLibs.X: GImportLibs.X <= GImportLibsCount++
           | when got Used.A
             | push A NewAs
             | push V NewVs
@@ -396,12 +390,8 @@ ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
 ssa_text String =
 | when got!it GTextsMap.String: leave it
-| Tx = "tx\[[GTextsCount]\]"
-| !GTextsCount+1
-| StringBytes = String^ssa_cstring
-| push StringBytes GTexts
-| GTextsMap.String <= Tx
-| Tx
+| push String^ssa_cstring GTexts
+| as Tx "tx\[[GTextsCount++]\]": GTextsMap.String <= Tx
 
 ssa_ffi_var Type Name =
 | V = @rand v
@@ -545,7 +535,7 @@ produce_ssa Entry Expr =
   | Origin = find_closes_meta Expr
   | less got Origin: Origin <= [-1 -1 unknown]
   | R = ssa_var result
-  | uniquify !Expr
+  | Expr <= uniquify Expr
   | ssa_expr R Expr
   | ssa return R
   | ssa entry setup

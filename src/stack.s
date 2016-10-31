@@ -7,12 +7,10 @@ stack.init Xs =
 | $clear
 | for X Xs: $push{X}
 
-stack.push X =
-| $xs.$used <= X
-| !$used+1
+stack.push X = $xs.($used++) <= X
 
 stack.pop =
-| !$used-1
+| $used--
 | $xs.$used
 
 stack.alloc @Xs =

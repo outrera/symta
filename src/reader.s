@@ -10,11 +10,11 @@ text_stream.peek = when $off < $len: $chars.($off)
 text_stream.next =
 | when $off < $len
   | $last <= $chars.($off)
-  | !$col + 1
-  | !$off + 1
+  | $col++
+  | $off++
   | when $last >< '\n'
     | $col <= 0
-    | !$row + 1
+    | $row++
   | $last
 text_stream.src = [$row $col $origin]
 text_stream.error Msg = | say "at [$src]: [Msg]"; halt
@@ -178,14 +178,10 @@ read_comment R Cs =
 | read_token R 0
 
 read_multi_comment R Cs =
-| O = 1
-| while O > 0
-  | case [R.next R.peek]
-      [X No] | R.error{"`/*`: missing `*/`"}
-      [`*` `/`] | !O - 1
-                | R.next
-      [`/` `*`] | !O + 1
-                | R.next
+| for(O=1; O > 0; ): case [R.next R.peek]
+    [X No] | R.error{"`/*`: missing `*/`"}
+    [`*` `/`] | O--; R.next
+    [`/` `*`] | O++; R.next
 | read_token R 0
 
 parser_error Cause Tok =

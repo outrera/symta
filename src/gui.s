@@ -119,8 +119,8 @@ dlg.draw G PX PY =
 | for [X Y W] $ws
   | R = W.render
   | Rect = W.meta_
-  | !X + R.x
-  | !Y + R.y
+  | X += R.x
+  | Y += R.y
   | Rect.init{[X Y R.w R.h]}
   | G.blit{PX+X PY+Y R}
 
@@ -197,7 +197,7 @@ gui.render =
     | FB.blit{XY.0 XY.1-R.h R}
 | FB
 gui.add_timer Interval Handler =
-| [@!Me.timers [Interval (clock)+Interval Handler]]
+| Me.timers <= [@Me.timers [Interval (clock)+Interval Handler]]
 gui.update_timers Time =
 | Ts = $timers
 | less Ts.size: leave 0
@@ -208,8 +208,8 @@ gui.update_timers Time =
     | if got Fn{} then Ts.N.1 <= (Time)+Interval
       else push N Remove
 | when Remove.size
-  | N = -1
-  | Ts <= Ts.skip{X=>Remove.locate{!N+1}^got}
+  | N = 0
+  | Ts <= Ts.skip{X=>Remove.locate{N++}^got}
 | when $timers.size: Ts <= [@Ts @$timers]
 | $timers <= Ts
 | 0

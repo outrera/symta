@@ -34,7 +34,7 @@ type ecs{max_entities}
   | $systems.Name <= System
   | $arrays.Name <= Array
   | System.init
-  | !I+1
+  | I++
 | for I Elements.size: Elements.I <= $systems."n[I]_".array
 
 ecs.new_block =
@@ -64,7 +64,7 @@ ecs.new @Components =
   | BlockIdx = Id/BlockSize
   | less System.usage.BlockIdx: 
     | System.array.BlockIdx <= $new_block
-  | !System.usage.BlockIdx + 1
+  | System.usage.BlockIdx++
   | System.new{Id}
   | less UseDefault:
     | System.Id <= Value
@@ -89,7 +89,7 @@ ecs.clear_freed =
         | when Block.ItemIdx <> $none
           | System.free{Id}
           | Block.ItemIdx <= $none
-          | !System.usage.BlockIdx - 1
+          | System.usage.BlockIdx--
           | less System.usage.BlockIdx
             | $free_block{Array.BlockIdx}
             | Array.BlockIdx <= 0
@@ -102,7 +102,7 @@ ecs.update =
 | Systems = $systems.list{}{?1}
 | for System Systems: System.update
 | $clear_freed
-| !$cycle+1
+| $cycle++
 
 ecs.clear =
 | for Id $alive.active: $free{Id}
@@ -125,7 +125,7 @@ int.enable Component =
 | BlockIdx = Me/BlockSize
 | less System.usage.BlockIdx: 
   | System.array.BlockIdx <= ECS.new_block
-| !System.usage.BlockIdx + 1
+| System.usage.BlockIdx++
 | System.new{Me}
 
 int.disable Component =
@@ -138,7 +138,7 @@ int.disable Component =
 | less Block.ItemIdx <> None: leave 0
 | System.free{Me}
 | Block.ItemIdx <= None
-| !System.usage.BlockIdx - 1
+| System.usage.BlockIdx--
 | less System.usage.BlockIdx
   | ECS.free_block{Array.BlockIdx}
   | Array.BlockIdx <= 0

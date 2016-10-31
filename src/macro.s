@@ -29,7 +29,7 @@ load_symbol Library Name =
 expand_list_hole_advanced H Hs Key Hit Miss =
 | [Again Took Rest Xs I N Else] = form: ~Again ~Took ~Rest ~Xs ~I ~N ~Else
 | Fail = form: if I < N
-               then | !I + 1
+               then | I++
                     | _goto Again
                else Miss
 | form | Xs = Key.list // ensure it is simple list
@@ -417,7 +417,7 @@ let @As =
 
 expand_colon_r E Found =
 | less E.is_list: leave E
-| P = E.locate{$0["!" Y] => Y.is_keyword}
+| P = E.locate{$0 ["!" Y]=>Y.is_keyword}
 | less got P: leave: map X E: expand_colon_r X Found
 | Name = E.P.1
 | Expr = E.drop{P+1}
@@ -682,7 +682,7 @@ type Name @Fields =
 
 expand_block_item_method Type Name Args Body =
 | less Name >< _
-  | [\Me @!Args]
+  | push \Me Args
   | when got GTypes.Type: Body <= form: _type Type $\Me Body
 | when Name >< _
   | case Args
@@ -771,7 +771,7 @@ expand_block Xs =
 | R = []
 | for X Xs.flip:
   | [A B] = X
-  | when B.is_list: supply_meta !B X
+  | when B.is_list: B <= supply_meta B X
   | R <= expand_block_helper R A B
 | R <= [_progn @R]
 | Bs = Xs.keep{X => X.0.is_keyword}
@@ -967,7 +967,7 @@ mex ExprIn =
   [X@Xs] | Src = when Expr.is_meta: Expr.meta_ 
          | let GSrc (if got Src then Src else GSrc)
            | mex_normal X Xs
-| when R.is_list: supply_meta !R ExprIn
+| when R.is_list: R <= supply_meta R ExprIn
 | R
 
 macroexpand Expr Macros ModuleCompiler ModuleFolders =
@@ -998,7 +998,7 @@ uncons Field Item = form
 | ~Xs = []
 | ~X = Item
 | while ~X
-  | [~X@!~Xs]
+  | ~Xs <= [~X@~Xs]
   | ~X <= ~X.Field
 | ~Xs
 
