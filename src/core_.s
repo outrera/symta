@@ -54,7 +54,7 @@ float.abs = if Me < 0.0 then -Me else Me
 
 list.abs =
 | R = 0.0
-| map X Me: !R + (X*X).float
+| map X Me: R += @float X*X
 | R.sqrt
 
 list.normalize = Me / $abs
@@ -90,21 +90,21 @@ text.is_upcase =
 | times I $size
   | C = $I.code
   | when C < 'A'.code or 'Z'.code < C: leave 0
-  | !I + 1
+  | I++
 | 1
 
 text.is_downcase =
 | times I $size
   | C = $I.code
   | when C < 'a'.code or 'z'.code < C: leave 0
-  | !I + 1
+  | I++
 | 1
 
 text.is_digit =
 | times I $size
   | C = $I.code
   | when C < '0'.code or '9'.code < C: leave 0
-  | !I + 1
+  | I++
 | 1
 
 text.upcase =
@@ -163,7 +163,7 @@ list.size =
 | S = 0
 | till $end
   | Me <= $tail
-  | !S + 1
+  | S++
 | S
 
 list.end = not $size
@@ -238,14 +238,14 @@ list.flip =
 | N = $size
 | Ys = dup N
 | while N > 0
-  | !N - 1
+  | N--
   | Ys.N <= pop Me
 | Ys
 
 hard_list.flip =
 | N = $size
 | dup N
-  | !N - 1
+  | N--
   | $N
 
 text.flip = $list.flip.text
@@ -257,7 +257,7 @@ hard_list.map F = dup I $size: F $I
 text.map F = $list.map{F}
 
 list.fold Run F =
-| for X Me: F !Run X
+| for X Me: Run <= F Run X
 | Run
 
 list.e F = till $end: F Me^pop
@@ -265,24 +265,24 @@ hard_list.e F = times I $size: F $I
 
 list.sum =
 | S = 0
-| till $end: !S + Me^pop
+| till $end: S += pop Me
 | S
 
 hard_list.sum =
 | S = 0
-| times I $size: !S + $I
+| times I $size: S += $I
 | S
 
 list.count F =
 | C = 0
-| till $end: when F Me^pop: !C + 1
+| till $end: when F Me^pop: C++
 | C
 
 hard_list.count F =
-| S = 0
+| C = 0
 | I = 0
-| times I $size: when F $I: !S + 1
-| S
+| times I $size: when F $I: C++
+| C
 
 list.keep F =
 | Ys = []
@@ -301,8 +301,7 @@ list.skip F =
 list.join =
 | Rs = dup $map{?size}.sum
 | I = 0
-| for Ys Me: for Y Ys | Rs.I <= Y
-                      | !I + 1
+| for Ys Me: for Y Ys: Rs.(I++) <= Y
 | Rs
 
 _list_.list = Me
@@ -366,7 +365,7 @@ text.url =
 | when got Dot and (no Sep or Dot < Sep):
   | Ext <= Xs.take{Dot}.flip.text
   | Xs <= Xs.drop{Dot+1}
-  | when got Sep: !Sep - (Dot+1)
+  | when got Sep: Sep -= Dot+1
 | Folder = No
 | Name = No
 | if got Sep
@@ -390,11 +389,7 @@ list.drop N =
 | times I N Me^pop
 | Me
 
-hard_list.drop S =
-| dup $size-S
-  | R = $S
-  | !S + 1
-  | R
+hard_list.drop S = dup $size-S: $|S++
 
 text.drop S = $list.drop{S}.text
 text.take S = $list.take{S}.text
@@ -422,10 +417,7 @@ list.infix Item = // intersperse from Haskell
 
 list.locate F =
 | less F.is_fn: F <= (X => F >< X)
-| I = 0
-| till $end
-  | when F Me^pop: leave I
-  | !I + 1
+| for(I=0; not $end; I++): when F Me^pop: leave I
 
 hard_list.locate F =
 | if F.is_fn then times I $size: when F $I: leave I
@@ -436,25 +428,15 @@ text.locate F =
   else times I $size: when F >< $I: leave I
 
 list.find F =
-| I = 0
 | if F.is_fn
-  then | till $end
-         | X = Me^pop
-         | when F X: leave X
-         | !I + 1
-  else | till $end
-         | X = Me^pop
-         | when F >< X: leave X
-         | !I + 1
+  then for(I=0; not $end; I++): when F!it Me^pop: leave it
+  else for(I=0; not $end; I++): when `><`F !it Me^pop: leave it
 
 hard_list.find F =
 | if F.is_fn
-  then | times I $size
-         | X = $I
-         | when F X: leave X
-  else | times I $size
-         | X = $I
-         | when F >< X: leave X
+  then | times I $size: when F!it $I: leave it
+  else | times I $size: when `><`F !it $I: leave it
+
 text.list = dup I $size $I
 
 list.group N =
@@ -463,7 +445,7 @@ list.group N =
 | I = 0
 | till $end
   | push Me^pop Y
-  | !I + 1
+  | I++
   | when I >< N
     | push Y.flip Ys
     | Y <= []
@@ -504,7 +486,7 @@ int.x =
   | Me <= -Me
 | while Me > 0
   | Cs <= [HexChars.(Me%16) @Cs]
-  | !Me / 16
+  | Me /= 16
 | [S@Cs].text
 
 _.as_text = "#([Me^typename] [Me^address.x])"
@@ -520,7 +502,7 @@ int.as_text =
   | Me <= -Me
 | while Me > 0
   | Cs <= [HexChars.(Me%10) @Cs]
-  | !Me / 10
+  | Me /= 10
 | [S@Cs].text
 
 plain_char C =
@@ -623,16 +605,16 @@ int.digits @Base =
 | B = if Base.end then 10 else Base.head
 | Ys = []
 | while Me > 0
-  | [Me%B@!Ys]
-  | !Me / B
-| Ys
+  | push Me%B Ys
+  | Me /= B
+| Ys.list
 
 list.digits @Base =
 | B = if Base.end then 10 else Base.head
 | R = 0
 | for X Me
-  | !R * B
-  | !R + X
+  | R *= B
+  | R += X
 | R
 
 type macro{@new_macro N E} name/N expander/E
@@ -665,7 +647,7 @@ float.rand =
 list.rand = $(@rand $size-1)
 
 GGensymCount = 0
-text.rand = "[Me]__[!GGensymCount+1]"
+text.rand = "[Me]__[GGensymCount++]"
 
 lcg_init: time
 
@@ -673,7 +655,7 @@ list.shuffle =
 | Xs = $copy
 | N = Xs.size
 | while N > 1
-  | !N - 1
+  | N--
   | R = N.rand
   | X = Xs.R
   | Xs.R <= Xs.N
@@ -748,45 +730,44 @@ text.int @Radix =
 | N = $size
 | I = 0
 | Sign = if $I >< '-'
-         then | !I + 1
+         then | I++
               | -1
          else 1
 | R = 0
 | Base = '0'.code
 | AlphaBase = 'A'.code - 10
-| while I < N
+| for(; I < N; I++)
   | C = T.I.code
   | V = if '0'.code << C and C << '9'.code then C - Base else C - AlphaBase
   | R <= R*Rdx + V
-  | !I + 1
 | R*Sign
 
 list.u4 = $3*#1000000 + $2*#10000 + $1*#100 + $0
 list.u4b = $0*#1000000 + $1*#10000 + $2*#100 + $3
-list.s4 = as R $u4: when R&&&#80000000: !R-#100000000
-list.s4b = as R $u4b: when R&&&#80000000: !R-#100000000
+list.s4 = as R $u4: when R&&&#80000000: R-=#100000000
+list.s4b = as R $u4b: when R&&&#80000000: R-=#100000000
 
 list.u2 = $1*#100 + $0
 list.u2b = $0*#100 + $1
-list.s2 = as R $u2: when R&&&#8000: !R-#10000
-list.s2b = as R $u2b: when R&&&#8000: !R-#10000
+list.s2 = as R $u2: when R&&&#8000: R-=#10000
+list.s2b = as R $u2b: when R&&&#8000: R-=#10000
 
 int.u4 = [Me%256 Me/#100%256 Me/#10000%256 Me/#1000000%256]
 int.u4b = [Me/#1000000%256 Me/#10000%256 Me/#100%256 Me%256]
 int.s4 =
-| when Me < 0: #100000000+!Me
+| when Me < 0: Me += #100000000
 | [Me%256 Me/#100%256 Me/#10000%256 Me/#1000000%256]
 int.s4b =
-| when Me < 0: #100000000+!Me
+| when Me < 0: Me += #100000000
 | [Me/#1000000%256 Me/#10000%256 Me/#100%256 Me%256]
 
 int.u2 = [Me%256 Me/#100%256]
 int.u2b = [Me/#100%256 Me%256]
 int.s2 = 
-| when Me < 0: #10000+!Me
+| when Me < 0: Me += #10000
 | [Me%256 Me/#100%256]
 int.s2b =
-| when Me < 0: #10000+!Me
+| when Me < 0: Me += #10000
 | [Me/#100%256 Me%256]
 
 int.in Start End = Start << Me and Me < End
@@ -822,14 +803,8 @@ list.clear Value = times I $size: Me.I <= Value
 
 type iter{base p}
 iter.end = $base.size><$p
-iter.`++` =
-| R = $base.$p
-| !$p+1
-| R
-iter.`--` =
-| R = $base.$p
-| !$p-1
-| R
+iter.`++` = $base.($p++)
+iter.`--` = $base.($p--)
 iter.head = $base.$p
 iter.`.` N = $base.($p+N)
 iter.`!` N V = $base.($p+N) <= V
