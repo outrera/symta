@@ -345,6 +345,12 @@ pop O = form: as O.head: O <= O.tail
 
 push Item O = form: O <= [Item @O]
 
+`+=` A B = [`<=` A [`+` A B]]
+`-=` A B = [`<=` A [`-` A B]]
+`*=` A B = [`<=` A [`*` A B]]
+`/=` A B = [`<=` A [`/` A B]]
+`%=` A B = [`<=` A [`%` A B]]
+
 `++` O = form: let_ ((~O O))
                (_if (_eq (_tag ~O) 0) //is int?
                     (`|` (`<=` (O) (_add ~O 1))
@@ -1004,5 +1010,6 @@ export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'i
        'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
        '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>' '!!'
-       '++' '--' '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
+       '+=' '-=' '*=' '/=' '%=' '++' '--'
+       '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
        'ffi_begin' 'ffi' 'min' 'max' 'swap' '~' 'have' 'source_' 'compile_when' '"'

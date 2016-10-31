@@ -50,6 +50,7 @@ init_tokenizer =
 | HeadChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_?~"
 | TailChar = "[HeadChar][Digit]"
 | Ls = \(`+` `-` `*` `/` `%` `^` `.` `->` `|` `;` `,` `:` `=` `=>` `<=`
+         `+=` `-=` `*=` `/=` `%=`
          `---` `+++` `&&&` `<<<` `>>>` `^^` `..` `++` `--`
          `><` `<>` `<` `>` `<<` `>>`
          `\\` `$` `@` `&` `!`
@@ -245,7 +246,11 @@ parse_term =
 | Tok.parsed <= [P]
 | Tok
 
-is_delim X = X.is_token and case X.symbol `:`+`=`+`=>`+`<=`+`if`+`then`+`else` 1
+is_delim X = X.is_token and case X.symbol
+             `:`+`=`+`=>`+`<=`+`if`+`then`+`else`+`+=`+`-=`+`*=`+`/=`+`%=`
+             1
+
+
 
 parse_op Ops =
 | when GInput.end: leave 0
@@ -308,7 +313,7 @@ parse_logic =
 | No
 
 parse_delim =
-| O = parse_op [`:` `=` `=>` `<=`] or leave (parse_logic)
+| O = parse_op [`:` `=` `=>` `<=` `+=` `-=` `*=` `/=` `%=`] or leave (parse_logic)
 | Pref = if GOutput.size > 0 then GOutput.flip else []
 | GOutput <= [(parse_xs) Pref O]
 | No
