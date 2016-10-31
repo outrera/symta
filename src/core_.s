@@ -820,4 +820,21 @@ list.hash =
 
 list.clear Value = times I $size: Me.I <= Value
 
+type iter{base p}
+iter.end = $base.size><$p
+iter.`++` =
+| R = $base.$p
+| !$p+1
+| R
+iter.`--` =
+| R = $base.$p
+| !$p-1
+| R
+iter.head = $base.$p
+iter.`.` N = $base.($p+N)
+iter.`!` N V = $base.($p+N) <= V
+iter.`+` N = iter $base $p+N
+
+list.iter = iter $list 0
+
 export non say bad no got table_ new_macro meta main_root methods

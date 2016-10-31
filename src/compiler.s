@@ -451,6 +451,7 @@ ssa_form K Xs =
   [_tagged Tag X] | ssa_tagged K Tag X
   [_import Lib Symbol] | ssa_import K Lib Symbol
   [_add A B] | ssa_fixed2 K fxnadd A B
+  [_sub A B] | ssa_fixed2 K fxnsub A B
   [_eq A B] | ssa_fixed2 K fxneq A B
   [_lt A B] | ssa_fixed2 K fxnlt A B
   [_gte A B] | ssa_fixed2 K fxngte A B

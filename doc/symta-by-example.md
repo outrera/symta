@@ -826,6 +826,8 @@ For the full semantics see `expand_hole` function in macro.s
 
 `&Expr` - matches to the result of evaluating Expr
 
+`~` - matches anything but No
+
 `A+B` - either `A` or `B`
 
 `-X` - not `X`

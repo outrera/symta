@@ -345,6 +345,18 @@ pop O = form: as O.head: O <= O.tail
 
 push Item O = form: O <= [Item @O]
 
+`++` O = form: let_ ((~O O))
+               (_if (_eq (_tag ~O) 0) //is int?
+                    (`|` (`<=` (O) (_add ~O 1))
+                         ~O)
+                    (_mcall ~O `++`))
+
+`--` O = form: let_ ((~O O))
+               (_if (_eq (_tag ~O) 0) //is int?
+                    (`|` (`<=` (O) (_sub ~O 1))
+                         ~O)
+                    (_mcall ~O `--`))
+
 let @As =
 | when As.size < 2: mex_error "bad let @As"
 | Bs = As.lead.group{2}

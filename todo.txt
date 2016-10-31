@@ -1,6 +1,48 @@
-- `!I+1`, while more flexible, is really clunky construct, inferior to I++, because it requires holding shift and pressing different keys. So implement `++` postfix operator
-- Consider using `++` and `--` to advance view (by modifying it, instead of creating new one). That way code using C++ pointers inside of array can be translated to Symta without that much fuzz.
-- Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`. Note: watch for `**` used as multiplication, rename it to `^^`.
+when no X:  f V = X.0 <= V
+- instead of `!A+B` use c-style `A+=B`
+- replace `not` with `!`
+- replace `<=` with `~`
+- replace `and` with `&&`
+- repalce `or` with `||`
+- optimize and fix ssa_form, so that will report wrong number of arguments
+- optimize No, by initing it to a well known memory location
+- inline C-code
+- inline optimizations for arithmetic and comparions operators, array size and array indexing
+- lexical targets for for optimizations in Spell of Mastery
+  1670: =
+  1268: <=
+  724: when
+  470: -
+  420: +
+  354: type.method ... = ... (around 2 kilobytes)
+  299: if/then/else
+  256: less
+  237: and (can be replaced with && or `et`)
+  167: .0 and .head
+  162: ?
+  116: not
+  96: `else if` (replace with elif)
+  89: size
+  83: or (can be replaced with -- or `an`)
+  54: f{Arg} ({[A-Ba-b0-9]\+}')
+  41: &
+  40: !.*+1
+  33: drop
+  24: take
+  21: pop
+  19: tail
+  5: ??
+  4: lead
+  1: ->
+- Xs.head = *Xs
+  Xs.tail = Xs++
+  Xs.drop{N} = Xs+N
+  Xs.take{N} = Xs%N
+- a way to define a block, such that all methods inside of it belong to some class
+  +point
+  `+` A B = ...
+  -point
+- Consider using  `*` to access the head element: *Xs would be the same as Xs.head or Xs.0. Currently *Xs is unused. Xs.0 and Xs.head are used 180 times in Spell of Mastery. Stuff like  `Xs.(Ys.0)` could be rewritten to `Xs.*Ys`.
 - `pop` is relatively inefficient, so should be replaced by pointer
 - `done` and `pass` for `dup` and `map` macros, where these keyword will yield alternative value or skip value.
 - recompile dependent modules only when exports list changes
