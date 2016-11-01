@@ -423,7 +423,7 @@ expand_colon_r E Found =
 | Expr = E.drop{P+1}
 | G = 'G'.rand
 | Found Name G
-| [@E.take{P}.tail ['|' ['<=' [G] Expr] G]]
+| [@E.take{P} ['|' ['<=' [G] Expr] G]]
 
 `:` A B =
 | Name = 0
@@ -482,23 +482,9 @@ expand_method_arg Expr =
   [`^` A B] | [B @As A]
   Else | if H.is_keyword then [H @As] else [_mcall H '{}' @As]
 
-`!!` @As =
-| Ys = map A As A
-| V = No
-| P = As.locate{$0[`!` X] =>| V<=X; 1}
-| when no P: mex_error "invalid !! - no ! in [As]"
-| Ys.P <= V
-| expand_assign V Ys
-
 is_incut X = case X [`@` Xs] 1
 
-`[]` @Xs =
-| Save = 0
-| As = map A Xs: case A
-                 ['!!' '@' ['!' X]] | Save <= X
-                                    | ['@' X]
-                 Else | A
-| when Save: leave: form: Save <= `[]` $@As
+`[]` @As =
 | IncutCount = As.count{&is_incut}
 | when IncutCount >< 0: leave [_list @As]
 | when IncutCount >< 1
@@ -698,7 +684,6 @@ expand_block_item_method Type Name Args Body =
 
 expand_block_item Expr =
 | Y = case Expr
-  [`=` [`!!` [`!` Place]] Value] | [No (expand_assign Place Value)]
   [`=` [[`.` Type Method] @Args] Body] | expand_block_item_method Type Method Args Body
   [`=` [Name @Args] Value]
     | if Name.is_keyword then expand_block_item_fn Name Args Value
@@ -1009,7 +994,7 @@ on @Xs X = [X @Xs]
 export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
        'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
-       '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>' '!!'
+       '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>'
        '+=' '-=' '*=' '/=' '%=' '++' '--'
        '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
        'ffi_begin' 'ffi' 'min' 'max' 'swap' '~' 'have' 'source_' 'compile_when' '"'

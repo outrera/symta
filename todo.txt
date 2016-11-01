@@ -1,5 +1,5 @@
-- instead of `!A+B` use c-style `A+=B`
-- instead of `!it` use `~it`
+- instead of `!it`, the `:` should use something else, as we want to free `!` for not
+- instead of `type.!method` use `type.~method`. That will make 
 - methods `list.e` and `hard_list.e` don't appear to be used that much
 - replace `not` with `!`
 - replace `<=` with `~`
@@ -16,6 +16,7 @@
   1268: <=
   724: when
   470: -
+  413: Me
   420: +
   354: type.method ... = ... (around 2 kilobytes)
   299: if/then/else
@@ -32,10 +33,12 @@
   53: ^
   41: &
   40: !.*+1
+  32: type.`!method`
   33: drop
   24: take
   21: pop
   19: tail
+  15: !it
   5: ??
   4: lead
   1: ->

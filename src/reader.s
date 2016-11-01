@@ -350,9 +350,6 @@ parse_strip X =
        | Head = X.head
        | Meta = when Head.is_token: Head.src
        | Ys = map V X: parse_strip V
-       | for V X
-         | when case V [U@Us] U^token_is{`!`} and not case X [Z@Zs] Z^token_is{`!`}:
-           | leave [`!!` @Ys]
        | when got Meta and Meta.2 <> '<none>': Ys <= meta Ys Meta
        | Ys
   else X
