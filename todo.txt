@@ -18,7 +18,8 @@
   470: -
   413: Me
   420: +
-  354: type.method ... = ... (around 2 kilobytes)
+  354: type.method ... = ... (around 2 kilobytes); provide `methods` keyword
+  324: arg/Value ([^a-zA-Z.][a-z][A-Za-z]*/)
   299: if/then/else
   256: less
   237: and (can be replaced with && or `et`)
@@ -39,6 +40,7 @@
   21: pop
   19: tail
   15: !it
+  13: arg/(Expr)
   5: ??
   4: lead
   1: ->
