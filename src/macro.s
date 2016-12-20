@@ -417,7 +417,7 @@ let @As =
 
 expand_colon_r E Found =
 | less E.is_list: leave E
-| P = E.locate{$0 ["!" Y]=>Y.is_keyword}
+| P = E.locate{$0 ["@@" Y]=>Y.is_keyword}
 | less got P: leave: map X E: expand_colon_r X Found
 | Name = E.P.1
 | Expr = E.drop{P+1}

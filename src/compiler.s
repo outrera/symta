@@ -76,7 +76,8 @@ ssa_symbol K X Value =
 cstring_bytes S = [@S.list.map{C => C.code} 0]
 
 ssa_cstring Str =
-| when got!it GStrings.Str: leave it
+| It = GStrings.Str
+| when got It: leave It
 | as Name 'b'.rand:
   | GStrings.Str <= Name
   | push [Name Str^cstring_bytes] GBytes
@@ -194,14 +195,16 @@ ssa_apply K F As =
   | if F.is_keyword then ssa call K H else ssa call_tagged K H
 
 resolve_type Name =
-| when got!it GRTypes.Name: leave it.1
+| It = GRTypes.Name
+| when got It: leave It.1
 | N = GRTypesCount++
 | R = "ty\[[N]\]"
 | GRTypes.Name <= [N R Name^ssa_cstring]
 | R
 
 resolve_method Name =
-| when got!it GMethods.Name: leave it.1
+| It =  GMethods.Name
+| when got It: leave It.1
 | N = GMethodsCount++
 | R = "mt\[[N]\]"
 | GMethods.Name <= [N R Name^ssa_cstring]
@@ -389,7 +392,8 @@ ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
 ssa_text String =
-| when got!it GTextsMap.String: leave it
+| It = GTextsMap.String
+| when got It: leave It
 | push String^ssa_cstring GTexts
 | as Tx "tx\[[GTextsCount++]\]": GTextsMap.String <= Tx
 
@@ -482,7 +486,9 @@ ssa_fnmeta_entry Fn Name Size NArgs Origin =
 find_closes_meta Expr =
 | if Expr.is_meta then Expr.meta_
   else if Expr.is_list then
-   | for X Expr: when got!it find_closes_meta X: leave it
+   | for X Expr:
+     | It = find_closes_meta X
+     | when got It: leave It
    | No
   else No
 

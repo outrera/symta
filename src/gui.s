@@ -51,7 +51,7 @@ spacer.as_text = "#spacer{[$w] [$h]}"
 
 type tabs.~{Init Tabs} tab all/Tabs | $pick{Init}
 tabs.pick TabName =
-| when $tab: when got!it get_gui: it.focus_widget <= No
+| when $tab: when got@@it get_gui: it.focus_widget <= No
 | $tab <= $all.TabName
 | when no $tab: bad "tabs.pick: no [TabName]"
 tabs.as_text = "#tabs{[$tab]}"
@@ -108,7 +108,7 @@ type dlg.widget{Xs w/No h/No} w/W h/H ws items rs
 | $ws <= Xs{[X Y W]=>[X Y (meta W [0 0 1 1])]}
 | $items <= $ws{}{?2}.flip
 dlg.render =
-| when got!it $items.locate{?above_all}:
+| when got@@it $items.locate{?above_all}:
   | swap $items.0 $items.it
   | swap $ws.($ws.size-1) $ws.($ws.size-it-1)
   | $items.0.above_all <= 0
@@ -175,7 +175,7 @@ gui.render =
   | FB <= gfx W H
   | $fb <= FB
 | FB.blit{0 0 R}
-| when got!fw $focus_widget:
+| when got@@fw $focus_widget:
   | when fw.wants_focus_rect
     | P = $focus_xy+[fw.x fw.y]
     | WH = if fw.w and fw.h then [fw.w fw.h] else $focus_wh

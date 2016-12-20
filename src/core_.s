@@ -128,10 +128,13 @@ text.is_keyword = not: $size and $0.is_upcase
 
 text.trim s/' ' i/0 l/1 r/1 =
 | Xs = $list
-| when L: while!it case Xs [&S@Zs] Zs: Xs <= it
+| when L: 
+  | It = case Xs [&S@Zs] Zs
+  | while It: Xs <= It
 | when R
   | Xs <= Xs.flip
-  | while!it case Xs [&S@Zs] Zs: Xs <= it
+  | It = case Xs [&S@Zs] Zs
+  | while It: Xs <= It
   | Xs <= Xs.flip
 | Xs.text
 
@@ -427,13 +430,20 @@ text.locate F =
 
 list.find F =
 | if F.is_fn
-  then for(I=0; not $end; I++): when F!it Me^pop: leave it
-  else for(I=0; not $end; I++): when `><`F !it Me^pop: leave it
+  then for(I=0; not $end; I++):
+  | It = Me^pop; when F It: leave It
+  else for(I=0; not $end; I++):
+  | It = Me^pop
+  | when F><It: leave It
 
 hard_list.find F =
 | if F.is_fn
-  then | times I $size: when F!it $I: leave it
-  else | times I $size: when `><`F !it $I: leave it
+  then | times I $size:
+         | It = $I
+         | when F It: leave It
+  else | times I $size:
+         | It = $I
+         | when F><It: leave It
 
 text.list = dup I $size $I
 
@@ -564,7 +574,7 @@ table.del K =
 | Me
 table._ Method Args =
 | if Args.size > 1
-  then Args.0.(Method^_method_name.tail) <= Args.1 // strip `!`
+  then Args.0.(Method^_method_name.tail) <= Args.1 // strip `assing indicator`
   else Me.(Method^_method_name)
 table.size = $buckets.map{X => if got X then X.size else 0}.sum
 table.list = $buckets.skip{No}.join
