@@ -1,4 +1,5 @@
-- instead of `it?`, the `:` should use something else, as we want to free `!` for not. Use `~`, which is currently used for name match hole match
+- instead of `it?`, the `:` should use something else, as we want to free `!` for not. Use @@
+- make local copies of symta releases
 - instead of `type.!method` use `type.~method`. That will make 
 - methods `list.e` and `hard_list.e` don't appear to be used that much
 - replace `not` with `!`
