@@ -5,6 +5,10 @@ GInput = No
 GOutput = No
 
 type text_stream{T O} chars/T.list len/T.size off last/No row col origin/O
+| DD = (#0d).char //allows reading windows line encoded files
+| $chars <= $chars.skip{?><DD}
+| $len <= $chars.size
+
 text_stream.`{}` K = $chars.K
 text_stream.peek = when $off < $len: $chars.($off)
 text_stream.next =

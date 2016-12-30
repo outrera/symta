@@ -251,11 +251,11 @@ Another secret, the `:` operator hides, is the subexpression binding:
 Words = No
 get_words = Words
 
-when got !it get_words: say it
+when got @@it get_words: say it
 Words <= [a list of words]
-when got !it get_words: say it
+when got @@it get_words: say it
 ```
-The `got` checks if value doesn't equal `No`, while `!it` binds the result of get_words to `it` (before passing it to got), and exposes this variable for the right hand side of `:`. Note that variable name before `!` should start from a lowercase letter, liket `it`.
+The `got` checks if value doesn't equal `No`, while `@@it` binds the result of get_words to `it` (before passing it to got), and exposes this variable for the right hand side of `:`. Note that variable name before `@@` should start from a lowercase letter, liket `it`.
 
 
 Looping
