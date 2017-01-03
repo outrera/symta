@@ -57,7 +57,7 @@ init_tokenizer =
          `+=` `-=` `*=` `/=` `%=`
          `---` `+++` `&&&` `<<<` `>>>` `^^` `..` `++` `--`
          `><` `<>` `<` `>` `<<` `>>`
-         `\\` `$` `@` `&` `!` `@@`
+         `\\` `$` `@` `&` `@@`
          (() end)
          `)` (`(` $(R O => [`()` (read_list R O ')')]))
          `]` (`[` $(R O => [`[]` (read_list R O ']')]))
@@ -275,7 +275,7 @@ binary_loop Ops Down E =
 parse_binary Down Ops = binary_loop Ops Down: &Down or leave 0
 
 parse_dollar =
-| O = parse_op [`$` negate `\\` `@` `&` `!` `@@`] or leave (parse_term)
+| O = parse_op [`$` negate `\\` `@` `&` `@@`] or leave (parse_term)
 | when O^token_is{negate}: leave O^parse_negate
 | [O (parse_dollar or parser_error "no operand for" O)]
 parse_dot = parse_binary &parse_dollar [`.` `^` `->` `{}`]
@@ -284,7 +284,7 @@ parse_suffix_loop Ops E =
 | parse_suffix_loop Ops [O E]
 parse_suffix = parse_suffix_loop [`++` `--`]: parse_dot or leave 0
 parse_prefix =
-| O = parse_op [negate `\\` `@` `&` `!` `@@`] or leave (parse_suffix)
+| O = parse_op [negate `\\` `@` `&` `@@`] or leave (parse_suffix)
 | when O^token_is{negate}: leave O^parse_negate
 | [O (parse_prefix or parser_error "no operand for" O)]
 parse_pow = parse_binary &parse_prefix [`^^`]
