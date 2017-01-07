@@ -1,12 +1,7 @@
-- save #0d
-- make local copies of symta releases
-- default version should ignore #0d
-- instead of `type.!method` use `type.~method`. That will make 
-- methods `list.e` and `hard_list.e` don't appear to be used that much
-- replace `not` with `!`
-- replace `<=` with `~`
-- replace `and` with `&&`
-- replace `or` with `||`
+- optimize build dependencies being recompiled when not required (ensure to check export list)
+- instead of `type.!method` use `type.=method`. That will make more sense
+- reuse `!` for list splicing pythno style
+- methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
 - optimize and fix ssa_form, so that will report wrong number of arguments
 - optimize No, by initing it to a well known memory location
 - only symbols referenced inside of a closure should be allocated on heap.
