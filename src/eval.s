@@ -94,6 +94,8 @@ compile_module_sub Name =
       | when DstFile^newerThan{SrcFile} and CompiledDeps.all{X => got X and DstFile^newerThan{X}}:
         | leave DstFile
     | Expr = load_symta_file SrcFile
+    //| case Expr.last [export @Ept]
+    //  | say Name,Ept
     | Deps = compile_expr Name DstFile [`|` @Expr]
     | DepFile.set{Deps.text{' '}}
     | leave DstFile

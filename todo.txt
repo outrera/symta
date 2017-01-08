@@ -1,4 +1,6 @@
-- optimize build dependencies being recompiled when not required (ensure to check export list)
+- optimize build dependencies being recompiled when not required.
+  ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
+ 
 - instead of `type.!method` use `type.=method`. That will make more sense
 - reuse `!` for list splicing pythno style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
