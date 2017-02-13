@@ -1,5 +1,5 @@
 cflags="-O1 -Wno-return-type -Wno-pointer-sign -I ./runtime"
-bs="bootstrap/c/"
+bs="bootstrap/"
 echo "compiling runtime"
 gcc ${cflags} runtime/runtime.c -o symta
 mkdir lib

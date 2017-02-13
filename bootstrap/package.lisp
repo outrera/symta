@@ -1,1 +1,0 @@
-(defpackage :symta (:use :cl))
