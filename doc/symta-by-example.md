@@ -184,14 +184,14 @@ After all, Symta is a list processing language, so it provides a concise way to 
 Xs = [hello world 123] // create a simple list with three values
 Ys = [an other list]
 Zs = [@Xs @Ys] // Zs would be concatenation of two lists
-[456 @!Ys 789]
+Ys <= [456 @Ys 789]
 
 say "Xs: [Xs]"
 say "Ys: [Ys]"
 say "Zs: [Zs]"
 ```
 
-As always Symta doesn't requre quotes around lowercase symbols, therefore [a list of bare words] is perfectly valid. The `[456 @!Ys 789]` adds two numbers to both ends of `Ys` and stores the result back into `Ys` (remember the `!`)
+As always Symta doesn't requre quotes around lowercase symbols, therefore [a list of bare words] is perfectly valid. The `Ys <= [456 @Ys 789]` adds two numbers to both ends of `Ys` and stores the result back into `Ys`
 
 More basic way to access lists elements would be through index operator - `.`:
 ```
@@ -281,7 +281,7 @@ Symta also provides simpler and more verbose loop constructs - gotoes (see Macro
 I = 0
 while I < 10
 | say I
-| !I + 1
+| I++
 ```
 
 Here the `|` acts like off-side rule or semicolon with curly braces in other languages. The `|`s at the same indentation level are taken as a single sequence of statements.
@@ -294,17 +294,17 @@ say Xs{X => X*X}
 
 The `=>` is the lambda operator, which expresses anonymous function. In our case it take argument `X` and returns `X*X`. In case of `{}`, there is a shorthand for that: `Xs{?*?}`, which is equivalent to `Xs{X => X*X}`
 
-The subexpression binding operator `!` available in the context of `:` is especially useful with looping:
+The subexpression binding operator `@@` available in the context of `:` is especially useful with looping:
 ```
 Xs = [0 1 2 3 No 4 5 6]
-while not Xs.end and got !it pop Xs: say it //pints 0 1 2 3
+while not Xs.end and got @@it pop Xs: say it //pints 0 1 2 3
 ```
 
 Here we process values of `Xs` until `No` is encountered or Xs is over. This syntax is more flexible, than usual anaphoric macros available in Lisp-based languages or Rust's `while let Some(elem) = iterator.next()`
 
 Finally, there is C-style for loop:
 ```
-for (I=0; I<10; !I+1)
+for (I=0; I<10; I++)
 | when I><4: pass
 | when I><7: done
 | say I
@@ -653,7 +653,7 @@ Core Library
 ------------------------------
 This section provides a quick reference of the content of the Symta's standard library, defined in cors_.s, rt_.s and macro.s files.
 
-`f A B ... C: g D E ... F` - same as `f A B ... C (g D E ... F)`, but also binds sub expressions, like `when got!it get_value: process it`
+`f A B ... C: g D E ... F` - same as `f A B ... C (g D E ... F)`, but also binds sub expressions, like `when got@@it get_value: process it`
 
 `&function_name` - gets value of a function, instead of calling it
 `&FunctionName` - calls a function, referenced by `FunctionName`
@@ -808,9 +808,9 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `Item^~{A Default}` - if Item is `A`, then return `B`, otherwise return `Item`
 
-`for (I=0; I<N; !I+1): process I` - C-style for-loop, equivalent to `I=0; while I<N | process I; !I+1`
+`for (I=0; I<N; I++): process I` - C-style for-loop, equivalent to `I=0; while I<N | process I; I++`
 
-`map (I=0; I<N; !I+1): process I` - same as above, but collects the result of `process I`
+`map (I=0; I<N; I++): process I` - same as above, but collects the result of `process I`
 
 
 Loop control macros mexlets (available inside of `while`, `till` and `for`)

@@ -30,7 +30,7 @@ widget.popup = 0
 widget.infoline = '' //text to draw at info line
 widget.pointer = 0
 widget.parent = 
-widget.`!parent` P = 
+widget.`=parent` P = 
 widget.itemAt Point XY WH =
 | Items = $items
 | when no Items: leave [Me XY WH]

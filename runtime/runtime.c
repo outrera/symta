@@ -691,11 +691,11 @@ BUILTIN2("bytes.`.`",bytes_get,C_ANY,o,C_INT,index)
     bad_call(REGS_ARGS(P),P);
   }
 RETURNS(FIXNUM(BYTES_DATA(o)[idx]))
-BUILTIN3("bytes.`!`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
+BUILTIN3("bytes.`=`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
   intptr_t i = UNFIXNUM(index);
   if (BYTES_SIZE(o) <= (uintptr_t)i) {
     fprintf(stderr, "list !: index out of bounds\n");
-    TEXT(P, "!");
+    TEXT(P, "=");
     bad_call(REGS_ARGS(P),P);
   }
   BYTES_DATA(o)[i] = (uint8_t)UNFIXNUM(value);
@@ -790,13 +790,13 @@ BUILTIN2("view.`.`",view_get,C_ANY,o,C_INT,index)
     bad_call(REGS_ARGS(P),R);
   }
 RETURNS(VIEW_REF(o, start, UNFIXNUM(index)))
-BUILTIN3("view.`!`",view_set,C_ANY,o,C_INT,index,C_ANY,value)
+BUILTIN3("view.`=`",view_set,C_ANY,o,C_INT,index,C_ANY,value)
   uint32_t start = VIEW_START(o);
   uint32_t size = VIEW_SIZE(o);
   void *p;
   if (size <= (uint32_t)(uintptr_t)index) {
     fprintf(stderr, "view !: index out of bounds\n");
-    TEXT(P, "!");
+    TEXT(P, "=");
     bad_call(REGS_ARGS(P),P);
   }
   start += UNFIXNUM(index);
@@ -865,12 +865,12 @@ BUILTIN2("list.`.`",list_get,C_ANY,o,C_INT,index)
     bad_call(REGS_ARGS(P),P);
   }
 RETURNS(REF(o, UNFIXNUM(index)))
-BUILTIN3("list.`!`",list_set,C_ANY,o,C_INT,index,C_ANY,value)
+BUILTIN3("list.`=`",list_set,C_ANY,o,C_INT,index,C_ANY,value)
   void **p;
   intptr_t i;
   if (LIST_SIZE(o) <= (uintptr_t)index) {
     fprintf(stderr, "list !: index out of bounds\n");
-    TEXT(P, "!");
+    TEXT(P, "=");
     bad_call(REGS_ARGS(P),P);
   }
   p = (void*)O_PTR(o);
@@ -2126,7 +2126,7 @@ static void init_types(api_t *api) {
   METHOD_FN("end", 0, 0, 0, b_list_end, 0, 0, b_view_end, b_cons_end, 0);
   METHOD_FN("size", 0, 0, 0, b_list_size, b_fixtext_size, b_text_size, b_view_size, 0, 0);
   METHOD_FN(".", 0, 0, 0, b_list_get, b_fixtext_get, b_text_get, b_view_get, 0, 0);
-  METHOD_FN("!", 0, 0, 0, b_list_set, 0, 0, b_view_set, 0, 0);
+  METHOD_FN("=", 0, 0, 0, b_list_set, 0, 0, b_view_set, 0, 0);
   METHOD_FN("clear", 0, 0, 0, b_list_clear, 0, 0, 0, 0, 0);
   METHOD_FN("hash", b_int_hash, 0, 0, 0, b_fixtext_hash, b_text_hash, 0, 0, b_void_hash);
   METHOD_FN("code", 0, 0, 0, 0, b_fixtext_code, 0, 0, 0, 0);
@@ -2159,7 +2159,7 @@ static void init_types(api_t *api) {
   METHOD_FN1("_", T_BYTES, b_sink);
   METHOD_FN1("size", T_BYTES, b_bytes_size);
   METHOD_FN1(".", T_BYTES, b_bytes_get);
-  METHOD_FN1("!", T_BYTES, b_bytes_set);
+  METHOD_FN1("=", T_BYTES, b_bytes_set);
   METHOD_FN1("clear", T_BYTES, b_bytes_clear);
   METHOD_FN1("utf8", T_BYTES, b_bytes_utf8);
 

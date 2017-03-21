@@ -25,7 +25,7 @@ type gfx.widget.no_copy{@As} handle w h
 | $h == gfx_h $handle
 gfx.free = free_gfx $handle
 gfx.xy = [(gfx_x $handle) (gfx_y $handle)]
-gfx.`!xy` [X Y] = gfx_set_xy $handle X Y
+gfx.`=xy` [X Y] = gfx_set_xy $handle X Y
 gfx.get X Y = gfx_get $handle X Y
 gfx.set X Y Color = gfx_set $handle X Y Color
 gfx.clear Color = gfx_clear $handle Color
@@ -42,12 +42,12 @@ gfx.cmap raw/0 =
 | when Raw: leave P
 | less P: leave 0
 | dup I 256: _ffi_get uint32_t P I
-gfx.`!cmap` NewCM =
+gfx.`=cmap` NewCM =
 | when NewCM.size > 256: bad "cant set color map with more than 256 colors"
 | P = gfx_enable_cmap $handle
 | for [I E] NewCM.i: _ffi_set uint32_t P I E
 gfx.`zbuffer` = gfx_get_zdata $handle
-gfx.`!zbuffer` ZData = gfx_set_zdata $handle ZData
+gfx.`=zbuffer` ZData = gfx_set_zdata $handle ZData
 gfx.rect X Y W H =
 | gfx_set_blit_rect $handle X Y W H
 | Me

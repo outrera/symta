@@ -594,8 +594,8 @@ expand_assign Place Value =
                      | Fields = GTypes.Type
                      | P = got Fields and Fields.locate{B}
                      | when got P: leave [_dset A P Value]
-                   | [_mcall A "![B]" Value]
-              else [_mcall A "!" B Value]
+                   | [_mcall A "=[B]" Value]
+              else [_mcall A "=" B Value]
   [`$` Field] | expand_assign [`.` \Me Field] Value
   Else | [_set Place Value]
 
@@ -662,7 +662,7 @@ type Name @Fields =
             [`=` [[`.` Name "is_[Name]"]] 1]
             [`=` [[`.` '_' "is_[Name]"]] 0]
             @(map [I F] Fs.i [`=` [[`.` Name F]]  [_dget 'Me' I]])
-            @(map [I F] Fs.i [`=` [[`.` Name "![F]"] V]  [_dset 'Me' I V]])
+            @(map [I F] Fs.i [`=` [[`.` Name "=[F]"] V]  [_dset 'Me' I V]])
             @Heir
             ]]
 

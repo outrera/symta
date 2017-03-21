@@ -555,7 +555,7 @@ table.`.` K =
 | when no Xs: leave No
 | for X Xs: when X.0 >< K: leave X.1
 | No
-table.`!` K V =
+table.`=` K V =
 | Bs = $buckets
 | H = K.hash%Bs.size
 | Xs = Bs.H
