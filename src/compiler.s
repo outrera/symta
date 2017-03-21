@@ -39,14 +39,14 @@ get_parent_index Parent =
 | P = GClosure.0.locate{E => Parent >< E}
 | when got P: leave P
 | Parents = GClosure.head
-| GClosure <= [[@Parents Parent] @GClosure.tail]
+| GClosure == [[@Parents Parent] @GClosure.tail]
 | Parents.size
 
 path_to_sym X Es =
 | when Es.end: leave No
 | [Head@Tail] = Es
 | when case Head [U@Us] U >< GAll // reference to the whole arg-list?
-  | Head <= Head.1
+  | Head == Head.1
   | less Head.0 >< X: leave (path_to_sym X Tail)
   | when Es^address >< GEnv^address: leave [GAll No] // argument of the current function
   | leave [GAll (get_parent_index Head.1)]
@@ -79,7 +79,7 @@ ssa_cstring Str =
 | It = GStrings.Str
 | when got It: leave It
 | as Name 'b'.rand:
-  | GStrings.Str <= Name
+  | GStrings.Str == Name
   | push [Name Str^cstring_bytes] GBytes
 
 ssa_var Name = as V Name.rand: ssa var V
@@ -104,9 +104,9 @@ ssa_fn_body K F Args Body O Prologue Epilogue =
   | when Prologue: ssa label GCurFn
   | when Prologue
     | NArgs = if Args.is_text then -1 else Args.size 
-    | GFnMeta.F <= fnmeta nargs/NArgs origin/GSrc
+    | GFnMeta.F == fnmeta nargs/NArgs origin/GSrc
     | when NArgs<>-1: ssa check_nargs NArgs
-  | when no K: K <= ssa_var result
+  | when no K: K == ssa_var result
   | if Prologue then let GCurProperFn GCurFn | ssa_expr K Body
     else ssa_expr K Body
   | when Epilogue: ssa return K
@@ -123,7 +123,7 @@ ssa_fn K Args Expr O =
 | push Body GFns
 | NParents = Cs.size
 | ssa closure K F NParents
-| GFnMeta.F.size <= NParents
+| GFnMeta.F.size == NParents
 | for [I C] Cs.i: if C^address >< GCurFn^address // self?
                   then ssa stor K I \E
                   else ssa copy K I \P C^get_parent_index
@@ -145,7 +145,7 @@ ssa_hoist_decls Expr Hoist = // combine layered lets into single one
 | case Expr
      [_fn @Xs] | Expr
      [[_fn As @Xs] @Vs]
-       | Vs <= Vs.map{V => ssa_hoist_decls V Hoist}
+       | Vs == Vs.map{V => ssa_hoist_decls V Hoist}
        | if As.is_text
          then | Hoist [As]
               | [_progn [_set As [_list @Vs]]
@@ -157,8 +157,8 @@ ssa_hoist_decls Expr Hoist = // combine layered lets into single one
 
 ssa_let K Args Vals Xs =
 | Body = ssa_hoist_decls [_progn @Xs]: Hs =>
-         | Args <= [@Args @Hs]
-         | Vals <= [@Vals @Hs.map{H => 0}]
+         | Args == [@Args @Hs]
+         | Vals == [@Vals @Hs.map{H => 0}]
 | when Args.size >< 0
   | ssa_expr K Body
   | leave No
@@ -199,7 +199,7 @@ resolve_type Name =
 | when got It: leave It.1
 | N = GRTypesCount++
 | R = "ty\[[N]\]"
-| GRTypes.Name <= [N R Name^ssa_cstring]
+| GRTypes.Name == [N R Name^ssa_cstring]
 | R
 
 resolve_method Name =
@@ -207,25 +207,25 @@ resolve_method Name =
 | when got It: leave It.1
 | N = GMethodsCount++
 | R = "mt\[[N]\]"
-| GMethods.Name <= [N R Name^ssa_cstring]
+| GMethods.Name == [N R Name^ssa_cstring]
 | R
 
 ssa_import K Lib Symbol =
-| Lib <= Lib.1
-| Symbol <= Symbol.1
+| Lib == Lib.1
+| Symbol == Symbol.1
 | Key = "[Lib]::[Symbol]"
 | Im = GImports.Key
 | when no Im:
   | N = GImportsCount++
   | R = "im\[[N]\]"
-  | Im <= [N R Key GImportLibs.Lib Symbol^ssa_cstring]
-  | GImports.Key <= Im
+  | Im == [N R Key GImportLibs.Lib Symbol^ssa_cstring]
+  | GImports.Key == Im
 | ssa move K Im.1
 
 ssa_apply_method K Name O As =
 | ssa bpush
 | let GBases [[] @GBases]: named block
-  | As <= [O@As]
+  | As == [O@As]
   | Vs = map A As: ev A
   | E = ssa_var env
   | ssa arl E As.size
@@ -239,12 +239,12 @@ ssa_set K Place Value =
 
 // FIXME: _label should be allowed only inside of _progn
 ssa_progn K Xs =
-| when Xs.end: Xs <= [[]]
+| when Xs.end: Xs == [[]]
 | D = 'dummy'
-| for X Xs: case X [_label Name] | GBases <= [[Name @GBases.head] @GBases.tail]
+| for X Xs: case X [_label Name] | GBases == [[Name @GBases.head] @GBases.tail]
 | till Xs.end
   | X = pop Xs
-  | when Xs.end: D <= K
+  | when Xs.end: D == K
   | ssa_expr D X
   | when Xs.end and case X [_label@Zs] 1: ssa_atom D No
 
@@ -254,7 +254,7 @@ compiler_error Msg =
 | halt
 
 expr_symbols_sub Expr Syms =
-  if Expr.is_text then Syms.Expr <= 1
+  if Expr.is_text then Syms.Expr == 1
   else when Expr.is_list: map X Expr: expr_symbols_sub X Syms 
 
 expr_symbols Expr =
@@ -275,16 +275,16 @@ uniquify_let Xs =
     | V = pop Vs
     | case V
         [_import [_quote X] [_quote Y]]
-          | when no GImportLibs.X: GImportLibs.X <= GImportLibsCount++
+          | when no GImportLibs.X: GImportLibs.X == GImportLibsCount++
           | when got Used.A
             | push A NewAs
             | push V NewVs
         Else
           | push A NewAs
           | push V NewVs
-  | As <= NewAs.flip
-  | Vs <= NewVs.flip
-  | Xs <= [[_fn As @Body] @Vs]
+  | As == NewAs.flip
+  | Vs == NewVs.flip
+  | Xs == [[_fn As @Body] @Vs]
 | Xs
 
 uniquify_form Expr =
@@ -301,14 +301,14 @@ uniquify_form Expr =
         | Bs = Rs.map{?.1}
         | Bs = if As.is_text then Bs.0 else Bs
         | [_fn Bs @Body.map{&uniquify_expr}]
-    [_quote X] | when X.is_text: GHoistedTexts.X <= @rand 'T'
+    [_quote X] | when X.is_text: GHoistedTexts.X == @rand 'T'
                | Expr
     [_label X] Expr
     [_goto X] Expr
     [_call @Xs] Xs^uniquify_form
-    Xs | Xs <= uniquify_let Xs
+    Xs | Xs == uniquify_let Xs
        | Xs.map{&uniquify_expr}
-| when got Src: R <= meta R Src
+| when got Src: R == meta R Src
 | R
 
 uniquify_name S = for Closure GUniquifyStack: for X Closure: when X.0 >< S: leave X.1
@@ -341,7 +341,7 @@ ssa_data K Type Xs =
 | TypeName = Type.1
 | TypeVar = resolve_type TypeName
 | when no GTypeParams.TypeName:
-  | GTypeParams.TypeName <= 1
+  | GTypeParams.TypeName == 1
   | ssaI set_type_params TypeVar Size Type.1^ssa_text
 | ssa alloc_data K TypeVar Size
 | for [I X] Xs.i: ssa dinit K I X^ev
@@ -378,7 +378,7 @@ ssa_goto Name =
   | ssa bpop
 | ssa jmp Name
 
-ssa_mark Name = GFnMeta.GCurProperFn.name <= Name
+ssa_mark Name = GFnMeta.GCurProperFn.name == Name
 
 ssa_fixed1 K Op X = ssa Op K X^ev
 ssa_fixed2 K Op A B = ssa Op K A^ev B^ev
@@ -395,7 +395,7 @@ ssa_text String =
 | It = GTextsMap.String
 | when got It: leave It
 | push String^ssa_cstring GTexts
-| as Tx "tx\[[GTextsCount++]\]": GTextsMap.String <= Tx
+| as Tx "tx\[[GTextsCount++]\]": GTextsMap.String == Tx
 
 ssa_ffi_var Type Name =
 | V = @rand v
@@ -403,9 +403,9 @@ ssa_ffi_var Type Name =
 | V
 
 ssa_ffi_call K Type F As =
-| F <= ev F
-| As <= map A As: ev A
-| Type <= map X Type.tail
+| F == ev F
+| As == map A As: ev A
+| Type == map X Type.tail
           | case X.1
             text | 'text_'
             ptr | 'voidp_'
@@ -469,7 +469,7 @@ ssa_form K Xs =
 
 ssa_atom K X =
 | if X.is_int then
-    | when X > #7FFFFFFF or X < -#7FFFFFFF: X <= "[X]LL" //FIXME: kludge
+    | when X > #7FFFFFFF or X < -#7FFFFFFF: X == "[X]LL" //FIXME: kludge
     | ssa ldfxn K X
   else if X.is_text then ssa_symbol K X No
   else if X >< No then ssa move K 'No'
@@ -496,8 +496,8 @@ peephole_optimize Xs =
 | Vs = t size/2000
 | Cs = t size/2000
 | for X Xs: when X.is_list and X.size:
-  if X.0><var then Vs.(X.1) <= 1
-  else for A X.tail: when A.is_text and got Vs.A: Cs.A <= Cs.A^~{0}+1
+  if X.0><var then Vs.(X.1) == 1
+  else for A X.tail: when A.is_text and got Vs.A: Cs.A == Cs.A^~{0}+1
 | Ys = []
 | till Xs.end:
   | X = pop Xs
@@ -509,7 +509,7 @@ peephole_optimize Xs =
         [[move &V T] [starg A B &V] @Zs]
           | when Cs.V><2
             | push [starg A B T] Ys
-            | Xs <= Zs
+            | Xs == Zs
             | pass
   | push X Ys
 | Ys.flip
@@ -539,16 +539,16 @@ produce_ssa Entry Expr =
       GHoistedTexts (t size/1000)
   | ssa entry Entry
   | Origin = find_closes_meta Expr
-  | less got Origin: Origin <= [-1 -1 unknown]
+  | less got Origin: Origin == [-1 -1 unknown]
   | R = ssa_var result
-  | Expr <= uniquify Expr
+  | Expr == uniquify Expr
   | ssa_expr R Expr
   | ssa return R
   | ssa entry setup
   | Libs = map K,N GImportLibs [K^ssa_cstring N]
   | Libs = Libs.sort{?1<??1}{?0}
-  | GFnMeta.setup <= fnmeta name/'<init>' size/0 nargs/0 origin/Origin
-  | GFnMeta.entry <= fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
+  | GFnMeta.setup == fnmeta name/'<init>' size/0 nargs/0 origin/Origin
+  | GFnMeta.entry == fnmeta name/'<toplevel>' size/0 nargs/0 origin/Origin
   | Types = map Name,[Index SN CStr] GRTypes: Index,CStr
   | Types = Types.sort{?0 < ??0}{?1}
   | Meths = map Name,[Index SN CStr] GMethods: Index,CStr
@@ -562,7 +562,7 @@ produce_ssa Entry Expr =
   | for X GInits.flip: push X GOut
   | ssa return_no_gc 0
   | Rs = [GOut@GFns].flip.join.flip
-  | Rs <= peephole_optimize Rs
+  | Rs == peephole_optimize Rs
   | [Header @Rs]
 
 GCompiled = No
@@ -607,11 +607,11 @@ ssa_to_c Xs = let GCompiled []
     | ArgsText = Args.text{', '}
     | ArgsTypesText = ArgsTypes.text{', '}
     | Call = "(([ResultType](*)([ArgsTypesText]))[F])([ArgsText]);"
-    | when got Dst: Call <= "[Dst] = [Call]"
+    | when got Dst: Call == "[Dst] = [Call]"
     | c "  [Call]"
   Else | cnorm X //FIXME: check if it is known and has correct argnum
 | c 'END_CODE'
-| GCompiled <=
+| GCompiled ==
    ['#include "symta.h"'
     @Decls.flip
     @TableDecls

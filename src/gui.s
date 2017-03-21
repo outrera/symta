@@ -51,18 +51,18 @@ spacer.as_text = "#spacer{[$w] [$h]}"
 
 type tabs.~{Init Tabs} tab all/Tabs | $pick{Init}
 tabs.pick TabName =
-| when $tab: when got@@it get_gui: it.focus_widget <= No
-| $tab <= $all.TabName
+| when $tab: when got@@it get_gui: it.focus_widget == No
+| $tab == $all.TabName
 | when no $tab: bad "tabs.pick: no [TabName]"
 tabs.as_text = "#tabs{[$tab]}"
 tabs._ Method Args =
-| Args.0 <= Args.0.tab
+| Args.0 == Args.0.tab
 | Args.apply_method{Method}
 
 type hidden.~{widget show/0} show/Show spacer/spacer{0 0}
 hidden.as_text = "#hidden{show/[$show] [$widget]}"
 hidden._ Method Args =
-| Args.0 <= if $show then Args.0.widget else Args.0.spacer
+| Args.0 == if $show then Args.0.widget else Args.0.spacer
 | Args.apply_method{Method}
 
 type canvas.widget{W H P} w/W h/H paint/P
@@ -73,8 +73,8 @@ layV.draw G X Y =
 | S = $spacing
 | Is = $items
 | Rs = Is{?render}
-| $w <= Rs{?w}.max
-| $h <= Rs{?h}.infix{S}.sum
+| $w == Rs{?w}.max
+| $h == Rs{?h}.infix{S}.sum
 | N = 0
 | for R Rs
   | W = R.w
@@ -84,15 +84,15 @@ layV.draw G X Y =
   | RY = N
   | G.blit{X+RX Y+RY R}
   | Rect.init{[RX RY W H]}
-  | N <= N+H+S
+  | N == N+H+S
 
 type layH.widget{Xs s/S} w/1 h/1 spacing/S items/Xs{(meta ? [0 0 1 1])}
 layH.draw G X Y =
 | S = $spacing
 | Is = $items
 | Rs = Is{?render}
-| $h <= Rs{?h}.max
-| $w <= Rs{?w}.infix{S}.sum
+| $h == Rs{?h}.max
+| $w == Rs{?w}.infix{S}.sum
 | N = 0
 | for R Rs
   | W = R.w
@@ -102,16 +102,16 @@ layH.draw G X Y =
   | RY = 0
   | G.blit{X+RX Y+RY R}
   | Rect.init{[RX RY W H]}
-  | N <= N+W+S
+  | N == N+W+S
 
 type dlg.widget{Xs w/No h/No} w/W h/H ws items rs
-| $ws <= Xs{[X Y W]=>[X Y (meta W [0 0 1 1])]}
-| $items <= $ws{}{?2}.flip
+| $ws == Xs{[X Y W]=>[X Y (meta W [0 0 1 1])]}
+| $items == $ws{}{?2}.flip
 dlg.render =
 | when got@@it $items.locate{?above_all}:
   | swap $items.0 $items.it
   | swap $ws.($ws.size-1) $ws.($ws.size-it-1)
-  | $items.0.above_all <= 0
+  | $items.0.above_all == 0
 | have $w: $ws{}{?0 + ?2.render.w}.max
 | have $h: $ws{}{?1 + ?2.render.h}.max
 | Me
@@ -153,16 +153,16 @@ type gui{Root cursor/host}
   click_time/(t)
   cursor/Cursor //defaut cursor
   host_cursor/0
-| GUI <= Me
-| $fb <= gfx 1 1
+| GUI == Me
+| $fb == gfx 1 1
 | show: Es => | GUI.input{Es}
               | GUI.render
 | when got $fb
   | $fb.free
-  | $fb <= No
+  | $fb == No
 | R = $result
-| $result <= No
-| GUI <= No
+| $result == No
+| GUI == No
 | leave R
 gui.render =
 | FB = $fb
@@ -172,8 +172,8 @@ gui.render =
 | H = R.h
 | when W <> FB.w or H <> FB.h:
   | FB.free
-  | FB <= gfx W H
-  | $fb <= FB
+  | FB == gfx W H
+  | $fb == FB
 | FB.blit{0 0 R}
 | when got@@fw $focus_widget:
   | when fw.wants_focus_rect
@@ -186,39 +186,39 @@ gui.render =
   | CG = if C then C else $cursor
   | when got CG and host <> CG:
     | when $host_cursor: show_cursor 0
-    | $host_cursor <= 0
+    | $host_cursor == 0
     | FB.blit{XY.0 XY.1 CG}
   | when host >< CG and not $host_cursor:
     | show_cursor 1
-    | $host_cursor <= 1
+    | $host_cursor == 1
     | Pop = 
   | when $popup
     | R = $popup.render
     | FB.blit{XY.0 XY.1-R.h R}
 | FB
 gui.add_timer Interval Handler =
-| Me.timers <= [@Me.timers [Interval (clock)+Interval Handler]]
+| Me.timers == [@Me.timers [Interval (clock)+Interval Handler]]
 gui.update_timers Time =
 | Ts = $timers
 | less Ts.size: leave 0
-| $timers <= [] // user code can insert additional timers
+| $timers == [] // user code can insert additional timers
 | Remove = []
 | for [N T] Ts.i: case T [Interval Expiration Fn]:
   | when Time >> Expiration
-    | if got Fn{} then Ts.N.1 <= (Time)+Interval
+    | if got Fn{} then Ts.N.1 == (Time)+Interval
       else push N Remove
 | when Remove.size
   | N = 0
-  | Ts <= Ts.skip{X=>Remove.locate{N++}^got}
-| when $timers.size: Ts <= [@Ts @$timers]
-| $timers <= Ts
+  | Ts == Ts.skip{X=>Remove.locate{N++}^got}
+| when $timers.size: Ts == [@Ts @$timers]
+| $timers == Ts
 | 0
 gui.input Es =
 | T = clock
 | $update_timers{T}
 | [NW NW_XY NW_WH] = $root.itemAt{$mice_xy [0 0] [0 0]} //new widget
-| $popup <= NW.popup
-| $widget_cursor <= NW.pointer
+| $popup == NW.popup
+| $widget_cursor == NW.pointer
 | for E Es: case E
   [mice_move XY]
     | $mice_xy.init{XY}
@@ -228,41 +228,41 @@ gui.input Es =
     | MW = $mice_widget
     | when MW^address <> NW^address:
       | when got MW: MW.input{[mice over 0 XY]}
-      | $mice_widget <= NW
+      | $mice_widget == NW
       | NW.input{[mice over 1 XY]}
   [mice Button State]
     | MP = $mice_xy
     | MW = $mice_widget
     | when MW^address <> NW^address:
       | when got MW: MW.input{[mice over 0 MP]}
-      | $mice_widget <= NW
+      | $mice_widget == NW
       | NW.input{[mice over 1 MP]}
     | if $mice_focus
       then | LastClickTime = $click_time.Button
            | when got LastClickTime and T-LastClickTime < 0.25:
              | NW.input{[mice "double_[Button]" 1 MP-NW_XY]}
-           | $click_time.Button <= T
+           | $click_time.Button == T
            | $mice_focus.input{[mice Button State MP-$mice_focus_xy]}
-           | less State: $mice_focus <= 0
-      else | $mice_focus <= NW
+           | less State: $mice_focus == 0
+      else | $mice_focus == NW
            | $mice_focus_xy.init{NW_XY}
            | NW.input{[mice Button State MP-NW_XY]}
     | when State and NW.wants_focus:
-      | $focus_xy <= NW_XY
-      | $focus_wh <= NW_WH
+      | $focus_xy == NW_XY
+      | $focus_wh == NW_WH
       | FW = $focus_widget
       | when FW^address <> NW^address:
         | when got FW: FW.input{[focus 0 MP-$focus_xy]}
-        | $focus_widget <= NW
+        | $focus_widget == NW
         | NW.input{[focus 1 MP-NW_XY]}
-  [key Key State] | $keys.Key <= State
+  [key Key State] | $keys.Key == State
                   | D = if got $focus_widget then $focus_widget else NW
                   | D.input{[key Key State]}
   Else |
 | No
 gui.exit @Result =
-| $result <= case Result [R](R) Else(No)
-| $fb <= No
+| $result == case Result [R](R) Else(No)
+| $fb == No
 
 // sleep for a number of seconds
 gui.sleep Seconds = show_sleep: @int Seconds*1000.0

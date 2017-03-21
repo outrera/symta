@@ -6,18 +6,18 @@ GOutput = No
 
 type text_stream{T O} chars/T.list len/T.size off last/No row col origin/O
 | DD = (#0d).char //allows reading windows line encoded files
-| $chars <= $chars.skip{?><DD}
-| $len <= $chars.size
+| $chars == $chars.skip{?><DD}
+| $len == $chars.size
 
 text_stream.`{}` K = $chars.K
 text_stream.peek = when $off < $len: $chars.($off)
 text_stream.next =
 | when $off < $len
-  | $last <= $chars.($off)
+  | $last == $chars.($off)
   | $col++
   | $off++
   | when $last >< '\n'
-    | $col <= 0
+    | $col == 0
     | $row++
   | $last
 text_stream.src = [$row $col $origin]
@@ -29,21 +29,21 @@ token_is What O = O.is_token and O.symbol >< What
 //FIXME: optimize memory usage
 add_lexeme Dst Pattern Type =
 | when Pattern.end
-  | Dst.'type' <= Type
+  | Dst.'type' == Type
   | leave No
 | [Cs@Next] = Pattern
 | Kleene = 0
-| case Cs [`&` X] | Cs <= X
-                  | Next <= \(@$Cs $@Next)
-          [`@` X] | Cs <= X
-                  | Kleene <= 1
-| when Cs.is_text: Cs <= Cs.list
+| case Cs [`&` X] | Cs == X
+                  | Next == \(@$Cs $@Next)
+          [`@` X] | Cs == X
+                  | Kleene == 1
+| when Cs.is_text: Cs == Cs.list
 | Cs = if Cs.is_list then Cs else [Cs]
 | for C Cs
   | T = Dst.C
   | when no T: 
-    | T <= if Kleene then Dst else t
-    | Dst.C <= T
+    | T == if Kleene then Dst else t
+    | Dst.C == T
   | add_lexeme T Next Type
 
 init_tokenizer =
@@ -53,7 +53,7 @@ init_tokenizer =
 | BinDigit = "01"
 | HeadChar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_?~"
 | TailChar = "[HeadChar][Digit]"
-| Ls = \(`+` `-` `*` `/` `%` `^` `.` `->` `|` `;` `,` `:` `=` `=>` `<=`
+| Ls = \(`+` `-` `*` `/` `%` `^` `.` `->` `|` `;` `,` `:` `=` `==` `=>`
          `+=` `-=` `*=` `/=` `%=`
          `---` `+++` `&&&` `<<<` `>>>` `^^` `..` `++` `--`
          `><` `<>` `<` `>` `<<` `>>`
@@ -74,12 +74,12 @@ init_tokenizer =
          (($HeadChar @$TailChar) symbol)
          )
 | Ss = \((`if` `if`) (`then` `then`) (`else` `else`) (`and` `and`) (`or` `or`) (`No` `void`))
-| GTable <= t
-| GSpecs <= t
-| for [A B] Ss: GSpecs.A <= B
+| GTable == t
+| GSpecs == t
+| for [A B] Ss: GSpecs.A == B
 | for L Ls
   | [Pattern Type] = if L.is_list then L else [L L]
-  | when Pattern.is_text: Pattern <= Pattern.list
+  | when Pattern.is_text: Pattern == Pattern.list
   | add_lexeme GTable Pattern Type
 
 read_token R LeftSpaced =
@@ -90,25 +90,25 @@ read_token R LeftSpaced =
 | C = No
 | Cs = []
 | while 1
-  | Cur <= Next
-  | C <= R.peek
-  | Next <= Next.C
+  | Cur == Next
+  | C == R.peek
+  | Next == Next.C
   | when no Next
     | Value = Cs.flip.text
     | Type = GSpecs.Value
-    | when no Type: Type <= Cur.'type'
+    | when no Type: Type == Cur.'type'
     | when Value >< '-' and LeftSpaced and C <> '\n' and C <> ' ':
-      | Type <= \negate
-    | when Type >< end and got C: Type <= 0
+      | Type == \negate
+    | when Type >< end and got C: Type == 0
     | less Type:
       | when Value><'' and C.size><1:
-        | C <= if C.code>#d then "[C] (#[C.code.x])" else "no-printable (#[C.code.x])"
+        | C == if C.code>#d then "[C] (#[C.code.x])" else "no-printable (#[C.code.x])"
       | R.error{"unexpected `[Value][C or '']`"}
     | when Type.is_fn
-      | Value <= Type R Value
+      | Value == Type R Value
       | when Value.is_token: leave Value
-      | Type <= Value.0
-      | Value <= Value.1
+      | Type == Value.0
+      | Value == Value.1
     | leave: token Type Value Src 0
   | push C Cs
   | R.next
@@ -122,7 +122,7 @@ add_bars Xs =
   | S = X.symbol
   | when (Col >< 0 or First) and S <> `|` and S <> `then` and S <> `else`:
     | push (token '|' '|' [Row Col-1 Orig] 0) Ys 
-    | First <= 0
+    | First == 0
   | push X Ys
 | Ys.flip
 
@@ -140,7 +140,7 @@ read_list R Open Close =
   | X = read_token R 0
   | when X^token_is{Close}: leave Xs.flip
   | when X^token_is{end}: GError "[Orig]:[Row],[Col]: unclosed `[Open]`"
-  | Xs <= [X@Xs]
+  | Xs == [X@Xs]
 
 spliced_string_normalize Xs =
 | Ys = Xs.skip{X => '' >< X}
@@ -155,26 +155,26 @@ read_string R Incut End =
   | less C >< Incut: R.next
   | case C
      `\\` | case R.next
-             `n` | L <= ['\n' @L]
-             `t` | L <= ['\t' @L]
-             `\\` | L <= ['\\' @L]
-             `[` | L <= ['[' @L]
-             `]` | L <= [']' @L]
-             `'` | L <= [`'` @L]
-             `"` | L <= [`"` @L]
-             C<&Incut+&End | L <= [C@L]
+             `n` | L == ['\n' @L]
+             `t` | L == ['\t' @L]
+             `\\` | L == ['\\' @L]
+             `[` | L == ['[' @L]
+             `]` | L == [']' @L]
+             `'` | L == [`'` @L]
+             `"` | L == [`"` @L]
+             C<&Incut+&End | L == [C@L]
              No | R.error{'EOF in string'}
-             Other | if Other><'`' then L <= ['`' @L]
+             Other | if Other><'`' then L == ['`' @L]
                      else R.error{"Invalid escape code: [Other]"}
      &End | Ys = [L.flip.text]
-          | when End >< '"': Ys <= spliced_string_normalize Ys
+          | when End >< '"': Ys == spliced_string_normalize Ys
           | leave Ys
-     &Incut | L <= L.flip.text
+     &Incut | L == L.flip.text
             | M = (read_token R 0).value
             | E = read_string R Incut End
             | leave: spliced_string_normalize [L M @E]
      No | R.error{'EOF in string'}
-     Else | L <= [C@L]
+     Else | L == [C@L]
 
 is_comment_char C = got C and C <> '\n'
 read_comment R Cs =
@@ -243,11 +243,11 @@ parse_term =
          `-` | leave Tok^parse_negate
          Else | push Tok GInput
               | leave 0
-| Tok.parsed <= [P]
+| Tok.parsed == [P]
 | Tok
 
 is_delim X = X.is_token and case X.symbol
-             `:`+`=`+`=>`+`<=`+`if`+`then`+`else`+`+=`+`-=`+`*=`+`/=`+`%=`
+             `:`+`=`+`==`+`=>`+`if`+`then`+`else`+`+=`+`-=`+`*=`+`/=`+`%=`
              1
 
 
@@ -262,8 +262,8 @@ binary_loop Ops Down E =
 | O = parse_op Ops or leave E
 | when O^token_is{`{}`}
   | As = parse_tokens O.value
-  | As <= if got As.find{&is_delim} then [As] else As //allows Xs.map{X=>...}
-  | O.parsed <= [`{}`]
+  | As == if got As.find{&is_delim} then [As] else As //allows Xs.map{X=>...}
+  | O.parsed == [`{}`]
   | leave: binary_loop Ops Down [O E @As]
 | B = &Down or parser_error "no right operand for" O
 | less O^token_is{'.'} and E^token_is{integer} and B^token_is{integer}:
@@ -299,23 +299,23 @@ parse_bool = parse_binary &parse_comma [`><` `<>` `<` `>` `<<` `>>`]
 
 parse_logic =
 | O = parse_op [`and` `or`] or leave (parse_bool)
-| GOutput <= GOutput.flip
+| GOutput == GOutput.flip
 | P = GInput.locate{&is_delim} //hack LL(1) to speed-up parsing
 | Tok = got P and GInput.P
 | when no P or got [`if` `then` `else` ].locate{X => Tok^token_is{X}}:
-  | GOutput <= [(parse_xs) GOutput O]
+  | GOutput == [(parse_xs) GOutput O]
   | leave 0
 | R = GInput.take{P}
-| GInput <= GInput.drop{P}
-| GOutput <= if Tok^token_is{`:`}
+| GInput == GInput.drop{P}
+| GOutput == if Tok^token_is{`:`}
              then [[O GOutput.tail R^parse_tokens] GOutput.head]
              else [[O GOutput R^parse_tokens]]
 | No
 
 parse_delim =
-| O = parse_op [`:` `=` `=>` `<=` `+=` `-=` `*=` `/=` `%=`] or leave (parse_logic)
+| O = parse_op [`:` `=` `==` `=>` `+=` `-=` `*=` `/=` `%=`] or leave (parse_logic)
 | Pref = if GOutput.size > 0 then GOutput.flip else []
-| GOutput <= [(parse_xs) Pref O]
+| GOutput == [(parse_xs) Pref O]
 | No
 
 parse_semicolon =
@@ -324,8 +324,8 @@ parse_semicolon =
 | when no P or M^token_is{`|`}: leave 0
 | L = parse_tokens GInput.take{P}
 | R = parse_tokens GInput.drop{P+1}
-| GInput <= []
-| GOutput <= if R.size and R.0^token_is{`;`}
+| GInput == []
+| GOutput == if R.size and R.0^token_is{`;`}
              then [@R.tail.flip L M]
              else [R L M]
 | No
@@ -354,7 +354,7 @@ parse_strip X =
        | Head = X.head
        | Meta = when Head.is_token: Head.src
        | Ys = map V X: parse_strip V
-       | when got Meta and Meta.2 <> '<none>': Ys <= meta Ys Meta
+       | when got Meta and Meta.2 <> '<none>': Ys == meta Ys Meta
        | Ys
   else X
 

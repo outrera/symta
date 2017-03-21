@@ -130,12 +130,12 @@ text.trim s/' ' i/0 l/1 r/1 =
 | Xs = $list
 | when L: 
   | It = case Xs [&S@Zs] Zs
-  | while It: Xs <= It
+  | while It: Xs == It
 | when R
-  | Xs <= Xs.flip
+  | Xs == Xs.flip
   | It = case Xs [&S@Zs] Zs
-  | while It: Xs <= It
-  | Xs <= Xs.flip
+  | while It: Xs == It
+  | Xs == Xs.flip
 | Xs.text
 
 list.replace A B = Me{|&A=>B; X=>X}
@@ -151,7 +151,7 @@ int.skip F = Me.list.skip{F}
 list.i = dup I $size: [I Me^pop]
 
 list.`.` K =
-| times I K: Me <= $tail
+| times I K: Me == $tail
 | $head
 
 list.del K = [@$take{K} @$drop{K+1}]
@@ -165,7 +165,7 @@ list.z = $2
 list.size =
 | S = 0
 | till $end
-  | Me <= $tail
+  | Me == $tail
   | S++
 | S
 
@@ -179,7 +179,7 @@ bytes.bytes = Me
 
 list.bytes =
 | N = $size
-| as Ys N.bytes: times I N: Ys.I <= pop Me
+| as Ys N.bytes: times I N: Ys.I == pop Me
 
 list.utf8 = $bytes.utf8
 
@@ -203,8 +203,8 @@ list.`<` Xs =
 | A = 0
 | B = 0
 | times I $size:
-  | A <= $I
-  | B <= Xs.I
+  | A == $I
+  | B == Xs.I
   | when A <> B: leave A < B
 | leave A < B
 
@@ -212,8 +212,8 @@ list.`>` Xs =
 | A = 0
 | B = 0
 | times I $size:
-  | A <= $I
-  | B <= Xs.I
+  | A == $I
+  | B == Xs.I
   | when A <> B: leave A > B
 | leave A > B
 
@@ -221,8 +221,8 @@ list.`<<` Xs =
 | A = 0
 | B = 0
 | times I $size:
-  | A <= $I
-  | B <= Xs.I
+  | A == $I
+  | B == Xs.I
   | when A <> B: leave A << B
 | leave A << B
 
@@ -230,8 +230,8 @@ list.`>>` Xs =
 | A = 0
 | B = 0
 | times I $size:
-  | A <= $I
-  | B <= Xs.I
+  | A == $I
+  | B == Xs.I
   | when A <> B: leave A >> B
 | leave A >> B
 
@@ -240,7 +240,7 @@ list.flip =
 | Ys = dup N
 | while N > 0
   | N--
-  | Ys.N <= pop Me
+  | Ys.N == pop Me
 | Ys
 
 hard_list.flip =
@@ -258,7 +258,7 @@ hard_list.map F = dup I $size: F $I
 text.map F = $list.map{F}
 
 list.fold Run F =
-| for X Me: Run <= F Run X
+| for X Me: Run == F Run X
 | Run
 
 list.e F = till $end: F Me^pop
@@ -288,21 +288,21 @@ hard_list.count F =
 list.keep F =
 | Ys = []
 | if F.is_fn
-  then for X Me: when F X: Ys <= [X@Ys]
-  else for X Me: when F >< X: Ys <= [X@Ys]
+  then for X Me: when F X: Ys == [X@Ys]
+  else for X Me: when F >< X: Ys == [X@Ys]
 | Ys.flip
 
 list.skip F =
 | Ys = []
 | if F.is_fn
-  then for X Me: less F X: Ys <= [X@Ys]
-  else for X Me: less F >< X: Ys <= [X@Ys]
+  then for X Me: less F X: Ys == [X@Ys]
+  else for X Me: less F >< X: Ys == [X@Ys]
 | Ys.flip
 
 list.join =
 | Rs = dup $map{?size}.sum
 | I = 0
-| for Ys Me: for Y Ys: Rs.(I++) <= Y
+| for Ys Me: for Y Ys: Rs.(I++) == Y
 | Rs
 
 _list_.list = Me
@@ -310,7 +310,7 @@ _list_.list = Me
 list.list =
 | N = $size
 | Ys = dup N
-| times I N: Ys.I <= pop Me
+| times I N: Ys.I == pop Me
 | Ys
 
 list.apply F = $list.apply{F}
@@ -327,9 +327,9 @@ list.split S =
 | Ys = []
 | P = $locate{F}
 | while got P
-  | Ys <= [$take{P}@Ys]
-  | Me <= $drop{P+1}
-  | P <= $locate{F}
+  | Ys == [$take{P}@Ys]
+  | Me == $drop{P+1}
+  | P == $locate{F}
 | [Me@Ys].flip
 
 text.split F = $list.split{F}.map{X=>X.text}
@@ -364,21 +364,21 @@ text.url =
 | Sep = Xs.locate{?><'/'}
 | Dot = Xs.locate{?><'.'}
 | when got Dot and (no Sep or Dot < Sep):
-  | Ext <= Xs.take{Dot}.flip.text
-  | Xs <= Xs.drop{Dot+1}
+  | Ext == Xs.take{Dot}.flip.text
+  | Xs == Xs.drop{Dot+1}
   | when got Sep: Sep -= Dot+1
 | Folder = No
 | Name = No
 | if got Sep
-  then | Folder <= "[Xs.drop{Sep+1}.flip.text]/"
-       | Name <= Xs.take{Sep}.flip.text
-  else | Folder <= ''
-       | Name <= Xs.flip.text
+  then | Folder == "[Xs.drop{Sep+1}.flip.text]/"
+       | Name == Xs.take{Sep}.flip.text
+  else | Folder == ''
+       | Name == Xs.flip.text
 | [Folder Name Ext]
 
 list.unurl =
 | [Folder Name Ext] = Me
-| when Ext <> '': Ext <= ".[Ext]"
+| when Ext <> '': Ext == ".[Ext]"
 | "[Folder][Name][Ext]"
 
 main_root = (main_lib).url.0
@@ -417,7 +417,7 @@ list.infix Item = // intersperse from Haskell
 | if N < 0 then [] else dup I N: if I%2 then Item else Me^pop
 
 list.locate F =
-| less F.is_fn: F <= (X => F >< X)
+| less F.is_fn: F == (X => F >< X)
 | for(I=0; not $end; I++): when F Me^pop: leave I
 
 hard_list.locate F =
@@ -456,8 +456,8 @@ list.group N =
   | I++
   | when I >< N
     | push Y.flip Ys
-    | Y <= []
-    | I <= 0
+    | Y == []
+    | I == 0
 | when Y.size: push Y.flip Ys
 | Ys.flip
 
@@ -474,13 +474,13 @@ list.any F =
 list.max =
 | when $end: leave No
 | M = $head
-| for X Me: when X > M: M <= X
+| for X Me: when X > M: M == X
 | M
 
 list.min =
 | when $end: leave No
 | M = $head
-| for X Me: when X < M: M <= X
+| for X Me: when X < M: M == X
 | M
 
 HexChars = '0123456789ABCDEF'
@@ -490,10 +490,10 @@ int.x =
 | Cs = []
 | S = ''
 | when Me < 0
-  | S <= '-'
-  | Me <= -Me
+  | S == '-'
+  | Me == -Me
 | while Me > 0
-  | Cs <= [HexChars.(Me%16) @Cs]
+  | Cs == [HexChars.(Me%16) @Cs]
   | Me /= 16
 | [S@Cs].text
 
@@ -506,10 +506,10 @@ int.as_text =
 | Cs = []
 | S = ''
 | when Me < 0
-  | S <= '-'
-  | Me <= -Me
+  | S == '-'
+  | Me == -Me
 | while Me > 0
-  | Cs <= [HexChars.(Me%10) @Cs]
+  | Cs == [HexChars.(Me%10) @Cs]
   | Me /= 10
 | [S@Cs].text
 
@@ -527,8 +527,8 @@ text.as_text =
 | Cs = []
 | Q = 0
 | for C Me
-  | less plain_char C: Q <= 1
-  | when C >< '`': C <= '\\`'
+  | less plain_char C: Q == 1
+  | when C >< '`': C == '\\`'
   | push C Cs
 | if Q then ['`' @['`' @Cs].flip].text else Me
 
@@ -559,10 +559,10 @@ table.`!` K V =
 | Bs = $buckets
 | H = K.hash%Bs.size
 | Xs = Bs.H
-| if no Xs then Bs.H <= [[K V]]
+| if no Xs then Bs.H == [[K V]]
   else | Old = Xs.find{X => X.0><K}
-       | if no Old then Bs.H <= [[K V]@Xs]
-         else Old.1 <= V
+       | if no Old then Bs.H == [[K V]@Xs]
+         else Old.1 == V
 | No
 table.del K =
 | Bs = $buckets
@@ -570,11 +570,11 @@ table.del K =
 | Xs = Bs.H
 | when no Xs: leave No
 | L = Xs.locate{X => X.0><K}
-| when got L: Bs.H <= $Xs.L
+| when got L: Bs.H == $Xs.L
 | Me
 table._ Method Args =
 | if Args.size > 1
-  then Args.0.(Method^_method_name.tail) <= Args.1 // strip `assing indicator`
+  then Args.0.(Method^_method_name.tail) == Args.1 // strip `assing indicator`
   else Me.(Method^_method_name)
 table.size = $buckets.map{X => if got X then X.size else 0}.sum
 table.list = $buckets.skip{No}.join
@@ -587,12 +587,12 @@ table.deep_copy = $list.table
 list.table =
 | S = $size*2
 | T = t size/(if S < 3 then 3 else S)
-| for [K V] Me: T.K <= V
+| for [K V] Me: T.K == V
 | T
 
 list.uniq =
 | Seen = t size/($size*2)
-| $skip{X => got Seen.X or (Seen.X <= 1) and 0}
+| $skip{X => got Seen.X or (Seen.X == 1) and 0}
 
 text.pad Count Item =
 | X = "[Item]"
@@ -630,7 +630,7 @@ type macro{@new_macro N E} name/N expander/E
 type meta.~{O M} object_/O meta_/M
 _.meta_ = No
 meta._ Method Args =
-| Args.0 <= $object_
+| Args.0 == $object_
 | Args.apply_method{Method}
 
 LCG_Seed = No
@@ -640,16 +640,16 @@ LCG_A = 16807
 LCG_B = 0
 
 lcg_init Seed =
-| LCG_Seed <= Seed
+| LCG_Seed == Seed
 | 10.rand
 | No
 
 int.rand =
-| LCG_Seed <= (LCG_Seed*LCG_A + LCG_B) % LCG_M
+| LCG_Seed == (LCG_Seed*LCG_A + LCG_B) % LCG_M
 | @int: @round: LCG_Seed.float*$float/LCG_M_F
 
 float.rand =
-| LCG_Seed <= (LCG_Seed*LCG_A + LCG_B) % LCG_M
+| LCG_Seed == (LCG_Seed*LCG_A + LCG_B) % LCG_M
 | LCG_Seed.float/LCG_M_F*Me
 
 list.rand = $(@rand $size-1)
@@ -666,8 +666,8 @@ list.shuffle =
   | N--
   | R = N.rand
   | X = Xs.R
-  | Xs.R <= Xs.N
-  | Xs.N <= X
+  | Xs.R == Xs.N
+  | Xs.N == X
 | Xs
 
 
@@ -681,29 +681,29 @@ merge H1 H2 =
 | less H2: leave H1
 | when H2.IValue < H1.IValue:
   | T = H1
-  | H1 <= H2
-  | H2 <= T
+  | H1 == H2
+  | H2 == T
 | if 1.rand
-  then | H1.ILeft <= merge H1.ILeft H2
-       | when H1.ILeft: H1.ILeft.IParent <= H1
-  else | H1.IRight <= merge H1.IRight H2
-       | when H1.IRight: H1.IRight.IParent <= H1
+  then | H1.ILeft == merge H1.ILeft H2
+       | when H1.ILeft: H1.ILeft.IParent == H1
+  else | H1.IRight == merge H1.IRight H2
+       | when H1.IRight: H1.IRight.IParent == H1
 | H1
 
 sort_asc Xs =
 | Root = 0
 | for X Xs
-  | Root <= merge [X 0 0 0] Root
-  | Root.IParent <= 0
+  | Root == merge [X 0 0 0] Root
+  | Root.IParent == 0
 | dup Xs.size
   | V = Root.IValue
-  | Root <= merge Root.ILeft Root.IRight
+  | Root == merge Root.ILeft Root.IRight
   | V
 
 list.sort @As = 
 | F = No
 | case As
-  [A] | F <= A
+  [A] | F == A
   [] | leave: sort_asc Me
   Else | bad "list.sort: invalid number of arguments"
 | merge H1 H2 =
@@ -711,21 +711,21 @@ list.sort @As =
   | less H2: leave H1
   | when F H2.IValue H1.IValue:
     | T = H1
-    | H1 <= H2
-    | H2 <= T
+    | H1 == H2
+    | H2 == T
   | if 1.rand
-    then | H1.ILeft <= merge H1.ILeft H2
-         | when H1.ILeft: H1.ILeft.IParent <= H1
-    else | H1.IRight <= merge H1.IRight H2
-         | when H1.IRight: H1.IRight.IParent <= H1
+    then | H1.ILeft == merge H1.ILeft H2
+         | when H1.ILeft: H1.ILeft.IParent == H1
+    else | H1.IRight == merge H1.IRight H2
+         | when H1.IRight: H1.IRight.IParent == H1
   | H1
 | Root = 0
 | for X Me
-  | Root <= merge [X 0 0 0] Root
-  | Root.IParent <= 0
+  | Root == merge [X 0 0 0] Root
+  | Root.IParent == 0
 | dup $size
   | V = Root.IValue
-  | Root <= merge Root.ILeft Root.IRight
+  | Root == merge Root.ILeft Root.IRight
   | V
 
 list.sortBy F = $sort{?^F < ??^F}
@@ -733,7 +733,7 @@ list.sortBy F = $sort{?^F < ??^F}
 //= parse text as integer; an optional argument provides Radix
 text.int @Radix =
 | Rdx = 10
-| when Radix.size: Rdx <= Radix.0
+| when Radix.size: Rdx == Radix.0
 | T = Me.upcase
 | N = $size
 | I = 0
@@ -747,7 +747,7 @@ text.int @Radix =
 | for(; I < N; I++)
   | C = T.I.code
   | V = if '0'.code << C and C << '9'.code then C - Base else C - AlphaBase
-  | R <= R*Rdx + V
+  | R == R*Rdx + V
 | R*Sign
 
 list.u4 = $3*#1000000 + $2*#10000 + $1*#100 + $0
@@ -789,14 +789,14 @@ float.clip A B = if Me < A then A
                  else if Me > B then B
                  else Me
 
-list.init Src = times I $size: $I <= Src.I
+list.init Src = times I $size: $I == Src.I
 
 list.div F =
 | R = t
 | for X Me
   | K = F{X}
   | Xs = R.K
-  | R.K <= if got Xs then [X@Xs] else [X]
+  | R.K == if got Xs then [X@Xs] else [X]
 | R{[?0 ?1.flip]}.table
 
 list.xs Is = Is{$?}
@@ -804,10 +804,10 @@ table.xs Is = Is{$?}
 
 list.hash =
 | H = 0
-| for X Me: H <= (H<<<1) +++ X.hash
+| for X Me: H == (H<<<1) +++ X.hash
 | if H<0 then -H else H
 
-list.clear Value = times I $size: Me.I <= Value
+list.clear Value = times I $size: Me.I == Value
 
 type iter{base p}
 iter.end = $base.size><$p
@@ -815,7 +815,7 @@ iter.`++` = $base.($p++)
 iter.`--` = $base.($p--)
 iter.head = $base.$p
 iter.`.` N = $base.($p+N)
-iter.`!` N V = $base.($p+N) <= V
+iter.`=` N V = $base.($p+N) == V
 iter.`+` N = iter $base $p+N
 
 list.iter = iter $list 0

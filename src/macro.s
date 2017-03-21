@@ -66,7 +66,7 @@ expand_list_hole Key Hole Hit Miss = case Hole
                       $(expand_hole Ys Sub Hit Miss))
   [X@Xs] | H = @rand 'X'
          | Hs = @rand 'Xs'
-         | Hit <= expand_list_hole Hs Xs Hit Miss
+         | Hit == expand_list_hole Hs Xs Hit Miss
          | [`if` [_mcall Key end]
                  Miss
                  [let_ [[H [_mcall Key head]]
@@ -83,9 +83,9 @@ expand_hole_keywords Key Hit Xs =
                | form: named L
                  | times I Size: less I%2
                    | when K >< As.I
-                     | $(K.title) <= As.(I+1)
+                     | $(K.title) == As.(I+1)
                      | leave L 0
-                 | (`<=` ($(K.title)) V))
+                 | (`==` ($(K.title)) V))
             Hit
 
 expand_hole_term Key Hole Hit Miss =
@@ -94,7 +94,7 @@ expand_hole_term Key Hole Hit Miss =
 | when Hole.is_keyword
   | when Hole.size and Hole.last >< '?':
     | leave: form: _if (@$"is_[Hole.lead]" Key) Hit Miss
-  | Hole <= [_quote Hole]
+  | Hole == [_quote Hole]
 | leave: if Hole.is_text then [let_ [[Hole Key]] Hit]
          else [_if ['><' Hole Key] Hit Miss]
 
@@ -102,7 +102,7 @@ expand_hole Key Hole Hit Miss =
 | less Hole^is{[X@Xs]}: leave: expand_hole_term Key Hole Hit Miss
 | case Hole
   [`[]` @Xs] | P = Xs.locate{$0[`/` K V]=>K.is_keyword}
-             | when got P: Xs <= [@Xs.take{P} [`@` [`//` @Xs.drop{P}]]]
+             | when got P: Xs == [@Xs.take{P} [`@` [`//` @Xs.drop{P}]]]
              | [_if [_mcall Key is_list]
                     (expand_list_hole Key Xs Hit Miss)
                     Miss]
@@ -147,7 +147,7 @@ expand_hole Key Hole Hit Miss =
 
 // FIXME: use `coma_list_normalize`
 expand_match Keyform Cases Default Key =
-| when no Key: Key <= @rand 'Key'
+| when no Key: Key == @rand 'Key'
 | E = @rand end
 | D = @rand default
 | R = @rand 'R'
@@ -158,7 +158,7 @@ expand_match Keyform Cases Default Key =
   | Miss = [_goto NextLabel]
   | Hit = [_progn [_set R [_progn @Case.tail]]
                   [_goto E]]
-  | Ys <= [[_label Name] (expand_hole Key Case.head Hit Miss) @Ys]
+  | Ys == [[_label Name] (expand_hole Key Case.head Hit Miss) @Ys]
 | [let_ [[Key Keyform]
          [R 0]]
     @Ys.tail
@@ -193,8 +193,8 @@ min @As = expand_minmax `<` As
 max @As = expand_minmax `>` As
 
 swap A B = form | ~T = A
-                | A <= B
-                | B <= ~T
+                | A == B
+                | B == ~T
 
 `if` A B C = [_if A B C]
 not @Xs = [_if Xs 0 1]
@@ -212,9 +212,9 @@ has_head Head Xs =
 mexlet Expr Value Body =
 | case Expr
   [Head] | Prev = GMexLets.Head
-         | GMexLets.Head <= Value
-         | Body <= [_nomex Body^mex]
-         | GMexLets.Head <= Prev
+         | GMexLets.Head == Value
+         | Body == [_nomex Body^mex]
+         | GMexLets.Head == Prev
          | Body
   Else | mex_error "mexlet: bad expr=[Expr]"
 
@@ -224,11 +224,11 @@ expand_loop Head Post Body =
 | Break = []
 | when Body^has_head{pass}:
   | Pass = @rand pass
-  | Body <= [mexlet [pass] [_goto Pass] Body]
+  | Body == [mexlet [pass] [_goto Pass] Body]
   | push [_label Pass] Post
 | when Body^has_head{done}:
   | Done = @rand done
-  | Body <= [mexlet [done] [_goto Done] Body]
+  | Body == [mexlet [done] [_goto Done] Body]
   | push [_label Done] Break
 | [_progn [_label L]
           [_if Head
@@ -318,8 +318,8 @@ expand_form O AGT =
   else if O.is_text and O.size > 1 and O.0 >< '~' then
     | AG = AGT.O
     | when no AG
-      | AG <= O.tail.rand
-      | AGT.O <= AG
+      | AG == O.tail.rand
+      | AGT.O == AG
     | AG
   else [_quote O]
 | case O
@@ -329,7 +329,7 @@ expand_form O AGT =
 form O =
 | AGT = t
 | R = expand_form O AGT
-| when AGT.size > 0: R <= [let_ (map [K V] AGT [V [_mcall [_quote K.tail] rand]]) R]
+| when AGT.size > 0: R == [let_ (map [K V] AGT [V [_mcall [_quote K.tail] rand]]) R]
 | R
 
 expand_text_splice Xs =
@@ -341,25 +341,25 @@ expand_text_splice Xs =
 
 `"` @Xs /*"*/ = expand_text_splice Xs
 
-pop O = form: as O.head: O <= O.tail
+pop O = form: as O.head: O == O.tail
 
-push Item O = form: O <= [Item @O]
+push Item O = form: O == [Item @O]
 
-`+=` A B = [`<=` A [`+` A B]]
-`-=` A B = [`<=` A [`-` A B]]
-`*=` A B = [`<=` A [`*` A B]]
-`/=` A B = [`<=` A [`/` A B]]
-`%=` A B = [`<=` A [`%` A B]]
+`+=` A B = [`==` A [`+` A B]]
+`-=` A B = [`==` A [`-` A B]]
+`*=` A B = [`==` A [`*` A B]]
+`/=` A B = [`==` A [`/` A B]]
+`%=` A B = [`==` A [`%` A B]]
 
 `++` O = form: let_ ((~O O))
                (_if (_eq (_tag ~O) 0) //is int?
-                    (`|` (`<=` (O) (_add ~O 1))
+                    (`|` (`==` (O) (_add ~O 1))
                          ~O)
                     (_mcall ~O `++`))
 
 `--` O = form: let_ ((~O O))
                (_if (_eq (_tag ~O) 0) //is int?
-                    (`|` (`<=` (O) (_sub ~O 1))
+                    (`|` (`==` (O) (_sub ~O 1))
                          ~O)
                     (_mcall ~O `--`))
 
@@ -404,8 +404,8 @@ let @As =
 | `=` (~B) B
 | ~G = ~A.~B
 | when No >< ~G
-  | ~G <= t
-  | ~A.~B <= ~G
+  | ~G == t
+  | ~A.~B == ~G
 | ~G
 
 `&&&` A B = [_mcall A '&&&' B]
@@ -423,12 +423,12 @@ expand_colon_r E Found =
 | Expr = E.drop{P+1}
 | G = 'G'.rand
 | Found Name G
-| [@E.take{P} ['|' ['<=' [G] Expr] G]]
+| [@E.take{P} ['|' ['==' [G] Expr] G]]
 
 `:` A B =
 | Name = 0
 | G = 0
-| E = expand_colon_r A: X Y => | Name <= X; G <= Y
+| E = expand_colon_r A: X Y => | Name == X; G == Y
 | less Name: leave [@A B]
 | B = B.rmap{if Name >< ? then G else ?} //FIXME: preserve metainfo
 | [let_ [[G 0]] [@E B]]
@@ -438,7 +438,7 @@ expand_colon_r E Found =
 
 `$` Expr = [`.` 'Me' Expr]
 
-have Var Default = form | when (no Var) (`<=` (Var) Default)
+have Var Default = form | when (no Var) (`==` (Var) Default)
                         | Var
 
 `~` @As = case As
@@ -454,9 +454,9 @@ expand_method_arg_r A FX FY =
     | M = A.tail
     | V = '?'
     | when M.0 >< '?'
-      | V <= '??'
-      | M <= M.tail
-    | when M.is_digit: M <= M.int
+      | V == '??'
+      | M == M.tail
+    | when M.is_digit: M == M.int
     | leave: expand_method_arg_r ['.' V M] FX FY
 | less A.is_list: leave A
 | case A
@@ -471,7 +471,7 @@ expand_method_arg Expr =
 | Y = No
 | R = expand_method_arg_r Expr (N => have X: form ~X) (N => have Y: form ~Y)
 | As = [X Y].skip{No}
-| when As.size: Expr <= form: _fn As R
+| when As.size: Expr == form: _fn As R
 | Expr
 
 `{}` H @As =
@@ -490,7 +490,7 @@ is_incut X = case X [`@` Xs] 1
 | when IncutCount >< 1
   | case As.last
     [`@` Xs] | As = As.flip.tail
-             | till As.end: Xs <= [_mcall Xs pre As^pop]
+             | till As.end: Xs == [_mcall Xs pre As^pop]
              | leave Xs
 | As = map A As: if A^is_incut then A.1 else [_list A]
 | [_mcall [_list @As] join]
@@ -499,19 +499,19 @@ t @As_ =
 | As = As_
 | Size = 0
 | case As [[`/` size S] @Xs]
-  | Size <= S
-  | As <= Xs
+  | Size == S
+  | As == Xs
 | T = form ~T
-| As <= As.group{2}
+| As == As.group{2}
 | if As.size
-  then | less Size: Size <= 2*As.size
+  then | less Size: Size == 2*As.size
        | form: `|` (T = table_ Size)
                    $@(map [K V] As
-                     | when K.is_text: K <= form \K
-                     | when V.is_text: V <= form \V
-                     | form: T.K <= V)
+                     | when K.is_text: K == form \K
+                     | when V.is_text: V == form \V
+                     | form: T.K == V)
                  T
-  else | less Size: Size <= 256
+  else | less Size: Size == 256
        | form: table_ Size
 
 //FIXME: move it to compiler.s
@@ -546,12 +546,12 @@ add_pattern_matcher Args Body =
 | All = @rand 'As'
 | Default = form: _fatal 'couldnt match args list'
 | case Args
-    [[`$` '_'] @Zs] | Default <= form All.0; Args <= Zs
-    [[`$` D] @Zs] | Default <= D; Args <= Zs
+    [[`$` '_'] @Zs] | Default == form All.0; Args == Zs
+    [[`$` D] @Zs] | Default == D; Args == Zs
 | case Args
-   [[`@` All]] | Args <= All
-   Else | Body <= expand_match All [[['[]' @Args] Body]] Default No
-        | Args <= All
+   [[`@` All]] | Args == All
+   Else | Body == expand_match All [[['[]' @Args] Body]] Default No
+        | Args == All
 | [Args Body]
 
 pattern_arg X = not X.is_text or X.is_keyword
@@ -559,27 +559,27 @@ pattern_arg X = not X.is_text or X.is_keyword
 expand_lambda As Body =
 | Name = 0
 | case As [[`@` N] @Zs]: when N.is_keyword
-  | Name <= N
-  | As <= Zs
+  | Name == N
+  | As == Zs
 | [A B] = if no As.find{&pattern_arg} then [As Body] else add_pattern_matcher As Body
 | R = [_fn A B]
-| when Name: R <= [let_ [[Name 0]] [`|` [_set Name R] [`&` Name]]]
+| when Name: R == [let_ [[Name 0]] [`|` [_set Name R] [`&` Name]]]
 | R
 
 default_leave_ Name Body = let GDefaultLeave Name [_nomex Body^mex]
 
 supply_leave Name Body =
 | less has_head leave Body: leave Body
-| less got Name: Name <= 'lmb_'.rand
+| less got Name: Name == 'lmb_'.rand
 | [default_leave_ Name (expand_named Name Body)]
 
 `=>` As Body =
-| Body <= supply_leave No Body
+| Body == supply_leave No Body
 | expand_lambda As [`|` Body]
 
 expand_block_item_fn Name As Body =
-| Body <= supply_leave Name Body
-| Body <= [_progn [_mark Name] Body]
+| Body == supply_leave Name Body
+| Body == [_progn [_mark Name] Body]
 | [Name (expand_lambda As Body)]
 
 expand_destructuring Value Bs Body =
@@ -599,7 +599,7 @@ expand_assign Place Value =
   [`$` Field] | expand_assign [`.` \Me Field] Value
   Else | [_set Place Value]
 
-`<=` Place Value = expand_assign Place.0 Value
+`==` Place Value = expand_assign Place.0 Value
 
 type Name @Fields =
 | Parent = 0
@@ -610,35 +610,35 @@ type Name @Fields =
 | ProvideCopy = 1
 | while Name.is_list: case Name
   ['{}' N @As]
-    | when case As [['@' A]@_] A.is_keyword: CtorName <= As^pop.1
+    | when case As [['@' A]@_] A.is_keyword: CtorName == As^pop.1
     | Gs = []
     | while case As [A@_] A.is_keyword
       | A = As^pop
       | G = "[A.head.upcase][A.tail]"
       | push ["/" A G] Fields
       | push G Gs
-    | As <= [@Gs.flip @As]
-    | CtorArgs <= As
-    | Name <= N
-  ['.' A B] | Name <= A
-            | if B >< ~ then Super <= Super.skip{_}
-              else if B >< no_copy then ProvideCopy <= 0
+    | As == [@Gs.flip @As]
+    | CtorArgs == As
+    | Name == N
+  ['.' A B] | Name == A
+            | if B >< ~ then Super == Super.skip{_}
+              else if B >< no_copy then ProvideCopy == 0
               else if B.is_keyword then push B Super
-              else | Super <= Super.skip{_} // get parent's redeclarations of _'s methods
-                   | Parent <= B
+              else | Super == Super.skip{_} // get parent's redeclarations of _'s methods
+                   | Parent == B
   Else | mex_error "type: bad declarator [Name]"
-| less CtorName: CtorName <= Name
+| less CtorName: CtorName == Name
 | Vs = []
 | Fs = map F Fields: case F
        [`/` Name Value] | push Value Vs
                         | Name
-       [`|` @Body] | CtorBody <= F
+       [`|` @Body] | CtorBody == F
                    | No
        Else | push 0 Vs
             | F
 | Fs = Fs.skip{No}
 | Vs = Vs.flip
-| GTypes.Name <= Fs
+| GTypes.Name == Fs
 | Ctor = if CtorBody
          then [`=` [CtorName @CtorArgs]
                    [`|` [`=` ['Me'] [_data Name @Vs]]
@@ -652,7 +652,7 @@ type Name @Fields =
          else []
 | Heir = if Parent
          then form ((Name._ ~Method ~Args =
-                     | ~Args.0 <= Parent
+                     | ~Args.0 == Parent
                      | ~Args.apply_method{~Method}))
          else []
 | ['@' ['|' Ctor
@@ -669,17 +669,17 @@ type Name @Fields =
 expand_block_item_method Type Name Args Body =
 | less Name >< _
   | push \Me Args
-  | when got GTypes.Type: Body <= form: _type Type $\Me Body
+  | when got GTypes.Type: Body == form: _type Type $\Me Body
 | when Name >< _
   | case Args
-    [Method As] | Args <= [['@' As]]
-                | Body <= form: `|` (Method = _this_method)
+    [Method As] | Args == [['@' As]]
+                | Body == form: `|` (Method = _this_method)
                                     ($\Me = As.0)
                                     (_type Type $\Me Body)
     Else | mex_error "bad arglist for _; should be: Method Args"
-| Body <= supply_leave Name Body
+| Body == supply_leave Name Body
 | Fn = [`=>` Args [_progn [_mark "[Type].[Name]"] Body]]
-| Fn <= meta Fn GSrc
+| Fn == meta Fn GSrc
 | [No [_dmet Name Type Fn]]
 
 expand_block_item Expr =
@@ -706,11 +706,11 @@ make_multimethod Xs =
 | Xs = map X Xs: case X
     [`=>` Args Expr]
       | case Args [[`@` N] @Zs]: when N.is_keyword:
-        | Name <= [[`@` N]]
-        | Args <= Zs
+        | Name == [[`@` N]]
+        | Args == Zs
       | case Args
-          [['$' '_'] @Zs] | Default <= form All.0; Args <= Zs
-          [['$' D] @Zs] | Default <= D; Args <= Zs
+          [['$' '_'] @Zs] | Default == form All.0; Args == Zs
+          [['$' D] @Zs] | Default == D; Args == Zs
       | [['[]' @Args] Expr]
 | ['=>' [@Name ['@' All]] (expand_match All Xs Default No)]
 
@@ -734,7 +734,7 @@ expand_block_helper R A B =
 
 supply_meta Object Source =
 | when Source.is_meta and not Object.is_meta:
-  | Object <= meta Object Source.meta_
+  | Object == meta Object Source.meta_
 | Object
 
 expand_block Xs =
@@ -745,22 +745,22 @@ expand_block Xs =
   [`=>` A B] | push X Ms
   Else | push X Ys
 | less Ms.end: push Ms.flip^make_multimethod Ys
-| Xs <= Ys.flip
-| Xs <= map X Xs:
+| Xs == Ys.flip
+| Xs == map X Xs:
   | Src = when X.is_meta: X.meta_
   | Rs = let GSrc (if got Src then Src else GSrc)
          | expand_block_item X
-  | when X.is_meta: Rs <= map R Rs: meta R X.meta_
+  | when X.is_meta: Rs == map R Rs: meta R X.meta_
   | Rs
-| Xs <= Xs.join
+| Xs == Xs.join
 | R = []
 | for X Xs.flip:
   | [A B] = X
-  | when B.is_list: B <= supply_meta B X
-  | R <= expand_block_helper R A B
-| R <= [_progn @R]
+  | when B.is_list: B == supply_meta B X
+  | R == expand_block_helper R A B
+| R == [_progn @R]
 | Bs = Xs.keep{X => X.0.is_keyword}
-| when Bs.size: R <= [let_ (map B Bs [B.0 No]) R]
+| when Bs.size: R == [let_ (map B Bs [B.0 No]) R]
 | R
 
 `|` @Xs = expand_block Xs
@@ -814,8 +814,8 @@ FFI_Lib = No
 
 copy_file A B =
 | if get_rt_flag_ windows
-  then | A <= A.replace{'/' '\\'}
-       | B <= B.replace{'/' '\\'}
+  then | A == A.replace{'/' '\\'}
+       | B == B.replace{'/' '\\'}
        | unix "copy /y \"[A]\" \"[B]\""
   else unix "cp -f '[A]' '[B]'"
 
@@ -833,7 +833,7 @@ ffi_begin Name =
 | DstFFI = "[Dst]ffi/[Name]/"
 | less RootFFI.exists: mex_error "Missing [RootFFI]"
 | copy_ffi RootFFI DstFFI
-| FFI_Lib <= form | ~L = \$"[DstFFI]main"
+| FFI_Lib == form | ~L = \$"[DstFFI]main"
                   | if ~L.exists then ~L
                     else "[main_lib]/ffi/[\Name]/main"
 | 0
@@ -866,11 +866,11 @@ exports_preprocess Xs =
          | [_list [_quote X] V]
 
 export_hidden @Xs =
-| GExports <= [@GExports @Xs]
+| GExports == [@GExports @Xs]
 | 0
 
 export @Xs =
-| GExports <= [@Xs @GExports]
+| GExports == [@Xs @GExports]
 | [_list @GExports^exports_preprocess]
 
 handle_extern X =
@@ -904,19 +904,19 @@ mex_normal X Xs =
 | when X.is_text: case X^handle_extern [Pkg Sym]: when Sym.is_keyword:
   | M = load_symbol Pkg Sym
   | if M.is_macro
-    then Macro <= M
+    then Macro == M
     else | S = Sym.rand
          | leave: mex [let_ [[S [_import [_quote Pkg] [_quote Sym]]]] [S @Xs]]
 | when no Macro
   | case X [`@` Z]: leave: mex [_mcall Xs.last Z @Xs.lead]
   | when got Xs.locate{$0[`@` X]=>1}
     | when X >< _mcall: leave: mex: form: _mcall [$(Xs.0) $@(Xs.drop{2})] apply_method (_method $(Xs.1))
-    | when X.is_keyword: X <= form &X
+    | when X.is_keyword: X == form &X
     | leave: mex: form [$@Xs].apply{X}
   | Ks = []
   | NewXs = []
   | for X Xs: if case X [`/` A B] A.is_keyword then push [X.1 X.2] Ks else push X NewXs
-  | when Ks.size: Xs <= [@NewXs.flip @Ks.flip.join]
+  | when Ks.size: Xs == [@NewXs.flip @Ks.flip.join]
   | Y = X^mex
   | if (X.is_list and not Y.is_list) or (X.is_text and X <> Y)
     then leave: mex [Y@Xs]
@@ -937,7 +937,7 @@ mex ExprIn =
 | Expr = normalize_nesting ExprIn
 | when Expr.is_text
   | case Expr^handle_extern [Pkg Name]: leave: mex_extern Pkg Name
-  | when not Expr.is_keyword and got GMacros.Expr: Expr <= GMacros.Expr.expander
+  | when not Expr.is_keyword and got GMacros.Expr: Expr == GMacros.Expr.expander
 | less Expr.is_list: leave Expr
 | R = let GExpansionDepth GExpansionDepth+1: case Expr
   [_fn As Body] | [_fn As Body^mex]
@@ -952,7 +952,7 @@ mex ExprIn =
   [X@Xs] | Src = when Expr.is_meta: Expr.meta_ 
          | let GSrc (if got Src then Src else GSrc)
            | mex_normal X Xs
-| when R.is_list: R <= supply_meta R ExprIn
+| when R.is_list: R == supply_meta R ExprIn
 | R
 
 macroexpand Expr Macros ModuleCompiler ModuleFolders =
@@ -975,16 +975,16 @@ mtx @Xs =
 cons Field Xs = form
 | ~R = 0
 | for ~X Xs
-  | ~X.Field <= ~R
-  | ~R <= ~X
+  | ~X.Field == ~R
+  | ~R == ~X
 | ~R
 
 uncons Field Item = form
 | ~Xs = []
 | ~X = Item
 | while ~X
-  | ~Xs <= [~X@~Xs]
-  | ~X <= ~X.Field
+  | ~Xs == [~X@~Xs]
+  | ~X == ~X.Field
 | ~Xs
 
 same A B = form A^address >< B^address
@@ -994,7 +994,7 @@ on @Xs X = [X @Xs]
 export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
        'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
-       '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '<=' '=>'
-       '+=' '-=' '*=' '/=' '%=' '++' '--'
+       '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '=>'
+       '==' '+=' '-=' '*=' '/=' '%=' '++' '--'
        '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
        'ffi_begin' 'ffi' 'min' 'max' 'swap' '~' 'have' 'source_' 'compile_when' '"'

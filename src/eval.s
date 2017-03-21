@@ -30,20 +30,20 @@ newerThan Source Dependent =
 
 copy_file A B =
 | if get_rt_flag_ windows
-  then | A <= A.replace{'/' '\\'}
-       | B <= B.replace{'/' '\\'}
+  then | A == A.replace{'/' '\\'}
+       | B == B.replace{'/' '\\'}
        | unix "copy /y \"[A]\" \"[B]\""
   else unix "cp -f '[A]' '[B]'"
 
 DLL_EXT = ''
 
 c_compiler Dst Src =
-| Dst <= "[Dst]." // else gcc will add ".exe" on Windows
+| Dst == "[Dst]." // else gcc will add ".exe" on Windows
 | RtFolder = "[GRootFolder]runtime/"
 | unix "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
 
 copy_runtime Dst =
-| when get_rt_flag_ windows: Dst <= "[Dst].exe"
+| when get_rt_flag_ windows: Dst == "[Dst].exe"
 | less Dst.exists: copy_file "[GRootFolder]symta.exe" Dst
 
 add_imports Expr Deps =
@@ -55,12 +55,12 @@ module_folders = [GRootFolder GSrcFolders GDstFolder]
 
 compile_expr Name Dst Expr =
 | Uses = [rt_ core_]
-| Expr <= case Expr
+| Expr == case Expr
             [`|` [use @Us] @Xs]
-               | Uses <= [@Uses @Us]
+               | Uses == [@Uses @Us]
                | [`|` @Xs]
             Else | Expr
-| Uses <= Uses.skip{X => Name >< X}.uniq
+| Uses == Uses.skip{X => Name >< X}.uniq
 | Deps = Uses.tail
 | for D Deps: less compile_module D: bad "cant compile [D].s"
 | when GShowInfo: say "compiling [Name]..."
@@ -86,7 +86,7 @@ compile_module_sub Name =
   | SrcFile = "[Folder][Name].s"
   | when SrcFile.exists
     | DstFile = "[GDstFolder][Name][DLL_EXT]"
-    | GCompiledModules.Name <= DstFile
+    | GCompiledModules.Name == DstFile
     | DepFile = "[DstFile].dep"
     | when DepFile.exists and DepFile^newerThan{SrcFile}:
       | Deps = DepFile^load_symta_file.0 // first line
@@ -101,7 +101,7 @@ compile_module_sub Name =
 
 compile_module Name =
 | DstFile = GCompiledModules.Name
-| when no DstFile: DstFile <= compile_module_sub Name
+| when no DstFile: DstFile == compile_module_sub Name
 | DstFile
 
 build_entry Entry =
@@ -118,15 +118,15 @@ build RootFolder SrcFolder dst/0 =
 | Entry = "main"
 | SrcPref = "src/"
 | DstFolder = Dst or SrcFolder
-| when DstFolder.file: DstFolder <= DstFolder.url.0
+| when DstFolder.file: DstFolder == DstFolder.url.0
 | when SrcFolder.file:
-  | SrcFolder <= SrcFolder.url.0
-  | SrcPref <= ""
-| RootFolder <= normalize_folder RootFolder
-| SrcFolder <= normalize_folder SrcFolder
-| DstFolder <= normalize_folder DstFolder
+  | SrcFolder == SrcFolder.url.0
+  | SrcPref == ""
+| RootFolder == normalize_folder RootFolder
+| SrcFolder == normalize_folder SrcFolder
+| DstFolder == normalize_folder DstFolder
 | when DstFolder.0 <> '/' and DstFolder.1 <> ':':
-  | DstFolder <= "[get_work_folder]/[DstFolder]"
+  | DstFolder == "[get_work_folder]/[DstFolder]"
 | let GRootFolder RootFolder
       GDstFolder "[DstFolder]lib/"
       GSrcFolders ["[SrcFolder][SrcPref]" "[GRootFolder]src/"]
@@ -154,11 +154,11 @@ eval RootFolder Expr Env =
   | DstFile = "[BuildFolder]lib/[Entry]"
   | Vars = map [K V] Env K
   | Values = map [K V] Env V
-  | Expr <= [_fn Vars
-              ['|' ['<=' ['Last_'] Expr]
-                   @(map V Vars ['<=' [['.' 'Env_' ['\\' V]]] V])
+  | Expr == [_fn Vars
+              ['|' ['==' ['Last_'] Expr]
+                   @(map V Vars ['==' [['.' 'Env_' ['\\' V]]] V])
                    0]]
-  | Expr <= ['|' [use @Env.'Uses_'] Expr]
+  | Expr == ['|' [use @Env.'Uses_'] Expr]
   | Deps = compile_expr Entry DstFile Expr
   | less DstFile.exists: bad "cant compile [DstFile]"
   | Values.apply{DstFile^load_library}

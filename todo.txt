@@ -2,7 +2,7 @@
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
  
 - instead of `type.!method` use `type.=method`. That will make more sense
-- reuse `!` for list splicing pythno style
+- reuse `!` for list splicing python style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
 - optimize and fix ssa_form, so that will report wrong number of arguments
 - optimize No, by initing it to a well known memory location
@@ -12,6 +12,7 @@
 - a way to reference some memory location
 - lexical targets for for optimizations in Spell of Mastery
   1670: =
+  1291: `:`
   1268: <=
   724: when
   470: -
@@ -24,6 +25,7 @@
   237: and (can be replaced with && or `et`)
   167: .0 and .head
   162: ?
+  123: got
   116: not
   96: `else if` (replace with elif)
   89: size
