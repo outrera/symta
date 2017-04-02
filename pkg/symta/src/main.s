@@ -24,22 +24,22 @@ case Args [@_ '-v'+'--version' @_]
 | halt
 
 case Args ['-r' UserRoot @Xs]
-| Root == UserRoot
-| Args == Xs
+| Root <= UserRoot
+| Args <= Xs
 
 SrcDir = No
 DstDir = No
 
 case Args
-  [Src Dst] | SrcDir == Src; DstDir == Dst
-  [Src] | SrcDir == Src; DstDir == Src
+  [Src Dst] | SrcDir <= Src; DstDir <= Dst
+  [Src] | SrcDir <= Src; DstDir <= Src
   Else | print_usage
 
-Root == Root.replace{'\\' '/'}
-SrcDir == SrcDir.replace{'\\' '/'}
-DstDir == DstDir.replace{'\\' '/'}
+Root <= Root.replace{'\\' '/'}
+SrcDir <= SrcDir.replace{'\\' '/'}
+DstDir <= DstDir.replace{'\\' '/'}
 
-less Root.last >< '/': Root == "[Root]/"
+less Root.last >< '/': Root <= "[Root]/"
 
 less "[Root]src/rt_.s".exists: bad "Missing [Root]src/rt_.s"
 less "[Root]runtime/symta.h".exists: bad "Missing [Root]runtime/symta.h"

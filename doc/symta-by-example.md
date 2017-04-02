@@ -94,13 +94,13 @@ say "division: [B/A]"
 say "remainder: [B%A]"
 say "exponentiation: [A^^3]"
 say "average: [(A+B)/2]" // change operator precedence by using `(` and `)`
-A == 789 // assign a new value to A
+A <= 789 // assign a new value to A
 say "Now A contains [A]"
 B *= 3 // multiply B by 3
 say "Now B contains [B]"
 ```
 
-Above example declares two variables, `A` and `B` (bound to 123 and 456 respectively), and then shows some arithmetics with them. Declaring A second time would hide its previous version for the code, bellow the new declaration, but doesn't affect the code above or outside of current scope (more about Symta's scoping rules later). The operator `==` is used when previously declared variable is really have to be reassigned for all code, that sees it. The operator `*=` stores expression's result back to variable it prefixes, so `B *= 3` is the same as `B == B*3`.
+Above example declares two variables, `A` and `B` (bound to 123 and 456 respectively), and then shows some arithmetics with them. Declaring A second time would hide its previous version for the code, bellow the new declaration, but doesn't affect the code above or outside of current scope (more about Symta's scoping rules later). The operator `<=` is used when previously declared variable is really have to be reassigned for all code, that sees it. The operator `*=` stores expression's result back to variable it prefixes, so `B *= 3` is the same as `B <= B*3`.
 
 Note that all variable names must start from an uppercase letter, while function names start with anything non-uppercase. Such notation makes code more readable and simplifies syntax.
 
@@ -147,7 +147,7 @@ Hello, World!
 
 Yet the code is different: `greet Name =` declares function `greet`, which takes one argument `Name`; the body of this function, "Hello, [Name]!", is a string construction expression, where `[Name]` denotes that we want to put there the value of Name. The second line, `greet "World"`, invokes the declared function `greet`.
 
-The function argument `Name` behaves just like variables - it is a memory cell, not constants, like mathematical or Haskell's variables. So we can reassign it, using `==`, and hide using following variable declaration.
+The function argument `Name` behaves just like variables - it is a memory cell, not constants, like mathematical or Haskell's variables. So we can reassign it, using `<=`, and hide using following variable declaration.
 
 There is an alternative {}-based syntax for function calls:
 ```
@@ -197,7 +197,7 @@ More basic way to access lists elements would be through index operator - `.`:
 ```
 Xs = [a b c d e f]
 say Xs.3 // prints `d`, because indices start from 0
-Xs.3 == 123 // replaces `d` with 123
+Xs.3 <= 123 // replaces `d` with 123
 say "changes Xs is [Xs]"
 ```
 
@@ -252,7 +252,7 @@ Words = No
 get_words = Words
 
 when got @@it get_words: say it
-Words == [a list of words]
+Words <= [a list of words]
 when got @@it get_words: say it
 ```
 The `got` checks if value doesn't equal `No`, while `@@it` binds the result of get_words to `it` (before passing it to got), and exposes this variable for the right hand side of `:`. Note that variable name before `@@` should start from a lowercase letter, liket `it`.
@@ -322,8 +322,8 @@ Typical OOP example would be geometric point type:
 type point x y
 point.as_text = "[$x], [$y]"
 P = point
-P.x == 123
-P.y == 456
+P.x <= 123
+P.y <= 456
 say "created a point: [P]"
 ```
 
@@ -334,8 +334,8 @@ Note: when type declaration is available, the `Me.field_name` call compiles to a
 
 If a method takes arguments, they can be specified using `{}`. For example:
 ```
-point.set_x_and_y A B = | $x == A
-                        | $y == B
+point.set_x_and_y A B = | $x <= A
+                        | $y <= B
 P.set_x_and_y{666 777}
 ```
 
@@ -344,7 +344,7 @@ If you dislike `{` and `}`, there is a function-style syntax to invoke a method:
 @set_x_and_y 666 777 P
 ```
 
-Initializing fields with `==` is too verbose, therefore symta provides a shorthand for that, which allows writing a tighter version of previous example:
+Initializing fields with `<=` is too verbose, therefore symta provides a shorthand for that, which allows writing a tighter version of previous example:
 ```
 type point{X Y} x/X y/Y
 point.as_text = "[$x], [$y]"
@@ -704,9 +704,9 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `table.xs @Xs` - pick list elements indexed by Xs
 
-`pop Xs` - shorthand for `Xs == Xs.tail`
+`pop Xs` - shorthand for `Xs <= Xs.tail`
 
-`push Item Xs` - shorthand for `Xs == Item,@Xs`
+`push Item Xs` - shorthand for `Xs <= Item,@Xs`
 
 `list.replace A B` - searches for `A` and replaces it with `B`.
 

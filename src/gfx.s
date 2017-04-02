@@ -17,12 +17,12 @@ new_cmap Xs =
 type widget
 
 type gfx.widget.no_copy{@As} handle w h
-| $handle == case As
+| $handle <= case As
   [W<1.is_int H<1.is_int] | new_gfx_ W H
   [Filename<1.is_text] | gfx_load_png Filename
   Else | bad "cant create gfx from [As]"
-| $w == gfx_w $handle
-| $h == gfx_h $handle
+| $w <= gfx_w $handle
+| $h <= gfx_h $handle
 gfx.free = free_gfx $handle
 gfx.xy = [(gfx_x $handle) (gfx_y $handle)]
 gfx.`=xy` [X Y] = gfx_set_xy $handle X Y
@@ -88,7 +88,7 @@ gfx.cut X Y W H =
 | G = gfx W H
 | G.clear{#FF000000} // transparent
 | CMap = $cmap
-| when CMap: G.cmap == CMap
+| when CMap: G.cmap <= CMap
 | SX,SY = $xy
 | G.blit{-SX -SY Me.rect{X Y W H}}
 | G
