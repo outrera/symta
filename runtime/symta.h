@@ -102,11 +102,6 @@
 // should be less than C's stack, which is 1024*1024 bytes
 #define MAX_LEVEL (1024*1024/9)
 
-// P holds points to closure of current function
-// E holds pointer to arglist of current function
-#define REGS void *P, struct api_t *api
-#define REGS_ARGS(P) P, api
-
 typedef struct fn_meta_t { //function metadata
   intptr_t size;    // closure size - the size of environment,
                     // this function closes over.
@@ -120,13 +115,15 @@ typedef struct fn_meta_t { //function metadata
 
 
 typedef struct frame_t {
-  void **top;
+  void **top;  //this frame's heap top
   void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
+  void *clsr;  //closure
   void *lifts; //what should be lifted to parent frame
   void *onexit; //called on exit
 } frame_t;
 
-typedef struct api_t {
+typedef struct api_t api_t;
+struct api_t {
   frame_t *frame; // current frame
 
   void *method; // current method, we execute
@@ -140,26 +137,26 @@ typedef struct api_t {
   void *m_underscore;
 
   // runtime's C API
-  void (*bad_type)(REGS, char *expected, int arg_index, char *name);
-  void* (*bad_argnum)(REGS, void *E, intptr_t expected);
-  void (*tables_init)(struct api_t *api, void *tables);
-  char* (*print_object_f)(struct api_t *api, void *object);
+  void (*bad_type)(api_t *api, char *expected, int arg_index, char *name);
+  void* (*bad_argnum)(api_t *api, void *E, intptr_t expected);
+  void (*tables_init)(api_t *api, void *tables);
+  char* (*print_object_f)(api_t *api, void *object);
   void (*gc_lifts)();
   void *(*alloc_text)(char *s);
-  void (*fatal)(struct api_t *api, void *msg);
-  void (*fatal_chars)(struct api_t *api, char *msg);
-  void (*add_subtype)(struct api_t *api, intptr_t super, intptr_t sub);
-  void (*set_type_size_and_name)(struct api_t *api, intptr_t tag, intptr_t size, void *name);
-  void (*set_method)(struct api_t *api, void *method, void *type, void *handler);
-  char *(*text_chars)(struct api_t *api, void *text);
+  void (*fatal)(api_t *api, void *msg);
+  void (*fatal_chars)(api_t *api, char *msg);
+  void (*add_subtype)(api_t *api, intptr_t super, intptr_t sub);
+  void (*set_type_size_and_name)(api_t *api, intptr_t tag, intptr_t size, void *name);
+  void (*set_method)(api_t *api, void *method, void *type, void *handler);
+  char *(*text_chars)(api_t *api, void *text);
 
-  void *collectors[MAX_TYPES];
+  void *collectors[MAX_TYPES]; //garbage collectors for each type
   void *top[2]; // heap top
   frame_t frames[MAX_LEVEL]; // stack frames should come directly before the heap
   void *heap[2][HEAP_SIZE];
-} api_t;
+};
 
-typedef void *(*pfun)(REGS);
+typedef void *(*pfun)(api_t *api);
 
 #define No api->void_
 #define Empty api->empty_
@@ -181,11 +178,12 @@ typedef void *(*pfun)(REGS);
   *((void**)Top+0) = (void*)(code); \
   *((void**)Top+1) = Frame;
 
-#define ALLOC_NO_CODE(dst,count) \
+#define ALLOC_DATA(dst,tag,count) \
   HEAP_GUARD(); \
   dst = (void**)Top - (uintptr_t)(count); \
   Top = (void**)dst - 1; \
-  *((void**)Top+0) = Frame;
+  *((void**)Top+0) = Frame;\
+  dst = ADD_TAG(dst,tag);
 
 #define CLOSURE(dst,code,count) \
   ALLOC_BASIC(dst,code,count); \
@@ -194,10 +192,6 @@ typedef void *(*pfun)(REGS);
 //local closure
 #define LOSURE(dst,size) CLOSURE(dst,FIXNUM(size),size)
 
-#define ALLOC_DATA(dst,tag,count) \
-  ALLOC_NO_CODE(dst,count); \
-  dst = ADD_TAG(dst,tag);
-
 //ARgList
 #define ARL(dst,size) ALLOC_BASIC(dst,FIXNUM(size),size)
 
@@ -205,7 +199,7 @@ typedef void *(*pfun)(REGS);
   ARL(dst,size); \
   dst = ADD_TAG(dst, T_LIST);
 
-typedef struct tot_entry_t {
+typedef struct tot_entry_t { //table of tables entry
   intptr_t size;
   void *table;
 }  __attribute__((packed)) tot_entry_t;
@@ -238,13 +232,16 @@ typedef struct tot_entry_t {
 #define THIS_METHOD(dst) dst = api->method;
 #define METHOD_NAME(dst,method) dst = ((void**)(method))[T_NAME_TEXT];
 #define TYPE_ID(dst,o) dst = (void*)FIXNUM(O_TYPE(o));
-#define getArg(i) (*((void**)E+(i)))
-#define PROLOGUE void *E = (void**)Top+OBJ_HEAD_SIZE;
-#define ENTRY(name) } void *name(REGS) {PROLOGUE; void *dummy;
-#define DECL_LABEL(name) static void *name(REGS);
-#define LABEL(name) } static void *name(REGS) {PROLOGUE; void *dummy;
+// P holds points to closure of current function
+// E holds pointer to arglist of current function
+#define PROLOGUE void *P = Frame->clsr; \
+                 void *E = (void**)Top+OBJ_HEAD_SIZE;
+#define ENTRY(name) } void *name(api_t *api) {PROLOGUE; void *dummy;
+#define DECL_LABEL(name) static void *name(api_t *api);
+#define LABEL(name) } static void *name(api_t *api) {PROLOGUE; void *dummy;
 #define VAR(name) void *name;
 
+//opens new frame before allocating arguments for a call
 #define BPUSH() \
   ++Frame; \
   /*fprintf(stderr, "Entering %ld\n", Level);*/ \
@@ -253,7 +250,7 @@ typedef struct tot_entry_t {
   /*fprintf(stderr, "Leaving %ld\n", Level);*/ \
   Top = Base; \
   --Frame;
-#define CALL(k,f) k = O_FN(f)(REGS_ARGS(f));
+#define CALL(k,f) Frame->clsr = f; k = O_FN(f)(api);
 #define MCALL_NO_SAVE(k,o,m) \
    { \
       void *f_; \
@@ -385,7 +382,7 @@ typedef struct {
 
 #define CHECK_NARGS(expected) \
   if (NARGS(E) != FIXNUM(expected)) { \
-    api->bad_argnum(REGS_ARGS(P), E, FIXNUM(expected)); \
+    api->bad_argnum(api, E, FIXNUM(expected)); \
   }
 
 // kludge for FFI identifiers
@@ -396,14 +393,13 @@ typedef struct {
 #define FFI_VAR(type,name) type name;
 
 #define FFI_TO_INT(dst,src) \
-  if (O_TAGL(src) != T_INT) \
-    api->bad_type(REGS_ARGS(P), "int", 0, 0); \
+  if (O_TAGL(src) != T_INT) api->bad_type(api, "int", 0, 0); \
   dst = (int)UNFIXNUM(src);
 #define FFI_FROM_INT(dst,src) dst = (void*)FIXNUM((intptr_t)src);
 
 #define FFI_TO_U4(dst,src) \
   if (O_TAGL(src) != T_INT) \
-    api->bad_type(REGS_ARGS(P), "int", 0, 0); \
+    api->bad_type(api, "int", 0, 0); \
   dst = (uint32_t)UNFIXNUM(src);
 #define FFI_FROM_U4(dst,src) dst = (void*)FIXNUM((intptr_t)src);
 
@@ -426,7 +422,7 @@ typedef struct {
 #define FFI_GET(dst,type,ptr,off) dst = (void*)FIXNUM(((type*)(ptr))[UNFIXNUM(off)]);
 #define FFI_SET(type,ptr,off,val) ((type*)(ptr))[UNFIXNUM(off)] = (type)UNFIXNUM(val);
 
-void *entry(REGS);
-void *setup(REGS);
+void *entry(api_t *api);
+void *setup(api_t *api);
 
 #endif //SYMTA_H

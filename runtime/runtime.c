@@ -492,7 +492,7 @@ static uintptr_t show_runtime_info(api_t *api) {
 static void *exec_module(struct api_t *api, char *path) {
   void *lib;
   pfun entry, setup;
-  void *R, *P=0, *E=0;
+  void *R, *E=0;
 
   lib = dlopen(path, RTLD_LAZY);
   if (!lib) fatal("dlopen couldnt load %s\n", path);
@@ -504,13 +504,15 @@ static void *exec_module(struct api_t *api, char *path) {
   if (!setup) fatal("dlsym couldnt find symbol `setup` in %s\n", path);
 
   ARL(E,0);
-  setup(REGS_ARGS(P)); // init module's statics
+  Frame->clsr = 0;
+  setup(api); // init module's statics
 
   //fprintf(stderr, "running %s\n", path);
 
   BPUSH();
   ARL(E,0);
-  R = entry(REGS_ARGS(P)); 
+  Frame->clsr = 0;
+  R = entry(api); 
 
   //fprintf(stderr, "done %s\n", path);
 
@@ -600,7 +602,7 @@ static void *find_export(struct api_t *api, void *name, void *exports) {
   fatal("Couldn't resolve `%s`\n", print_object(name));
 }
 
-static void bad_type(REGS, char *expected, int arg_index, char *name) {
+static void bad_type(api_t *api, char *expected, int arg_index, char *name) {
   PROLOGUE;
   int i, nargs = (int)UNFIXNUM(NARGS(E));
   fprintf(stderr, "arg %d isnt %s, in: %s", arg_index, expected, name);
@@ -610,7 +612,7 @@ static void bad_type(REGS, char *expected, int arg_index, char *name) {
   fatal("aborting");
 }
 
-static void bad_call(REGS, void *method) {
+static void bad_call(api_t *api, void *method) {
   PROLOGUE;
   int i, nargs = (int)UNFIXNUM(NARGS(E));
   fprintf(stderr, "bad call: %s", print_object(getArg(0)));
@@ -688,7 +690,7 @@ BUILTIN2("bytes.`.`",bytes_get,C_ANY,o,C_INT,index)
   if ((uintptr_t)BYTES_SIZE(o) <= idx) {
     fprintf(stderr, "index out of bounds\n");
     TEXT(P, ".");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(FIXNUM(BYTES_DATA(o)[idx]))
 BUILTIN3("bytes.`=`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
@@ -696,7 +698,7 @@ BUILTIN3("bytes.`=`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
   if (BYTES_SIZE(o) <= (uintptr_t)i) {
     fprintf(stderr, "list !: index out of bounds\n");
     TEXT(P, "=");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
   BYTES_DATA(o)[i] = (uint8_t)UNFIXNUM(value);
   R = 0;
@@ -725,7 +727,7 @@ BUILTIN2("text.`.`",text_get,C_ANY,o,C_INT,index)
   if ((uintptr_t)REF4(o,0) <= idx) {
     fprintf(stderr, "index out of bounds\n");
     TEXT(P, ".");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(single_chars[REF1(o,4+idx)])
 BUILTIN1("text.hash",text_hash,C_ANY,o)
@@ -748,7 +750,7 @@ BUILTIN2("text.`.`",fixtext_get,C_ANY,o,C_INT,index)
 bounds_error:
     fprintf(stderr, "index out of bounds\n");
     TEXT(P, ".");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
   c = ((uint64_t)o>>(i*7))&(0x7F<<ALIGN_BITS);
   if (!c) goto bounds_error;
@@ -787,7 +789,7 @@ BUILTIN2("view.`.`",view_get,C_ANY,o,C_INT,index)
   if (size <= (uint32_t)(uintptr_t)index) {
     fprintf(stderr, "index out of bounds\n");
     TEXT(R, ".");
-    bad_call(REGS_ARGS(P),R);
+    bad_call(api,R);
   }
 RETURNS(VIEW_REF(o, start, UNFIXNUM(index)))
 BUILTIN3("view.`=`",view_set,C_ANY,o,C_INT,index,C_ANY,value)
@@ -797,7 +799,7 @@ BUILTIN3("view.`=`",view_set,C_ANY,o,C_INT,index,C_ANY,value)
   if (size <= (uint32_t)(uintptr_t)index) {
     fprintf(stderr, "view !: index out of bounds\n");
     TEXT(P, "=");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
   start += UNFIXNUM(index);
   p = &VIEW_REF(o, 0, 0);
@@ -831,7 +833,7 @@ BUILTIN2("view.take",view_take,C_ANY,o,C_INT,count)
   } else {
     fprintf(stderr, "list.take: count %d is invalid for list size = %d\n", (int)c, (int)size);
     TEXT(P, "take");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(R)
 BUILTIN2("view.drop",view_drop,C_ANY,o,C_INT,count)
@@ -848,7 +850,7 @@ BUILTIN2("view.drop",view_drop,C_ANY,o,C_INT,count)
   } else {
     fprintf(stderr, "list.drop: count %d is invalid for list size = %d\n", (int)c, (int)size);
     TEXT(P, "take");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(R)
 BUILTIN2("view.pre",view_pre,C_ANY,o,C_ANY,head)
@@ -862,7 +864,7 @@ BUILTIN2("list.`.`",list_get,C_ANY,o,C_INT,index)
   if (LIST_SIZE(o) <= (uintptr_t)index) {
     fprintf(stderr, "index out of bounds\n");
     TEXT(P, ".");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(REF(o, UNFIXNUM(index)))
 BUILTIN3("list.`=`",list_set,C_ANY,o,C_INT,index,C_ANY,value)
@@ -871,7 +873,7 @@ BUILTIN3("list.`=`",list_set,C_ANY,o,C_INT,index,C_ANY,value)
   if (LIST_SIZE(o) <= (uintptr_t)index) {
     fprintf(stderr, "list !: index out of bounds\n");
     TEXT(P, "=");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
   p = (void*)O_PTR(o);
   LIFT(p,UNFIXNUM(index),value);
@@ -893,7 +895,7 @@ BUILTIN1("list.head",list_head,C_ANY,o)
   if (size < 1) {
     fprintf(stderr, "list head: list is empty\n");
     TEXT(P, "head");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(REF(o,0))
 BUILTIN1("list.tail",list_tail,C_ANY,o)
@@ -905,7 +907,7 @@ BUILTIN1("list.tail",list_tail,C_ANY,o)
   } else {
     fprintf(stderr, "list tail: list is empty\n");
     TEXT(P, "tail");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(R)
 BUILTIN2("list.take",list_take,C_ANY,o,C_INT,count)
@@ -920,7 +922,7 @@ BUILTIN2("list.take",list_take,C_ANY,o,C_INT,count)
   } else {
     fprintf(stderr, "list.take: count %d is invalid for list size = %d\n", (int)c, (int)size);
     TEXT(P, "take");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(R)
 BUILTIN2("list.drop",list_drop,C_ANY,o,C_INT,count)
@@ -935,7 +937,7 @@ BUILTIN2("list.drop",list_drop,C_ANY,o,C_INT,count)
   } else {
     fprintf(stderr, "list.drop: count %d is invalid for list size = %d\n", (int)c, (int)size);
     TEXT(P, "drop");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 RETURNS(R)
 BUILTIN2("list.pre",list_pre,C_ANY,o,C_ANY,head)
@@ -959,12 +961,12 @@ BUILTIN_VARARGS("list.text",list_text)
     sep = getArg(1);
     if (!IS_TEXT(sep)) {
       fprintf(stderr, "list.text: separator is not text (%s)\n", print_object(sep));
-      bad_call(REGS_ARGS(P),P);
+      bad_call(api,P);
     }
     sep_size = text_size(sep);
   } else {
     fprintf(stderr, "list.text: bad number of args\n");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
 
   words_size = UNFIXNUM(LIST_SIZE(words));
@@ -975,7 +977,7 @@ BUILTIN_VARARGS("list.text",list_text)
     x = REF(words,i);
     if (!IS_TEXT(x)) {
       fprintf(stderr, "list.text: not a text (%s)\n", print_object(x));
-      bad_call(REGS_ARGS(P),P);
+      bad_call(api,P);
     }
     l += text_size(x);
   }
@@ -1012,7 +1014,7 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   m = (void*)O_PTR(m);
   if (!nargs) {
     fprintf(stderr, "apply_method: empty list\n");
-    bad_call(REGS_ARGS(P),P);
+    bad_call(api,P);
   }
   o = REF(as,i);
   ARL(e,nargs);
@@ -1821,7 +1823,7 @@ print_tail:
 }
 
 //FIXME: if callee wouldnt have messed Top, we could have used it instead of passing E
-static void *bad_argnum(REGS, void *E, intptr_t expected) {
+static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
   intptr_t got = NARGS(E);
 
   if (UNFIXNUM(expected) < 0) {
