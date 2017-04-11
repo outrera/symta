@@ -48,11 +48,11 @@ path_to_sym X Es =
 | when case Head [U@Us] U >< GAll // reference to the whole arg-list?
   | Head <= Head.1
   | less Head.0 >< X: leave (path_to_sym X Tail)
-  | when Es^address >< GEnv^address: leave [GAll No] // argument of the current function
+  | when same Es GEnv: leave [GAll No] // argument of the current function
   | leave [GAll (get_parent_index Head.1)]
 | P = Head.locate{V => X >< V.0}
 | when no P: leave (path_to_sym X Tail)
-| when Es^address >< GEnv^address: leave [P No] // argument of the current function
+| when same Es GEnv: leave [P No] // argument of the current function
 | [P (get_parent_index Head.P.1)]
 
 ssa_symbol K X Value =
@@ -124,7 +124,7 @@ ssa_fn K Args Expr O =
 | NParents = Cs.size
 | ssa closure K F NParents
 | GFnMeta.F.size <= NParents
-| for [I C] Cs.i: if C^address >< GCurFn^address // self?
+| for [I C] Cs.i: if same C GCurFn // self?
                   then ssa stor K I \E
                   else ssa copy K I \P C^get_parent_index
 
@@ -165,9 +165,9 @@ ssa_let K Args Vals Xs =
 | F = @rand f
 | [SsaBody Cs] = ssa_fn_body K F Args Body [] 0 0
 | NParents = Cs.size
-| P = ssa_var p // parent environment
+| P = 'l'.rand // parent environment
 | ssa losure P NParents
-| for [I C] Cs.i: if C^address >< GCurFn^address // self?
+| for [I C] Cs.i: if same C GCurFn // self?
                   then ssa stor P I \E
                   else ssa copy P I \P C^get_parent_index
 | E = ssa_var env

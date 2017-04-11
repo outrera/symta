@@ -190,7 +190,7 @@ typedef void *(*pfun)(api_t *api);
   dst = ADD_TAG(dst, T_CLOSURE);
 
 //local closure
-#define LOSURE(dst,size) CLOSURE(dst,FIXNUM(size),size)
+#define LOSURE(name,size) void *name[size];
 
 //ARgList
 #define ARL(dst,size) ALLOC_BASIC(dst,FIXNUM(size),size)
