@@ -138,17 +138,16 @@ static int print_depth = 0;
 #define PRINT_BUFFER_SIZE (1024*1024*2)
 static char print_buffer[PRINT_BUFFER_SIZE];
 
-int main(int argc, char **argv);
-void print_stack_trace(api_t *api);
-__attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
+void print_stack_trace(api_t *api) {
+  frame_t *frm;
   void *fn;
   fn_meta_t *meta;
   int row, col;
   char *name, *origin;
   int sp_count = 0;
   fprintf(stderr, "Stack Trace:\n");
-  while((fn = ctx_unwind(ctx)) != 0) {
-    if (fn == (void*)main) return;
+  for (frm = api->frame; frm >= api->frames; --frm) if (frm->clsr) {
+    fn = O_FN(frm->clsr);
     meta = (fn_meta_t*)get_meta(fn);
     if (!meta) {
       name = "???"; //continue;
@@ -167,14 +166,6 @@ __attribute__ ((noinline)) void ctx_print_stack_trace(void *ctx) {
       return;
     }
   }
-}
-
-void print_stack_trace(api_t *api) {
-  ctx_t ctx;
-  ctx_save(&ctx);
-  ctx_unwind(&ctx);
-  ctx_unwind(&ctx);
-  ctx_print_stack_trace(&ctx);
 }
 
 static void fatal(char *fmt, ...) {
@@ -504,14 +495,14 @@ static void *exec_module(struct api_t *api, char *path) {
   if (!setup) fatal("dlsym couldnt find symbol `setup` in %s\n", path);
 
   ARL(E,0);
-  Frame->clsr = 0;
+  CLOSURE(Frame->clsr,setup,0);
   setup(api); // init module's statics
 
   //fprintf(stderr, "running %s\n", path);
 
   BPUSH();
   ARL(E,0);
-  Frame->clsr = 0;
+  CLOSURE(Frame->clsr,entry,0);
   R = entry(api); 
 
   //fprintf(stderr, "done %s\n", path);
@@ -2294,7 +2285,7 @@ static int ctx_error_handler(ctx_error_t *info) {
     fprintf(stderr, "%s\n", info->text);
   }
   fprintf(stderr, "at ip=%p sp=%p\n", ip, sp);
-  ctx_print_stack_trace(ctx);
+  print_stack_trace(api);
   fatal("aborting");
   return CTXE_ABORT;
 }
