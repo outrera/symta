@@ -164,7 +164,7 @@ static LARGE_INTEGER getFILETIMEoffset()
     return (t);
 }
 
-int compat_clock_gettime(int X, struct timeval *tv)
+int compat_clock_gettime(int X, struct timespec *ts)
 {
     LARGE_INTEGER           t;
     FILETIME            f;
@@ -173,6 +173,7 @@ int compat_clock_gettime(int X, struct timeval *tv)
     static double           frequencyToMicroseconds;
     static int              initialized = 0;
     static BOOL             usePerformanceCounter = 0;
+    struct timeval tv;
 
     if (!initialized) {
         LARGE_INTEGER performanceFrequency;
@@ -197,8 +198,8 @@ int compat_clock_gettime(int X, struct timeval *tv)
     t.QuadPart -= offset.QuadPart;
     microseconds = (double)t.QuadPart / frequencyToMicroseconds;
     t.QuadPart = microseconds;
-    tv->tv_sec = t.QuadPart / 1000000;
-    tv->tv_usec = t.QuadPart % 1000000;
+    ts->tv_sec = t.QuadPart / 1000000;
+    ts->tv_nsec = (t.QuadPart % 1000000)*1000;
     return (0);
 }
 
