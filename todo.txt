@@ -1,7 +1,30 @@
+- change method calls to call-site caching to avoid large method tables.
+  uintptr_t tag = O_TAG(o);
+  if (cached_tag != tag) {
+    cached_tag = tag;
+    //note: when method gets redefined, all cache_tag entries should
+    //      be set to invalid value
+    cached_method = api->cache_method(tag, method_id);
+  }
+  api->method = method_id;
+  CALL(k,cached_method)
+  Pros:
+    - perfomance will improve, because O_TAG is faster than O_TYPE and we
+      avoid doing table lookup, which will produce cache misses.
+    - no limit on number of methods or types.
+    - faster startup, because no need to init huge tables.
+    - _.methods_ will be faster.
+  Cons:
+    - perfomance will suffer, if O_TAG(o) changes frequently.
+    - usage of api->method for catching and redirecting method calls could pose some problems.
+      watch for CALL_TAGGED, methods_
+- fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
+  Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
+- "$method = Body" declarations which would attach to the last type defined in current file.
+- `get_` and `set_` methods, based on cached `methods_` list
 - optimize build dependencies being recompiled when not required.
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
- 
-- instead of `type.!method` use `type.=method`. That will make more sense
+
 - reuse `!` for list splicing python style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
 - optimize and fix ssa_form, so that will report wrong number of arguments
@@ -13,12 +36,12 @@
 - lexical targets for for optimizations in Spell of Mastery
   1670: =
   1291: `:`
-  1268: ==
+  1268: <=
   724: when
   470: -
   413: Me
   420: +
-  354: type.method ... = ... (around 2 kilobytes); provide `methods` keyword
+  354: type.method ... = ... (around 2 kilobytes)
   324: arg/Value ([^a-zA-Z.][a-z][A-Za-z]*/)
   299: if/then/else
   256: less
