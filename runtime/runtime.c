@@ -175,7 +175,18 @@ static void *get_method(intptr_t type_id, intptr_t method_id) {
   do {
     for (i = 0; i < t->nmethods; i++) {
       type_method_t *m = &t->methods[i];
-      if (m->id == method_id) return m->fn;
+      if (m->id == method_id) {
+        if (t != o && o->nmethods < MAX_TYPE_METHODS) {
+          //copy method from parent to child
+          o->methods[o->nmethods++] = *m;
+        } else if (i) {
+          //move it closer to beginning, so next lookup will be faster
+          type_method_t tmp = *m;
+          *m = *(m-1);
+          *(m-1) = *m;
+        }
+        return m->fn;
+      }
     }
     t = t->super;
   } while (t); 
