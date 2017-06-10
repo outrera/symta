@@ -2,8 +2,6 @@
   uintptr_t tag = O_TAG(o);
   if (cached_tag != tag) {
     cached_tag = tag;
-    //note: when method gets redefined, all cache_tag entries should
-    //      be set to invalid value
     cached_method = api->cache_method(tag, method_id);
   }
   api->method = method_id;

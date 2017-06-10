@@ -16,6 +16,8 @@
 // used for debugging
 #define D fprintf(stderr, "%d:%s\n", __LINE__, __FILE__);
 
+static void fatal(char *fmt, ...);
+
 #ifdef __MACH__
 // OS X does not have clock_gettime, define it through clock_get_time
 #include <mach/clock.h>
@@ -54,7 +56,7 @@ int my_clock_gettime(int clk_id, struct timespec *ts) {
   VIEW_SIZE(dst) = (uint32_t)(size);
 #define VIEW_REF(o,start,i) *((void**)O_CODE(o) + start + (i))
 
-
+//metadata lookup table
 static void **metlut[0x10000];
 
 #define FN_ALIGN 2
@@ -117,6 +119,9 @@ static char *lib_folders[MAX_LIB_FOLDERS];
 
 static api_t api_g;
 
+static int initializing = 1; //true during runtime init
+
+#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
 
 static int methods_used;
 static void **methods[MAX_METHODS];
@@ -126,6 +131,86 @@ static char *typenames[MAX_TYPES];
 
 static void *undefined;
 static void *sink;
+
+
+#define MAX_TYPE_METHODS 256
+
+static char *method_names[MAX_METHODS];
+static int method_names_used;
+typedef struct {
+  int id;
+  void *fn;
+} type_method_t;
+
+typedef struct type_t type_t;
+
+struct type_t {
+  char *name;
+  type_t *super; //parent type
+  void *sink; // sink method: `type._ Method Args = @Body`
+  int nmethods;
+  type_method_t methods[MAX_TYPE_METHODS];
+};
+
+static int ntypes;
+static type_t types[MAX_TYPES];
+
+
+static intptr_t get_method_id(api_t *api, char *name) {
+  int i;
+  type_t *t;
+  for (i = 0; i < method_names_used; i++)
+    if (!strcmp(method_names[i], name))
+      return i;
+  if (method_names_used == MAX_METHODS) fatal("method_names[] table overflow\n");
+  ++method_names_used;
+  method_names[i] = strdup(name);
+  return i;
+}
+
+static void *get_method(intptr_t type_id, intptr_t method_id) {
+  int i;
+  type_t *o = types+type_id;
+  type_t *t = o;
+  do {
+    for (i = 0; i < t->nmethods; i++) {
+      type_method_t *m = &t->methods[i];
+      if (m->id == method_id) return m->fn;
+    }
+    t = t->super;
+  } while (t); 
+  return o->sink;
+}
+
+static void *collect_data(void *o);
+
+static intptr_t get_type_id(api_t *api, char *name) {
+  int i;
+  type_t *t;
+  for (i = 0; i < ntypes; i++)
+    if (!strcmp(types[i].name, name))
+      return i;
+  if (ntypes == MAX_TYPES) fatal("types[] table overflow\n");
+  ++ntypes;
+  t = types+i;
+  t->name = strdup(name);
+  t->sink = sink; //default sink
+  t->nmethods = 0;
+
+  if (!api->collectors[i]) {
+    SET_COLLECTOR(i, collect_data);
+  }
+
+  if (initializing && i != T_OBJECT) {
+    //builtin types all inherit `_`
+    t->super = types+T_OBJECT;
+  } else {
+    t->super = 0;
+  }
+
+  return i;
+}
+
 
 static int max_lifted;
 
@@ -195,11 +280,6 @@ static void **resolve_method(api_t *api, char *name) {
 }
 
 static void add_subtype(api_t *api, intptr_t type, intptr_t subtype);
-static void *collect_data(void *o);
-
-#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
-
-static int initializing = 1;
 
 static intptr_t resolve_type(api_t *api, char *name) {
   int i, j;
