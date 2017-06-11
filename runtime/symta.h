@@ -147,7 +147,8 @@ struct api_t {
   void (*fatal_chars)(api_t *api, char *msg);
   void (*add_subtype)(api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(api_t *api, intptr_t tag, intptr_t size, void *name);
-  void (*set_method)(api_t *api, void *method, void *type, void *handler);
+  void (*add_method)(api_t *api, intptr_t method_id, intptr_t type_id, void *handler);
+  void *(*get_method)(intptr_t type_id, intptr_t method_id)
   char *(*text_chars)(api_t *api, void *text);
 
   void *collectors[MAX_TYPES]; //garbage collectors for each type

@@ -16,7 +16,7 @@
     - perfomance will suffer, if O_TAG(o) changes frequently.
     - usage of api->method for catching and redirecting method calls could pose some problems.
       watch for CALL_TAGGED, methods_
-  Edit methods, add_method, resolve_method, resolve_type, add_subtype, set_method, init_methods, resolve_types, set_type_size_and_name, tag_of, METHOD_NAME, BUILTIN_VARARGS("_",sink), BUILTIN_VARARGS("undefined",undefined)
+  Edit m_ampersand, m_underscore, "_", "&", methods, add_method, resolve_method, resolve_type, add_subtype, set_method, init_methods, resolve_types, set_type_size_and_name, tag_of, METHOD_NAME, BUILTIN_VARARGS("_",sink), BUILTIN_VARARGS("undefined",undefined),SET_TYPE_PARAMS,DMET,SUBTYPE
 - fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
   Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
 - "$method = Body" declarations which would attach to the last type defined in current file.

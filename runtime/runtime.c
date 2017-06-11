@@ -164,7 +164,7 @@ static int ntypes;
 static type_t types[MAX_TYPES];
 
 
-static intptr_t get_method_id(api_t *api, char *name) {
+static intptr_t resolve_method(api_t *api, char *name) {
   int i;
   type_t *t;
   for (i = 0; i < method_names_used; i++)
@@ -208,7 +208,7 @@ static void *get_method(intptr_t type_id, intptr_t method_id) {
 
 static void *collect_data(void *o);
 
-static intptr_t get_type_id(api_t *api, char *name) {
+static intptr_t resolve_type(api_t *api, char *name) {
   int i;
   type_t *t;
   for (i = 0; i < ntypes; i++)
@@ -286,112 +286,20 @@ static void fatal(char *fmt, ...) {
   abort();
 }
 
-static void **resolve_method(api_t *api, char *name) {
-  int i, j;
-  for (i = 0; i < methods_used; i++) {
-    void **method = methods[i];
-    if (!strcmp(method[T_NAME], name)) {
-      return methods[i];
-    }
-  }
-  if (methods_used == MAX_METHODS) fatal("methods table overflow\n");
-  ++methods_used;
-
-  for (j = 0; j < types_used; j++) methods[i][j] = undefined;
-
-  methods[i][T_NAME] = strdup(name);
-  TEXT(methods[i][T_NAME_TEXT] ,name);
-  return methods[i];
-}
-
-static void add_subtype(api_t *api, intptr_t type, intptr_t subtype);
-
-static intptr_t resolve_type(api_t *api, char *name) {
-  int i, j;
-  for (i = 0; i < types_used; i++)
-    if (!strcmp(typenames[i], name))
-      return i;
-  if (types_used == MAX_TYPES) fatal("typenames table overflow\n");
-  ++types_used;
-  typenames[i] = strdup(name);
-
-  for (j = 0; j < methods_used; j++) methods[j][i] = undefined;
-  methods[M_SINK][i] = sink;
-
-  if (!api->collectors[i]) {
-    SET_COLLECTOR(i, collect_data);
-  }
-
-  if (initializing) { //builtin types all inherit `_`
-    add_subtype(api, T_OBJECT, i);
-  }
-
-  return i;
-}
-
-static void set_method_r(api_t *api, void *method, void *type, void *handler, int depth) {
-  int i;
-  uintptr_t id = (uintptr_t)(type);
-  void *m = *((void**)method+id);
-  int inherited = 0;
-
-  //if (depth) {
-    if (m == undefined) {
-      inherited = 1;
-    } else {
-      typing_t *psup = supertypings+id;
-      for (i = 0; i < psup->used; i++) {
-        uintptr_t sup_id = (uintptr_t)psup->items[i];
-        void *sup_m = *((void**)method+sup_id);
-        if (sup_m == m) {
-          inherited = 1;
-          break;
-        }
-      }
-    }
-  //}
-
-  if (!depth || inherited) {
-    typing_t *psub = subtypings+id;
-
-    if (!depth && !inherited && m != undefined && m != sink) {
-       char *tname = typenames[id];
-       fprintf(stderr, "set_method: redefinition of %s.%s\n",
-               tname, (char*)*((void**)method+T_NAME));
-       return; // avoid redefining
-    }
-
-    for (i = 0; i < psub->used; i++) {
-      void *subtype = (void*)(uintptr_t)psub->items[i];
-      set_method_r(api, method, subtype, handler, depth+1);
-    }
-    LIFT(method,(uintptr_t)(type),handler);
-  }
-}
-
 static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
-  int j;
   if (type == subtype) return;
-
   types[subtype].super = &types[type];
-
-  subtypings[type].items[subtypings[type].used++] = subtype;
-  supertypings[subtype].items[supertypings[subtype].used++] = type;
-  for (j = 0; j < methods_used; j++) {
-    void **method = methods[j];
-    void *handler = method[type];
-    if (handler == undefined) continue;
-    set_method_r(api, method, (void*)(uintptr_t)subtype, handler, 1);
-  }
 }
 
-static void set_method(api_t *api, void *method, void *type, void *handler) {
-  set_method_r(api, method, type, handler, 0);
-}
-
-static void add_method(api_t *api, intptr_t method_id, intptr_t type_id, void *handler) {
+static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *handler) {
   type_method_t *m;
   type_t *t = &types[type_id];
+
+  if (method_id == api->m_underscore) {
+    t->sink = handler;
+    return;
+  }
+
   if (type_methods_used == MAX_TYPE_METHODS)
     fatal("type_methods[] table overflow\n");
 
@@ -412,8 +320,6 @@ static void add_method(api_t *api, intptr_t method_id, intptr_t type_id, void *h
 static void set_type_size_and_name(struct api_t *api, intptr_t tag, intptr_t size, void *name) {
   types[tag].sname = name;
   types[tag].size = size;
-  methods[M_SIZE][tag] = (void*)size;
-  methods[M_NAME][tag] = name;
 }
 
 static void *tag_of(void *o) {
@@ -2137,49 +2043,38 @@ static void fatal_error_chars(api_t *api, char *msg) {
 
 static void setup_0() {}
 
-#define METHOD_FN(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void) \
-  multi = resolve_method(api, name); \
-  if (m_int) {BUILTIN_CLOSURE(multi[T_INT], m_int); \
-              setup_##m_int(api);} \
-  if (m_float) {BUILTIN_CLOSURE(multi[T_FLOAT], m_float); \
-                setup_##m_float(api);} \
-  if (m_fixtext) {BUILTIN_CLOSURE(multi[T_FIXTEXT], m_fixtext); \
-                  setup_##m_fixtext(api);} \
-  if (m_fn) {BUILTIN_CLOSURE(multi[T_CLOSURE], m_fn); \
-             setup_##m_fn(api);} \
-  if (m_list) {BUILTIN_CLOSURE(multi[T_LIST], m_list); \
-               setup_##m_list(api);} \
-  if (m_text) {BUILTIN_CLOSURE(multi[T_TEXT], m_text); \
-               setup_##m_text(api);} \
-  if (m_view) {BUILTIN_CLOSURE(multi[T_VIEW], m_view); \
-               setup_##m_view(api);} \
-  if (m_cons) {BUILTIN_CLOSURE(multi[T_CONS], m_cons); \
-               setup_##m_cons(api);} \
-  if (m_void) {BUILTIN_CLOSURE(multi[T_VOID], m_void); \
-               setup_##m_void(api);}
+mid = resolve_method(api, name);
 
-#define METHOD_FN1(name, type, fn) \
-  multi = resolve_method(api, name); \
-  BUILTIN_CLOSURE(multi[type], fn); \
-  if (type == T_TEXT) {BUILTIN_CLOSURE(multi[T_FIXTEXT], fn); \
-                       setup_##fn(api);}
+#define ADD_MET(tid,m_cfun) do {\
+  BUILTIN_CLOSURE(met, m_cfun); \
+  add_method(api, tid, mid, met); \
+  setup_##m_cfun(api); } while(0)
 
-#define METHOD_VAL(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void, m_bytes) \
-  multi = resolve_method(api, name); \
-  multi[T_INT] = m_int;\
-  multi[T_FLOAT] = m_float; \
-  multi[T_FIXTEXT] = m_fixtext; \
-  multi[T_CLOSURE] = m_fn; \
-  multi[T_LIST] = m_list; \
-  multi[T_TEXT] = m_text; \
-  multi[T_VIEW] = m_view; \
-  multi[T_CONS] = m_cons; \
-  multi[T_VOID] = m_void; \
-  multi[T_BYTES] = m_bytes;
+#define METHOD_FN(name, m_int, m_float, m_fn, m_list, m_fixtext, m_text, m_view, m_cons, m_void) {\
+  intptr_t mid = resolve_method(api, name); \
+  void *met; \
+  if (m_int) ADD_MET(T_INT,m_int); \
+  if (m_float) ADD_MET(T_FLOAT,m_float); \
+  if (m_fixtext) ADD_MET(T_FIXTEXT,m_fixtext); \
+  if (m_fn) ADD_MET(T_CLOSURE,m_fn); \
+  if (m_list) ADD_MET(T_LIST,m_list); \
+  if (m_text) ADD_MET(T_TEXT,m_text); \
+  if (m_view) ADD_MET(T_VIEW,m_view); \
+  if (m_cons) ADD_MET(T_CONS,m_cons); \
+  if (m_void) ADD_MET(T_VOID,m_void); \
+}
 
+#define METHOD_FN1(name, type, fn) {\
+  mid = resolve_method(api, name); \
+  void *met; \
+  ADD_MET(type,fn); \
+  if (type == T_TEXT) ADD_MET(T_FIXTEXT,fn); \
+}
 static void init_types(api_t *api) {
   void *n_int, *n_float, *n_fn, *n_list, *n_text, *n_void; // typenames
-  void **multi;
+
+  api->m_ampersand = resolve_method(api, "&");
+  api->m_underscore = resolve_method(api, "_");
 
   SET_COLLECTOR(T_INT, collect_immediate);
   SET_COLLECTOR(T_FLOAT, collect_immediate);
@@ -2216,8 +2111,17 @@ static void init_types(api_t *api) {
   resolve_type(api, "_name_text_");
   resolve_type(api, "_bytes_");
 
-  METHOD_VAL("_size", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_VAL("_name", n_int, n_float, n_fn, n_list, n_text, n_text, n_list, n_list, n_void, n_list);
+  set_type_size_and_name(api, T_INT, 0, n_int);
+  set_type_size_and_name(api, T_FLOAT, 0, n_float);
+  set_type_size_and_name(api, T_CLOSURE, 0, n_fn);
+  set_type_size_and_name(api, T_LIST, 0, n_list);
+  set_type_size_and_name(api, T_TEXT, 0, n_text);
+  set_type_size_and_name(api, T_FIXTEXT, 0, n_text);
+  set_type_size_and_name(api, T_VIEW, 0, n_list);
+  set_type_size_and_name(api, T_CONS, 0, n_list);
+  set_type_size_and_name(api, T_VOID, 0, n_void);
+  set_type_size_and_name(api, T_BYTES, 0, n_list);
+
   METHOD_FN("_", b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink);
   METHOD_FN("&", 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
@@ -2295,9 +2199,6 @@ static void init_types(api_t *api) {
 
   add_subtype(api, T_GENERIC_LIST, T_HARD_LIST);
   add_subtype(api, T_GENERIC_LIST, T_CONS);
-
-  api->m_ampersand = resolve_method(api, "&");
-  api->m_underscore = resolve_method(api, "_");
 }
 
 static void init_builtins(api_t *api) {
@@ -2438,11 +2339,11 @@ static void init_texts(api_t *api, void *txtbl, int count) {
   }
 }
 
-static void init_methods(api_t *api, void *metbl, int count) {
+static void resolve_methods(api_t *api, void *metbl, int count) {
   int i;
-  void **ts = (void**)metbl;
+  void **ms = (void**)metbl;
   for (i = 0; i < count; i++) {
-    ts[i] = resolve_method(api, (char*)ts[i]);
+    ms[i] = (void*)resolve_method(api, (char*)ms[i]);
   }
 }
 
@@ -2451,22 +2352,6 @@ static void resolve_types(api_t *api, void *types, int count) {
   void **ts = (void**)types;
   for (i = 0; i < count; i++) {
     ts[i] = (void*)resolve_type(api, (char*)ts[i]);
-  }
-}
-
-static void resolve_method_ids(api_t *api, void *metbl, int count) {
-  int i;
-  void **ms = (void**)metbl;
-  for (i = 0; i < count; i++) {
-    ms[i] = (void*)get_method_id(api, (char*)ms[i]);
-  }
-}
-
-static void resolve_type_ids(api_t *api, void *types, int count) {
-  int i;
-  void **ts = (void**)types;
-  for (i = 0; i < count; i++) {
-    ts[i] = (void*)get_type_id(api, (char*)ts[i]);
   }
 }
 
@@ -2490,12 +2375,10 @@ void tables_init(struct api_t *api, void *tables) {
   init_metadata(ts[0].table, ts[0].size);
   init_texts(api,ts[1].table, ts[1].size);
   resolve_types(api,ts[2].table, ts[2].size);
-  init_methods(api,ts[3].table, ts[3].size);
+  resolve_methods(api,ts[3].table, ts[3].size);
   load_libs(api,(void**)ts[4].table, ts[4].size
                ,(void**)ts[5].table, ts[5].size
                ,(void**)ts[6].table, ts[6].size);
-  //resolve_type_ids(api,ts[7].table, ts[7].size);
-  //resolve_method_ids(api,ts[8].table, ts[8].size);
 }
 
 static api_t *init_api() {
@@ -2513,7 +2396,8 @@ static api_t *init_api() {
   api->fatal_chars = fatal_error_chars;
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;
-  api->set_method = set_method;
+  api->add_method = add_method;
+  api->get_method = get_method;
   api->text_chars = text_chars;
 
 #define BASE_HEAD_SIZE 1
