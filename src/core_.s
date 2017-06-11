@@ -574,7 +574,7 @@ table.del K =
 | Me
 table._ Method Args =
 | if Args.size > 1
-  then Args.0.(Method^_method_name.tail) <= Args.1 // strip `assing indicator`
+  then Args.0.(Method^_method_name.tail) <= Args.1 // strip `assign indicator`
   else Me.(Method^_method_name)
 table.size = $buckets.map{X => if got X then X.size else 0}.sum
 table.list = $buckets.skip{No}.join

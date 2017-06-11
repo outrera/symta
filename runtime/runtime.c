@@ -133,24 +133,32 @@ static void *undefined;
 static void *sink;
 
 
-#define MAX_TYPE_METHODS 256
+#define MAX_TYPE_METHODS (1024*100)
 
-static char *method_names[MAX_METHODS];
-static int method_names_used;
-typedef struct {
+typedef struct type_method_t type_method_t;
+
+struct type_method_t {
   int id;
   void *fn;
-} type_method_t;
+  type_method_t *next;
+};
 
 typedef struct type_t type_t;
 
 struct type_t {
+  type_t *super; // parent type
+  intptr_t size; // number of data slots in type
+  void *sink;    // sink method: `type._ Method Args = @Body`
   char *name;
-  type_t *super; //parent type
-  void *sink; // sink method: `type._ Method Args = @Body`
-  int nmethods;
-  type_method_t methods[MAX_TYPE_METHODS];
+  void *sname;   // name in symta's format
+  type_method_t *methods;
 };
+
+static type_method_t type_methods[MAX_TYPE_METHODS];
+static int type_methods_used;
+
+static char *method_names[MAX_METHODS];
+static int method_names_used;
 
 static int ntypes;
 static type_t types[MAX_TYPES];
@@ -173,17 +181,22 @@ static void *get_method(intptr_t type_id, intptr_t method_id) {
   type_t *o = types+type_id;
   type_t *t = o;
   do {
-    for (i = 0; i < t->nmethods; i++) {
-      type_method_t *m = &t->methods[i];
+    type_method_t *m, *p=0;
+    for (m = t->methods; m; p = m, m = m->next) {
       if (m->id == method_id) {
-        if (t != o && o->nmethods < MAX_TYPE_METHODS) {
-          //copy method from parent to child
-          o->methods[o->nmethods++] = *m;
-        } else if (i) {
-          //move it closer to beginning, so next lookup will be faster
-          type_method_t tmp = *m;
-          *m = *(m-1);
-          *(m-1) = *m;
+        if (t != o) {
+          if (type_methods_used < MAX_TYPE_METHODS) {
+            //copy method from parent to child
+            type_method_t *n = type_methods + type_methods_used++;
+            *n = *m;
+            n->next = o->methods;
+            o->methods = n;
+          }
+        } else if (p) {
+          //move accessed method to the beginning
+          p->next = m->next;
+          m->next = o->methods;
+          o->methods = m;
         }
         return m->fn;
       }
@@ -206,7 +219,8 @@ static intptr_t get_type_id(api_t *api, char *name) {
   t = types+i;
   t->name = strdup(name);
   t->sink = sink; //default sink
-  t->nmethods = 0;
+  t->size = 0;
+  t->methods = 0;
 
   if (!api->collectors[i]) {
     SET_COLLECTOR(i, collect_data);
@@ -358,6 +372,9 @@ static void set_method_r(api_t *api, void *method, void *type, void *handler, in
 static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
   int j;
   if (type == subtype) return;
+
+  types[subtype].super = &types[type];
+
   subtypings[type].items[subtypings[type].used++] = subtype;
   supertypings[subtype].items[supertypings[subtype].used++] = type;
   for (j = 0; j < methods_used; j++) {
@@ -372,7 +389,29 @@ static void set_method(api_t *api, void *method, void *type, void *handler) {
   set_method_r(api, method, type, handler, 0);
 }
 
+static void add_method(api_t *api, intptr_t method_id, intptr_t type_id, void *handler) {
+  type_method_t *m;
+  type_t *t = &types[type_id];
+  if (type_methods_used == MAX_TYPE_METHODS)
+    fatal("type_methods[] table overflow\n");
+
+  for (m = types[type_id].methods; m; m = m->next) {
+    if (m->id == method_id) {
+      fprintf(stderr, "add_method: redefining %s.%s\n"
+             ,t->name, method_names[method_id]);
+    }
+  }
+
+  m = type_methods + type_methods_used++;
+  m->id = method_id;
+  m->fn = handler;
+  m->next = t->methods;
+  types[type_id].methods = m;
+}
+
 static void set_type_size_and_name(struct api_t *api, intptr_t tag, intptr_t size, void *name) {
+  types[tag].sname = name;
+  types[tag].size = size;
   methods[M_SIZE][tag] = (void*)size;
   methods[M_NAME][tag] = name;
 }
@@ -2415,6 +2454,22 @@ static void resolve_types(api_t *api, void *types, int count) {
   }
 }
 
+static void resolve_method_ids(api_t *api, void *metbl, int count) {
+  int i;
+  void **ms = (void**)metbl;
+  for (i = 0; i < count; i++) {
+    ms[i] = (void*)get_method_id(api, (char*)ms[i]);
+  }
+}
+
+static void resolve_type_ids(api_t *api, void *types, int count) {
+  int i;
+  void **ts = (void**)types;
+  for (i = 0; i < count; i++) {
+    ts[i] = (void*)get_type_id(api, (char*)ts[i]);
+  }
+}
+
 static void load_libs(api_t *api, void **libs, int nlibs, void **imlibs,
                       int nimlibs, void **im, int nimports) {
   int i;
@@ -2439,6 +2494,8 @@ void tables_init(struct api_t *api, void *tables) {
   load_libs(api,(void**)ts[4].table, ts[4].size
                ,(void**)ts[5].table, ts[5].size
                ,(void**)ts[6].table, ts[6].size);
+  //resolve_type_ids(api,ts[7].table, ts[7].size);
+  //resolve_method_ids(api,ts[8].table, ts[8].size);
 }
 
 static api_t *init_api() {
