@@ -16,10 +16,12 @@
     - perfomance will suffer, if O_TAG(o) changes frequently.
     - usage of api->method for catching and redirecting method calls could pose some problems.
       watch for CALL_TAGGED, methods_
-  Edit m_ampersand, m_underscore, "_", "&", methods, add_method, resolve_method, resolve_type, add_subtype, set_method, init_methods, resolve_types, set_type_size_and_name, tag_of, METHOD_NAME, BUILTIN_VARARGS("_",sink), BUILTIN_VARARGS("undefined",undefined),SET_TYPE_PARAMS,DMET,SUBTYPE
+  Edit m_ampersand, m_underscore, "_", "&", methods, add_method, resolve_method, resolve_type, add_subtype, set_method, init_methods, resolve_types, set_type_size_and_name, tag_of, METHOD_NAME, BUILTIN1("methods_",methods_,C_ANY,o), BUILTIN_VARARGS("_",sink), BUILTIN_VARARGS("undefined",undefined),SET_TYPE_PARAMS,DMET,SUBTYPE
+- SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
 - fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
   Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
 - "$method = Body" declarations which would attach to the last type defined in current file.
+- change void* and uintptr_t to uint64_t, typedef'ed as u64
 - `get_` and `set_` methods, based on cached `methods_` list
 - optimize build dependencies being recompiled when not required.
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes

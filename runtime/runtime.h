@@ -6,11 +6,6 @@
 #define MAX_METHODS (4*1024)
 #define MAX_LIBS 1024
 
-// predefine method slots
-#define M_SIZE 0
-#define M_NAME 1
-#define M_SINK 2
-
 #define LIST_SIZE(o) ((uintptr_t)O_CODE(o))
 
 #define IS_FIXTEXT(o) (O_TAGL(o) == T_FIXTEXT)

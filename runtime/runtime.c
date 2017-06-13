@@ -121,19 +121,7 @@ static api_t api_g;
 
 static int initializing = 1; //true during runtime init
 
-#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
-
-static int methods_used;
-static void **methods[MAX_METHODS];
-static int types_used;
-static char *typenames[MAX_TYPES];
-#define DATA_SIZE(o) ((uintptr_t)methods[0][O_TAGH(o)])
-
-static void *undefined;
 static void *sink;
-
-
-#define MAX_TYPE_METHODS (1024*100)
 
 typedef struct type_method_t type_method_t;
 
@@ -154,29 +142,37 @@ struct type_t {
   type_method_t *methods;
 };
 
+#define MAX_TYPE_METHODS (1024*100)
 static type_method_t type_methods[MAX_TYPE_METHODS];
 static int type_methods_used;
 
-static char *method_names[MAX_METHODS];
+static void *method_names[MAX_METHODS];
 static int method_names_used;
 
-static int ntypes;
 static type_t types[MAX_TYPES];
+static int types_used;
 
+static int texts_equal(void *a, void *b);
 
 static intptr_t resolve_method(api_t *api, char *name) {
   int i;
+  void *text_name;
+  TEXT(text_name, name);
   type_t *t;
   for (i = 0; i < method_names_used; i++)
-    if (!strcmp(method_names[i], name))
+    if (texts_equal(method_names[i], text_name))
       return i;
   if (method_names_used == MAX_METHODS) fatal("method_names[] table overflow\n");
   ++method_names_used;
-  method_names[i] = strdup(name);
+  method_names[i] = text_name;
   return i;
 }
 
-static void *get_method(intptr_t type_id, intptr_t method_id) {
+static void *get_method_name(uintptr_t method_id) {
+  return method_names[method_id];
+}
+
+static void *get_method(uintptr_t type_id, uintptr_t method_id) {
   int i;
   type_t *o = types+type_id;
   type_t *t = o;
@@ -207,15 +203,16 @@ static void *get_method(intptr_t type_id, intptr_t method_id) {
 }
 
 static void *collect_data(void *o);
+#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
 
 static intptr_t resolve_type(api_t *api, char *name) {
   int i;
   type_t *t;
-  for (i = 0; i < ntypes; i++)
+  for (i = 0; i < types_used; i++)
     if (!strcmp(types[i].name, name))
       return i;
-  if (ntypes == MAX_TYPES) fatal("types[] table overflow\n");
-  ++ntypes;
+  if (types_used == MAX_TYPES) fatal("types[] table overflow\n");
+  ++types_used;
   t = types+i;
   t->name = strdup(name);
   t->sink = sink; //default sink
@@ -306,7 +303,7 @@ static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *h
   for (m = types[type_id].methods; m; m = m->next) {
     if (m->id == method_id) {
       fprintf(stderr, "add_method: redefining %s.%s\n"
-             ,t->name, method_names[method_id]);
+             ,t->name, print_object(method_names[method_id]));
     }
   }
 
@@ -323,7 +320,7 @@ static void set_type_size_and_name(struct api_t *api, intptr_t tag, intptr_t siz
 }
 
 static void *tag_of(void *o) {
-  return methods[M_NAME][O_TYPE(o)];
+  return types[O_TYPE(o)].sname;
 }
 
 static void *fixtext_encode(char *p) {
@@ -512,7 +509,7 @@ static uintptr_t show_runtime_info(api_t *api) {
   fprintf(stderr, "total: %ld\n", (uintptr_t)(HEAP_SIZE)*2*8-total_reserved);
   fprintf(stderr, "runtime: %ld\n", total_reserved);
   fprintf(stderr, "types used: %d/%d\n", types_used, MAX_TYPES);
-  fprintf(stderr, "methods used: %d/%d\n", methods_used, MAX_METHODS);
+  fprintf(stderr, "methods used: %d/%d\n", type_methods_used, MAX_TYPE_METHODS);
   fprintf(stderr, "\n");
 }
 
@@ -1030,7 +1027,7 @@ BUILTIN2("list.apply",list_apply,C_ANY,as,C_FN,f)
   for (i = 0; i < nargs; i++) {
     STARG(e,i,REF(as,i));
   }
-  CALL_TAGGED(R,f)
+  CALL_TAGGED(R,f);
 RETURNS_NO_GC(R)
 BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   int i;
@@ -1048,7 +1045,7 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   for (i = 0; i < nargs; i++) {
     STARG(e,i,REF(as,i));
   }
-  MCALL(R,o,m);
+  MCALL(R,o,UNFIXNUM(m));
 RETURNS_NO_GC(R)
 
 
@@ -1238,7 +1235,7 @@ BUILTIN1("int.bytes",int_bytes,C_ANY,count)
 RETURNS(alloc_bytes(api,UNFIXNUM(count)))
 
 BUILTIN1("typename",typename,C_ANY,o)
-RETURNS(tag_of(o));
+RETURNS(types[O_TYPE(o)].sname);
 
 BUILTIN1("address",address,C_ANY,o)
 RETURNS((uintptr_t)(o)&~ALIGN_MASK)
@@ -1246,21 +1243,16 @@ RETURNS((uintptr_t)(o)&~ALIGN_MASK)
 #define NUM_SPECIAL_METHODS 6
 
 BUILTIN1("methods_",methods_,C_ANY,o)
-  int i;
-  void **m;
+  type_method_t *m;
   int t = (int)O_TYPE(o);
-  R = Empty; 
-  for (i = NUM_SPECIAL_METHODS; i < methods_used; i++) {
-     m = methods[i];
-     if (m[t] != undefined) {
-       void *name, *c, *pair;
-       LIST_ALLOC(pair, 2);
-       TEXT(name, (char*)m[T_NAME]);
-       REF(pair,0) = name;
-       REF(pair,1) = m[t];
-       CONS(c, pair, R);
-       R = c;
-     }
+  R = Empty;
+  for (m = types[t].methods; m; m = m->next) {
+    void *name, *c, *pair;
+    LIST_ALLOC(pair, 2);
+    REF(pair,0) = method_names[m->id];
+    REF(pair,1) = m->fn;
+    CONS(c, pair, R);
+    R = c;
   }
 RETURNS(R)
 
@@ -1692,18 +1684,10 @@ BUILTIN_VARARGS("_",sink)
   void *name;
   void *o = getArg(0);
   METHOD_NAME(name, api->method);
-  fprintf(stderr, "%s has no method ", print_object(tag_of(o)));
+  fprintf(stderr, "%s has no method ", types[O_TYPE(o)].name);
   fprintf(stderr, "%s\n", print_object(name));
   print_stack_trace(api);
   fatal("aborting");
-RETURNS(0)
-
-// handles methods that werent defined or inherited by type
-BUILTIN_VARARGS("undefined",undefined)
-  void *o = getArg(0);
-  void **m = methods[M_SINK];
-  MCALL_NO_SAVE(R,o,m);
-  return (void*)R; //no need to FLIP_HEAP or GC
 RETURNS(0)
 
 static struct {
@@ -1835,9 +1819,7 @@ print_tail:
     *out++ = '`';
   } else {
     if (type < types_used) {
-      out += sprintf(out, "#(");
-      out = decode_text(out, methods[M_NAME][type]);
-      out += sprintf(out, " %p)", (void*)O_PTR(o));
+      out += sprintf(out, "#(%s %p)", types[type].name, (void*)O_PTR(o));
     } else {
       out += sprintf(out, "#(bad_type{%d} %p)", type, o);
     }
@@ -1974,8 +1956,9 @@ static void *collect_data(void *o) {
   int i, size;
   void *p;
   api_t *api = &api_g;
-  size = DATA_SIZE(o);
-  ALLOC_DATA(p, O_TAGH(o), size);
+  uintptr_t tag = O_TAGH(o);
+  size = types[tag].size;
+  ALLOC_DATA(p, tag, size);
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
     GC_REC(REF(p,i), REF(o,i));
@@ -2035,15 +2018,7 @@ static void fatal_error(api_t *api, void *msg) {
   fatal("aborting");
 }
 
-static void fatal_error_chars(api_t *api, char *msg) {
-  fprintf(stderr, "fatal_error: %s\n", msg);
-  print_stack_trace(api);
-  fatal("aborting");
-}
-
 static void setup_0() {}
-
-mid = resolve_method(api, name);
 
 #define ADD_MET(tid,m_cfun) do {\
   BUILTIN_CLOSURE(met, m_cfun); \
@@ -2065,11 +2040,12 @@ mid = resolve_method(api, name);
 }
 
 #define METHOD_FN1(name, type, fn) {\
-  mid = resolve_method(api, name); \
+  intptr_t mid = resolve_method(api, name); \
   void *met; \
   ADD_MET(type,fn); \
   if (type == T_TEXT) ADD_MET(T_FIXTEXT,fn); \
 }
+
 static void init_types(api_t *api) {
   void *n_int, *n_float, *n_fn, *n_list, *n_text, *n_void; // typenames
 
@@ -2107,8 +2083,6 @@ static void init_types(api_t *api) {
   resolve_type(api, "list");
   resolve_type(api, "text");
   resolve_type(api, "hard_list");
-  resolve_type(api, "_name_");
-  resolve_type(api, "_name_text_");
   resolve_type(api, "_bytes_");
 
   set_type_size_and_name(api, T_INT, 0, n_int);
@@ -2242,10 +2216,6 @@ static void init_builtins(api_t *api) {
     single_chars[i] = single_chars[0];
   }
 
-  for (i = 0; i < MAX_METHODS; i++) {
-    ALLOC_BASIC(methods[i], FIXNUM(MAX_TYPES), MAX_TYPES);
-    Frame = &api->frames[i&1]; //ensures even memory consumption among two heaps
-  }
   Frame = api->frames+1;
   
   init_types(api);
@@ -2393,7 +2363,7 @@ static api_t *init_api() {
   api->gc_lifts = gc_lifts;
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
-  api->fatal_chars = fatal_error_chars;
+  api->get_method_name = get_method_name;
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;
   api->add_method = add_method;
@@ -2412,7 +2382,6 @@ static api_t *init_api() {
     api->frames[i].top = &api->top[i&1];
   }
 
-  BUILTIN_CLOSURE(undefined, b_undefined);
   BUILTIN_CLOSURE(sink, b_sink);
 
   ALLOC_DATA(No, T_VOID, 0);

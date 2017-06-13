@@ -60,9 +60,7 @@
 #define T_GENERIC_LIST 11
 #define T_GENERIC_TEXT 12
 #define T_HARD_LIST    13
-#define T_NAME         14
-#define T_NAME_TEXT    15
-#define T_BYTES        16
+#define T_BYTES        14
 
 // sign preserving shifts
 #define ASHL(x,count) ((x)*(1<<(count)))
@@ -126,15 +124,15 @@ typedef struct api_t api_t;
 struct api_t {
   frame_t *frame; // current frame
 
-  void *method; // current method, we execute
+  uintptr_t method; // current method, we execute
 
   void *jmp_return;
 
   // constants
   void *void_;
   void *empty_;
-  void *m_ampersand;
-  void *m_underscore;
+  uintptr_t m_ampersand;
+  uintptr_t m_underscore;
 
   // runtime's C API
   void (*bad_type)(api_t *api, char *expected, int arg_index, char *name);
@@ -144,11 +142,11 @@ struct api_t {
   void (*gc_lifts)();
   void *(*alloc_text)(char *s);
   void (*fatal)(api_t *api, void *msg);
-  void (*fatal_chars)(api_t *api, char *msg);
   void (*add_subtype)(api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(api_t *api, intptr_t tag, intptr_t size, void *name);
   void (*add_method)(api_t *api, intptr_t method_id, intptr_t type_id, void *handler);
-  void *(*get_method)(intptr_t type_id, intptr_t method_id)
+  void *(*get_method)(uintptr_t type_id, uintptr_t method_id);
+  void *(*get_method_name)(uintptr_t method_id);
   char *(*text_chars)(api_t *api, void *text);
 
   void *collectors[MAX_TYPES]; //garbage collectors for each type
@@ -208,7 +206,7 @@ typedef struct tot_entry_t { //table of tables entry
 
 #define SET_TYPE_PARAMS(tag,size,name) \
   api->set_type_size_and_name(api,(intptr_t)(tag),size,name);
-#define DMET(method,type,handler) api->set_method(api,method,type,handler);
+#define DMET(method,type,handler) api->add_method(api,(intptr_t)type,(intptr_t)method,handler);
 #define SUBTYPE(super,sub) api->add_subtype(api,(intptr_t)(super),(intptr_t)(sub));
 
 #define IS_LIST(o) (O_TAG(o) == TAG(T_LIST))
@@ -230,8 +228,8 @@ typedef struct tot_entry_t { //table of tables entry
 #define END_CODE }
 #define LDFXN(dst,x) dst = (void*)FIXNUM(x)
 #define TEXT(dst,x) dst = api->alloc_text((char*)(x))
-#define THIS_METHOD(dst) dst = api->method;
-#define METHOD_NAME(dst,method) dst = ((void**)(method))[T_NAME_TEXT];
+#define THIS_METHOD(dst) dst = (void*)FIXNUM(api->method);
+#define METHOD_NAME(dst,method) dst = api->get_method_name((uintptr_t)method);
 #define TYPE_ID(dst,o) dst = (void*)FIXNUM(O_TYPE(o));
 // P holds points to closure of current function
 // E holds pointer to arglist of current function
@@ -252,15 +250,21 @@ typedef struct tot_entry_t { //table of tables entry
   Top = Base; \
   --Frame;
 #define CALL(k,f) Frame->clsr = f; k = O_FN(f)(api);
-#define MCALL_NO_SAVE(k,o,m) \
-   { \
-      void *f_; \
-      f_ = ((void**)(m))[O_TYPE(o)]; \
-      CALL(k,f_); \
-   }
+
+#define MCALL_NO_SAVE(k,o,m) {\
+  static uintptr_t cached_tag = 0xFFFFFF; \
+  static void *cached_method; \
+  uintptr_t tag = O_TAG(o); \
+  if (cached_tag != tag) { \
+    cached_tag = tag; \
+    cached_method = api->get_method(tag,(uintptr_t)m); \
+  } \
+  CALL(k,cached_method); \
+}
+
 //method call
 #define MCALL(k,o,m) \
-   api->method = m; \
+   api->method = (uintptr_t)m; \
    MCALL_NO_SAVE(k,o,m);
 #define CALL_TAGGED(k,o) \
   { \
