@@ -2363,11 +2363,11 @@ static api_t *init_api() {
   api->gc_lifts = gc_lifts;
   api->alloc_text = alloc_text;
   api->fatal = fatal_error;
-  api->get_method_name = get_method_name;
   api->add_subtype = add_subtype;
   api->set_type_size_and_name = set_type_size_and_name;
   api->add_method = add_method;
   api->get_method = get_method;
+  api->get_method_name = get_method_name;
   api->text_chars = text_chars;
 
 #define BASE_HEAD_SIZE 1
