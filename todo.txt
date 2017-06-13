@@ -17,6 +17,8 @@
     - usage of api->method for catching and redirecting method calls could pose some problems.
       watch for CALL_TAGGED, methods_
   Edit m_ampersand, m_underscore, "_", "&", methods, add_method, resolve_method, resolve_type, add_subtype, set_method, init_methods, resolve_types, set_type_size_and_name, tag_of, METHOD_NAME, BUILTIN1("methods_",methods_,C_ANY,o), BUILTIN_VARARGS("_",sink), BUILTIN_VARARGS("undefined",undefined),SET_TYPE_PARAMS,DMET,SUBTYPE
+- circular inheritance should be fatal bug. Don't silently ignoder it in add_subtype
+- `log` is a really bad name, because it is not used for logging, but as debug version of `say`. Moreover it can be confused with math `log` function for natural logorithm. Rename `log` to `dbg`
 - SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
 - fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
   Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.

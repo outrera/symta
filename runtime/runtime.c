@@ -119,8 +119,6 @@ static char *lib_folders[MAX_LIB_FOLDERS];
 
 static api_t api_g;
 
-static int initializing = 1; //true during runtime init
-
 static void *sink;
 
 typedef struct type_method_t type_method_t;
@@ -172,10 +170,11 @@ static void *get_method_name(uintptr_t method_id) {
   return method_names[method_id];
 }
 
-static void *get_method(uintptr_t type_id, uintptr_t method_id) {
+static void *get_method(uintptr_t tag, uintptr_t method_id) {
   int i;
-  type_t *o = types+type_id;
+  type_t *o = types+O_TYPE(tag);
   type_t *t = o;
+
   do {
     type_method_t *m, *p=0;
     for (m = t->methods; m; p = m, m = m->next) {
@@ -198,7 +197,7 @@ static void *get_method(uintptr_t type_id, uintptr_t method_id) {
       }
     }
     t = t->super;
-  } while (t); 
+  } while (t);
   return o->sink;
 }
 
@@ -218,16 +217,10 @@ static intptr_t resolve_type(api_t *api, char *name) {
   t->sink = sink; //default sink
   t->size = 0;
   t->methods = 0;
+  t->super = 0;
 
   if (!api->collectors[i]) {
     SET_COLLECTOR(i, collect_data);
-  }
-
-  if (initializing && i != T_OBJECT) {
-    //builtin types all inherit `_`
-    t->super = types+T_OBJECT;
-  } else {
-    t->super = 0;
   }
 
   return i;
@@ -284,7 +277,7 @@ static void fatal(char *fmt, ...) {
 }
 
 static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
-  if (type == subtype) return;
+  if (type == subtype) return; //FIXME: should be fatal
   types[subtype].super = &types[type];
 }
 
@@ -2164,6 +2157,13 @@ static void init_types(api_t *api) {
   METHOD_FN1("clear", T_BYTES, b_bytes_clear);
   METHOD_FN1("utf8", T_BYTES, b_bytes_utf8);
 
+  add_subtype(api, T_OBJECT, T_GENERIC_TEXT);
+  add_subtype(api, T_OBJECT, T_GENERIC_LIST);
+  add_subtype(api, T_OBJECT, T_INT);
+  add_subtype(api, T_OBJECT, T_FLOAT);
+  add_subtype(api, T_OBJECT, T_VOID);
+  add_subtype(api, T_OBJECT, T_CLOSURE);
+
   add_subtype(api, T_GENERIC_TEXT, T_FIXTEXT);
   add_subtype(api, T_GENERIC_TEXT, T_TEXT);
 
@@ -2409,11 +2409,9 @@ int main(int argc, char **argv) {
   api_t *api;
   void *R;
 
-  initializing = 1;
   api = init_api();
   init_args(api, argc, argv);
   init_builtins(api);
-  initializing = 0;
 
   runtime_reserved0 = get_heap_used(0);
   runtime_reserved1 = get_heap_used(1);

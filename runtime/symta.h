@@ -145,7 +145,7 @@ struct api_t {
   void (*add_subtype)(api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(api_t *api, intptr_t tag, intptr_t size, void *name);
   void (*add_method)(api_t *api, intptr_t method_id, intptr_t type_id, void *handler);
-  void *(*get_method)(uintptr_t type_id, uintptr_t method_id);
+  void *(*get_method)(uintptr_t tag, uintptr_t method_id);
   void *(*get_method_name)(uintptr_t method_id);
   char *(*text_chars)(api_t *api, void *text);
 
