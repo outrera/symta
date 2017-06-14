@@ -141,7 +141,7 @@ struct type_t {
 };
 
 #define MAX_TYPE_METHODS (1024*100)
-static type_method_t type_methods[MAX_TYPE_METHODS];
+static type_method_t *type_methods;
 static int type_methods_used;
 
 static void *method_names[MAX_METHODS];
@@ -297,12 +297,15 @@ static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *h
     if (m->id == method_id) {
       fprintf(stderr, "add_method: redefining %s.%s\n"
              ,t->name, print_object(method_names[method_id]));
+      abort();
     }
   }
 
   m = type_methods + type_methods_used++;
   m->id = method_id;
-  m->fn = handler;
+  // make sure it is lifted with all dependencies
+  m->fn = (void*)((uintptr_t)(handler) | LIFT_FLAG);
+  LIFTS_CONS(Lifts, &m->fn, Lifts);
   m->next = t->methods;
   types[type_id].methods = m;
 }
@@ -2177,7 +2180,7 @@ static void init_types(api_t *api) {
 
 static void init_builtins(api_t *api) {
   int i;
-  void *rt;
+  void *rt, *tmp;
 
   for (i = 0; builtins[i].name; i++) {
     void *t;
@@ -2215,6 +2218,9 @@ static void init_builtins(api_t *api) {
   for (; i < MAX_SINGLE_CHARS; i++) {
     single_chars[i] = single_chars[0];
   }
+
+  ALLOC_BASIC(tmp, FIXNUM(MAX_TYPE_METHODS*3), MAX_TYPE_METHODS*3);
+  type_methods = (type_method_t*)tmp;
 
   Frame = api->frames+1;
   
