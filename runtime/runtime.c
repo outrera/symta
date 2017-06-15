@@ -167,7 +167,7 @@ static intptr_t resolve_method(api_t *api, char *name) {
 }
 
 static void *get_method_name(uintptr_t method_id) {
-  return method_names[method_id];
+  return method_names[UNFIXNUM(method_id)];
 }
 
 static void *get_method(uintptr_t tag, uintptr_t method_id) {
@@ -1031,7 +1031,6 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   void *o;
   void *e;
   uintptr_t tag;
-  m = (void*)O_PTR(m);
   if (!nargs) {
     fprintf(stderr, "apply_method: empty list\n");
     bad_call(api,P);
