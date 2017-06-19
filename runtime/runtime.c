@@ -213,7 +213,7 @@ static intptr_t resolve_type(api_t *api, char *name) {
   ++types_used;
   t = types+i;
   t->name = strdup(name);
-  t->sink = sink; //default sink
+  t->sink = &sink; //default sink
   t->size = 0;
   t->methods = 0;
   t->super = 0;
