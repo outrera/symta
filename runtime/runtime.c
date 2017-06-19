@@ -197,7 +197,7 @@ static void *get_method(uintptr_t tag, uintptr_t method_id) {
     }
     t = t->super;
   } while (t);
-  return o->sink;
+  return *(void**)o->sink;
 }
 
 static void *collect_data(void *o);
@@ -284,11 +284,6 @@ static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *h
   type_method_t *m;
   type_t *t = &types[type_id];
 
-  if (method_id == api->m_underscore) {
-    t->sink = handler;
-    return;
-  }
-
   if (type_methods_used == MAX_TYPE_METHODS)
     fatal("type_methods[] table overflow\n");
 
@@ -307,6 +302,11 @@ static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *h
   LIFTS_CONS(Lifts, &m->fn, Lifts);
   m->next = t->methods;
   types[type_id].methods = m;
+
+  if (method_id == api->m_underscore) {
+    t->sink = &m->fn;
+    return;
+  }
 }
 
 static void set_type_size_and_name(struct api_t *api, intptr_t tag, intptr_t size, void *name) {
@@ -1034,7 +1034,7 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
     fprintf(stderr, "apply_method: empty list\n");
     bad_call(api,P);
   }
-  o = REF(as,i);
+  o = REF(as,0);
   ARL(e,nargs);
   for (i = 0; i < nargs; i++) {
     STARG(e,i,REF(as,i));
