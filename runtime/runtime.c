@@ -171,11 +171,10 @@ static void *get_method_name(uintptr_t method_id) {
 }
 
 static void *get_method(uintptr_t tag, uintptr_t method_id) {
-  int i;
   type_t *o = types+O_TYPE(tag);
   type_t *t = o;
 
-  do {
+  do { //FIXME: non threadsafe
     type_method_t *m, *p=0;
     for (m = t->methods; m; p = m, m = m->next) {
       if (m->id == method_id) {
@@ -1678,7 +1677,7 @@ meta._ Method Args =
 BUILTIN_VARARGS("_",sink)
   void *name;
   void *o = getArg(0);
-  METHOD_NAME(name, api->method);
+  METHOD_NAME(name, FIXNUM(api->method));
   fprintf(stderr, "%s has no method ", types[O_TYPE(o)].name);
   fprintf(stderr, "%s\n", print_object(name));
   print_stack_trace(api);
@@ -2054,8 +2053,8 @@ static void init_types(api_t *api) {
   SET_COLLECTOR(T_LIST, collect_list);
   SET_COLLECTOR(T_VIEW, collect_view);
   SET_COLLECTOR(T_CONS, collect_cons);
-  SET_COLLECTOR(T_TEXT,collect_text);
-  SET_COLLECTOR(T_BYTES,collect_bytes);
+  SET_COLLECTOR(T_TEXT, collect_text);
+  SET_COLLECTOR(T_BYTES, collect_bytes);
 
   TEXT(n_int, "int");
   TEXT(n_float, "float");
@@ -2091,11 +2090,6 @@ static void init_types(api_t *api) {
   set_type_size_and_name(api, T_VOID, 0, n_void);
   set_type_size_and_name(api, T_BYTES, 0, n_list);
 
-  METHOD_FN("_", b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink, b_sink);
-  METHOD_FN("&", 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-  METHOD_FN("_gc", 0, 0, 0, 0, 0, 0, 0, 0, 0);
-  METHOD_FN("_print", 0, 0, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("neg", b_int_neg, b_float_neg, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("+", b_int_add, b_float_add, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("-", b_int_sub, b_float_sub, 0, 0, 0, 0, 0, 0, 0);
@@ -2152,7 +2146,6 @@ static void init_types(api_t *api) {
   METHOD_FN1("folder", T_TEXT, b_text_folder);
   METHOD_FN1("items", T_TEXT, b_text_items);
 
-  METHOD_FN1("_", T_BYTES, b_sink);
   METHOD_FN1("size", T_BYTES, b_bytes_size);
   METHOD_FN1(".", T_BYTES, b_bytes_get);
   METHOD_FN1("=", T_BYTES, b_bytes_set);
