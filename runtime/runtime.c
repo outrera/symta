@@ -1039,7 +1039,12 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   for (i = 0; i < nargs; i++) {
     STARG(e,i,REF(as,i));
   }
-  MCALL(R,o,UNFIXNUM(m));
+  {
+    void *fn;
+    api->method = (uintptr_t)UNFIXNUM(m);
+    fn = api->get_method(O_TAG(o),(uintptr_t)api->method);
+    CALL(R,fn);
+  }
 RETURNS_NO_GC(R)
 
 

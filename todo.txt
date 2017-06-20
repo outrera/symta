@@ -1,6 +1,6 @@
 - ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
-- circular inheritance should be fatal bug. Don't silently ignoder it in add_subtype
-- list.apply and list.apply_method should really be runtime calls, followed by MCALL. That will likey greatly speedup them.
+- circular inheritance should be fatal bug. Don't silently ignore it in add_subtype
+- list.apply and list.apply_method should really be runtime calls, followed by MCALL. That will may open ways to speedup them.
 - _this_method gets clobbered by a call to @tail, during destructuring of @As:
   type met{a b}
   met.test @As = say: _method_name: _this_method
@@ -10,6 +10,17 @@
 - `log` is a really bad name, because it is not used for logging, but as debug version of `say`. Moreover it can be confused with math `log` function for natural logorithm. Rename `log` to `dbg`
 - no and got should be macros
 - TCC compiled Symta compiler fails because of some bug in TCC.
+  compiling core_...
+  fatal: stack overflow
+  at ip=00000000215CC700 sp=0000000020B48860
+  Stack Trace:
+    000000002152EF01:ssa_form:423,14,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    000000002152CBB1:ssa_expr:478,13,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    00000000215BA299:ev:86,5,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    00000000215984E3:ssa_set:234,22,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    000000002152EF01:ssa_form:423,14,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    000000002152CBB1:ssa_expr:478,13,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+    000000002159462E:ssa_progn:240,15,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
 - SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
 - fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
   Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.

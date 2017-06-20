@@ -627,6 +627,7 @@ list.digits @Base =
 
 type macro{@new_macro N E} name/N expander/E
 
+//~ means meta doesnt inherit from _, so all methods will got to $object_
 type meta.~{O M} object_/O meta_/M
 _.meta_ = No
 meta._ Method Args =
