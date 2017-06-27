@@ -131,13 +131,17 @@ struct type_method_t {
 
 typedef struct type_t type_t;
 
+#define METHOD_TABLE_SIZE 512
+#define METHOD_TABLE_MASK (METHOD_TABLE_SIZE-1)
 struct type_t {
-  type_t *super; // parent type
   intptr_t size; // number of data slots in type
   void *sink;    // sink method: `type._ Method Args = @Body`
   char *name;
   void *sname;   // name in symta's format
-  type_method_t *methods;
+  type_t *super; // parent type
+  type_t *subtypes; // child types
+  type_t *next;  // next subtype
+  type_method_t *methods[METHOD_TABLE_SIZE];
 };
 
 #define MAX_TYPE_METHODS (1024*100)
@@ -173,24 +177,20 @@ static void *get_method_name(uintptr_t method_id) {
 static void *get_method(uintptr_t tag, uintptr_t method_id) {
   type_t *o = types+O_TYPE(tag);
   type_t *t = o;
+  uintptr_t hid = method_id&METHOD_TABLE_MASK;
 
-  do { //FIXME: non threadsafe
+  do { //FIXME: let add_subtype propagate added methods to children instead
     type_method_t *m, *p=0;
-    for (m = t->methods; m; p = m, m = m->next) {
+    for (m = t->methods[hid]; m; p = m, m = m->next) {
       if (m->id == method_id) {
         if (t != o) {
           if (type_methods_used < MAX_TYPE_METHODS) {
             //copy method from parent to child
             type_method_t *n = type_methods + type_methods_used++;
             *n = *m;
-            n->next = o->methods;
-            o->methods = n;
+            n->next = o->methods[hid];
+            o->methods[hid] = n;
           }
-        } else if (p) {
-          //move accessed method to the beginning
-          p->next = m->next;
-          m->next = o->methods;
-          o->methods = m;
         }
         return m->fn;
       }
@@ -214,9 +214,6 @@ static intptr_t resolve_type(api_t *api, char *name) {
   t = types+i;
   t->name = strdup(name);
   t->sink = &sink; //default sink
-  t->size = 0;
-  t->methods = 0;
-  t->super = 0;
 
   if (!api->collectors[i]) {
     SET_COLLECTOR(i, collect_data);
@@ -281,17 +278,19 @@ static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
 }
 
 static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *handler) {
-  type_method_t *m;
+  intptr_t hid; //hashed id
+  type_method_t *m,**ms;
   type_t *t = &types[type_id];
 
   if (type_methods_used == MAX_TYPE_METHODS)
     fatal("type_methods[] table overflow\n");
 
-  for (m = types[type_id].methods; m; m = m->next) {
+  hid = method_id&METHOD_TABLE_MASK;
+  ms = t->methods;
+  for (m = t->methods[hid]; m; m = m->next) {
     if (m->id == method_id) {
-      fprintf(stderr, "add_method: redefining %s.%s\n"
+      fatal("add_method: redefining %s.%s\n"
              ,t->name, print_object(method_names[method_id]));
-      abort();
     }
   }
 
@@ -300,8 +299,8 @@ static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *h
   // make sure it is lifted with all dependencies
   m->fn = (void*)((uintptr_t)(handler) | LIFT_FLAG);
   LIFTS_CONS(Lifts, &m->fn, Lifts);
-  m->next = t->methods;
-  types[type_id].methods = m;
+  m->next = t->methods[hid];
+  t->methods[hid] = m;
 
   if (method_id == api->m_underscore) {
     t->sink = &m->fn;
@@ -1241,17 +1240,22 @@ RETURNS((uintptr_t)(o)&~ALIGN_MASK)
 
 #define NUM_SPECIAL_METHODS 6
 
+//FIXME: can be speed-up, if all type's methods are linked
 BUILTIN1("methods_",methods_,C_ANY,o)
-  type_method_t *m;
+  int i;
+  type_method_t *m, **ms;
   int t = (int)O_TYPE(o);
   R = Empty;
-  for (m = types[t].methods; m; m = m->next) {
-    void *name, *c, *pair;
-    LIST_ALLOC(pair, 2);
-    REF(pair,0) = method_names[m->id];
-    REF(pair,1) = m->fn;
-    CONS(c, pair, R);
-    R = c;
+  ms = types[t].methods;
+  for (i = 0; i < METHOD_TABLE_SIZE; i++) {
+    for (m = ms[i]; m; m = m->next) {
+      void *name, *c, *pair;
+      LIST_ALLOC(pair, 2);
+      REF(pair,0) = method_names[m->id];
+      REF(pair,1) = m->fn;
+      CONS(c, pair, R);
+      R = c;
+    }
   }
 RETURNS(R)
 
