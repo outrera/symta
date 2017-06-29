@@ -1,15 +1,5 @@
 - ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
-- let add_subtype propagate added methods to children instead
-- circular inheritance should be fatal bug. Don't silently ignore it in add_subtype
-- list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object. Current idea is having caller of sink-method to pass its callsite cache, which _redirect will fill, hoping that the method-id is constant for that callsite:
-    uintptr_t tag = O_TAG(o);
-    if (cache->tag2 != tag || cache->mid2 != m) {
-      cache->tag2 = tag;
-      cache->mid2 = m;
-      cache->method2 = api->get_method(tag,(uintptr_t)m);
-    }
-    CALL(k,cache->method2);
-  The problem comes when cache->method2 gets resolved to sink-method too. Can be solved by malloc'ing cache list of tag2, mid2 and method2, although it would also require maintaining index and size
+- list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object.
 - _this_method gets clobbered by a call to @tail, during destructuring of @As:
   type met{a b}
   met.test @As = say: _method_name: _this_method

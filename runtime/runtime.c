@@ -98,13 +98,6 @@ static void *main_args;
 
 static char *version = "0.0.3";
 
-typedef struct {
-  int items[MAX_TYPES];
-  int used;
-} typing_t;
-static typing_t subtypings[MAX_TYPES];
-static typing_t supertypings[MAX_TYPES];
-
 #define MAX_SINGLE_CHARS (1<<8)
 static void *single_chars[MAX_SINGLE_CHARS];
 
@@ -118,110 +111,6 @@ static int lib_folders_used;
 static char *lib_folders[MAX_LIB_FOLDERS];
 
 static api_t api_g;
-
-static void *sink;
-
-typedef struct type_method_t type_method_t;
-
-struct type_method_t {
-  int id;
-  void *fn;
-  type_method_t *next;
-};
-
-typedef struct type_t type_t;
-
-#define METHOD_TABLE_SIZE 512
-#define METHOD_TABLE_MASK (METHOD_TABLE_SIZE-1)
-struct type_t {
-  intptr_t size; // number of data slots in type
-  void *sink;    // sink method: `type._ Method Args = @Body`
-  char *name;
-  void *sname;   // name in symta's format
-  type_t *super; // parent type
-  type_t *subtypes; // child types
-  type_t *next;  // next subtype
-  type_method_t *methods[METHOD_TABLE_SIZE];
-};
-
-#define MAX_TYPE_METHODS (1024*100)
-static type_method_t *type_methods;
-static int type_methods_used;
-
-static void *method_names[MAX_METHODS];
-static int method_names_used;
-
-static type_t types[MAX_TYPES];
-static int types_used;
-
-static int texts_equal(void *a, void *b);
-
-static intptr_t resolve_method(api_t *api, char *name) {
-  int i;
-  void *text_name;
-  TEXT(text_name, name);
-  type_t *t;
-  for (i = 0; i < method_names_used; i++)
-    if (texts_equal(method_names[i], text_name))
-      return i;
-  if (method_names_used == MAX_METHODS) fatal("method_names[] table overflow\n");
-  ++method_names_used;
-  method_names[i] = text_name;
-  return i;
-}
-
-static void *get_method_name(uintptr_t method_id) {
-  return method_names[UNFIXNUM(method_id)];
-}
-
-static void *get_method(uintptr_t tag, uintptr_t method_id) {
-  type_t *o = types+O_TYPE(tag);
-  type_t *t = o;
-  uintptr_t hid = method_id&METHOD_TABLE_MASK;
-
-  do { //FIXME: let add_subtype propagate added methods to children instead
-    type_method_t *m, *p=0;
-    for (m = t->methods[hid]; m; p = m, m = m->next) {
-      if (m->id == method_id) {
-        if (t != o) {
-          if (type_methods_used < MAX_TYPE_METHODS) {
-            //copy method from parent to child
-            type_method_t *n = type_methods + type_methods_used++;
-            *n = *m;
-            n->next = o->methods[hid];
-            o->methods[hid] = n;
-          }
-        }
-        return m->fn;
-      }
-    }
-    t = t->super;
-  } while (t);
-  return *(void**)o->sink;
-}
-
-static void *collect_data(void *o);
-#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
-
-static intptr_t resolve_type(api_t *api, char *name) {
-  int i;
-  type_t *t;
-  for (i = 0; i < types_used; i++)
-    if (!strcmp(types[i].name, name))
-      return i;
-  if (types_used == MAX_TYPES) fatal("types[] table overflow\n");
-  ++types_used;
-  t = types+i;
-  t->name = strdup(name);
-  t->sink = &sink; //default sink
-
-  if (!api->collectors[i]) {
-    SET_COLLECTOR(i, collect_data);
-  }
-
-  return i;
-}
-
 
 static int max_lifted;
 
@@ -272,40 +161,168 @@ static void fatal(char *fmt, ...) {
   abort();
 }
 
-static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
-  if (type == subtype) return; //FIXME: should be fatal
-  types[subtype].super = &types[type];
+static void *sink;
+
+typedef struct type_method_t type_method_t;
+
+struct type_method_t {
+  int id;
+  void *fn;
+  type_method_t *next;
+};
+
+typedef struct type_t type_t;
+
+#define METHOD_TABLE_SIZE 512
+#define METHOD_TABLE_MASK (METHOD_TABLE_SIZE-1)
+struct type_t {
+  intptr_t size; // number of data slots in type
+  void *sink;    // sink method: `type._ Method Args = @Body`
+  char *name;
+  void *sname;   // name in symta's format
+  type_t *super; // parent type
+  type_t *subtypes; // child types
+  type_t *next;  // next subtype
+  uintptr_t id;
+  type_method_t *methods[METHOD_TABLE_SIZE];
+};
+
+#define MAX_TYPE_METHODS (1024*100)
+static type_method_t *type_methods;
+static int type_methods_used;
+
+static void *method_names[MAX_METHODS];
+static int method_names_used;
+
+static type_t types[MAX_TYPES];
+static int types_used;
+
+static int texts_equal(void *a, void *b);
+
+static intptr_t resolve_method(api_t *api, char *name) {
+  int i;
+  void *text_name;
+  TEXT(text_name, name);
+  type_t *t;
+  for (i = 0; i < method_names_used; i++)
+    if (texts_equal(method_names[i], text_name))
+      return i;
+  if (method_names_used == MAX_METHODS) fatal("method_names[] table overflow\n");
+  ++method_names_used;
+  method_names[i] = text_name;
+  return i;
 }
 
-static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *handler) {
-  intptr_t hid; //hashed id
-  type_method_t *m,**ms;
-  type_t *t = &types[type_id];
+static void *get_method_name(uintptr_t method_id) {
+  return method_names[UNFIXNUM(method_id)];
+}
 
+static void *get_method(uintptr_t tag, uintptr_t method_id) {
+  type_method_t *m;
+  type_t *t = types+O_TYPE(tag);
+  uintptr_t hid = method_id&METHOD_TABLE_MASK;
+  for (m = t->methods[hid]; m; m = m->next)
+    if (m->id == method_id) return m->fn;
+  return *(void**)t->sink;
+}
+
+static void *collect_data(void *o);
+#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
+
+static intptr_t resolve_type(api_t *api, char *name) {
+  int i;
+  type_t *t;
+  for (i = 0; i < types_used; i++)
+    if (!strcmp(types[i].name, name))
+      return i;
+  if (types_used == MAX_TYPES) fatal("types[] table overflow\n");
+  ++types_used;
+  t = types+i;
+  t->name = strdup(name);
+  t->sink = &sink; //default sink
+  t->id = i;
+
+  if (!api->collectors[i]) {
+    SET_COLLECTOR(i, collect_data);
+  }
+
+  return i;
+}
+
+static void init_method(api_t *api, type_method_t **dst, uintptr_t id, void *handler) {
+  type_method_t *m;
   if (type_methods_used == MAX_TYPE_METHODS)
-    fatal("type_methods[] table overflow\n");
+    fatal("init_method: type_methods[] table overflow\n");
+
+  m = type_methods + type_methods_used++;
+  m->id = id;
+  // make sure it is lifted with all dependencies
+  m->fn = (void*)((uintptr_t)handler | LIFT_FLAG);
+  LIFTS_CONS(Lifts, &m->fn, Lifts);
+  m->next = *dst;
+  *dst = m;
+}
+
+static type_method_t *list_has_method(type_method_t *m, uintptr_t id) {
+  for ( ; m; m = m->next) if (m->id == id) return m;
+  return 0;
+}
+
+static void inherit_methods(api_t *api, type_t *parent, type_t *child) {
+  int i;
+  type_method_t *m, *n;
+  type_method_t **pms = parent->methods, **cms = child->methods;
+
+  for (i = 0; i < METHOD_TABLE_SIZE; i++)
+    for (n = pms[i]; n; n = n->next)
+      if (!list_has_method(cms[i], n->id))
+        init_method(api, cms+i, n->id, n->fn);
+}
+
+static void add_subtype(api_t *api, intptr_t type, intptr_t subtype) {
+  type_t *parent = &types[type];
+  type_t *child = &types[subtype];
+  if (type == subtype) fatal("type `%s` inherits from itself", parent->name);
+  child->super = parent;
+  child->next = parent->subtypes;
+  parent->subtypes = child;
+  inherit_methods(api, &types[type], &types[subtype]);
+}
+
+static void add_method_r(api_t *api, int depth, intptr_t type_id, intptr_t method_id, void *handler) {
+  intptr_t hid; //hashed id
+  type_method_t *n, *m, **ms;
+  type_t *s, *t = &types[type_id];
 
   hid = method_id&METHOD_TABLE_MASK;
   ms = t->methods;
-  for (m = t->methods[hid]; m; m = m->next) {
-    if (m->id == method_id) {
-      fatal("add_method: redefining %s.%s\n"
-             ,t->name, print_object(method_names[method_id]));
+  n = list_has_method(ms[hid], method_id);
+  if (n) {
+    for (s = t->super; s; s = s->super) {
+      m = list_has_method(s->methods[hid], method_id);
+      if (m && m->fn == n->fn) goto inherited;
     }
+    if (depth) return;
+    fatal("add_method: redefining %s.%s\n"
+         ,t->name, print_object(method_names[method_id]));
+  inherited:;
   }
 
-  m = type_methods + type_methods_used++;
-  m->id = method_id;
-  // make sure it is lifted with all dependencies
-  m->fn = (void*)((uintptr_t)(handler) | LIFT_FLAG);
-  LIFTS_CONS(Lifts, &m->fn, Lifts);
-  m->next = t->methods[hid];
-  t->methods[hid] = m;
+  init_method(api, ms+hid, method_id, handler);
+
+  for (s = t->subtypes; s; s = s->next) {
+    add_method_r(api, depth+1, s->id, method_id, handler);
+  }
 
   if (method_id == api->m_underscore) {
-    t->sink = &m->fn;
+    t->sink = &ms[hid]->fn;
     return;
   }
+}
+
+
+static void add_method(api_t *api, intptr_t type_id, intptr_t method_id, void *handler) {
+  add_method_r(api, 0, type_id, method_id, handler);
 }
 
 static void set_type_size_and_name(struct api_t *api, intptr_t tag, intptr_t size, void *name) {
