@@ -3,7 +3,7 @@ export address
        halt
        typename
        methods_
-       log
+       dbg
        say_
        rtstat
        stack_trace

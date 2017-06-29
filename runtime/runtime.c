@@ -1280,8 +1280,8 @@ BUILTIN0("halt",halt)
   exit(0);
 RETURNS(0)
 
-BUILTIN1("log",log,C_ANY,a)
-  fprintf(stderr, "log: %s\n", print_object(a));
+BUILTIN1("dbg",log,C_ANY,a)
+  fprintf(stderr, "dbg: %s\n", print_object(a));
 RETURNS(a)
 
 BUILTIN1("say_",say_,C_TEXT,o)

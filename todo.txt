@@ -6,7 +6,6 @@
   M = met 123 456
   M.test
   still, expand_block_item_method works, because it avoids clobbering.
-- `log` is a really bad name, because it is not used for logging, but as debug version of `say`. Moreover it can be confused with math `log` function for natural logorithm. Rename `log` to `dbg`
 - no and got should be macros
 - move m_mkdir into OS specific code.
 - move #ifdef __MACH__ my_clock_gettime into OSX specific code
