@@ -197,6 +197,8 @@ swap A B = form | ~T = A
                 | B <= ~T
 
 `if` A B C = [_if A B C]
+no @Xs = form No >< Xs
+got @Xs = form No <> Xs
 not @Xs = [_if Xs 0 1]
 `and` A B = [_if A B 0]
 `or` A B = form: let_ ((~V A)) (_if ~V ~V B)
@@ -991,8 +993,10 @@ same A B = form A^address >< B^address
 
 on @Xs X = [X @Xs]
 
-export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@' '[]' 't' '\\' 'form'
-       'mtx' 'list' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times' 'map' 'for' 'type'
+export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@'
+       '[]' 't' '\\' 'form'
+       'mtx' 'list' 'no' 'got' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times'
+       'map' 'for' 'type'
        'named' 'export_hidden' 'export' 'pop' 'push' 'as' 'callcc' 'fin' '|' ';' ',' '$'
        '+' '-' '*' '/' '%' '^^' '<' '>' '<<' '>>' '><' '<>' '^' '.' '->' ':' '{}' '=>'
        '<=' '+=' '-=' '*=' '/=' '%=' '++' '--'

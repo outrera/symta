@@ -1,6 +1,4 @@
 non F = X => if F X then 0 else 1
-no X = No >< X
-got X = No <> X
 
 _.`><` B = same Me B
 _.`<>` B = not Me >< B
@@ -821,4 +819,4 @@ iter.`+` N = iter $base $p+N
 
 list.iter = iter $list 0
 
-export non say bad no got table_ new_macro meta main_root methods
+export non say bad table_ new_macro meta main_root methods

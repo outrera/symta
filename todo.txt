@@ -1,4 +1,6 @@
-- ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
+- move m_mkdir into OS specific code.
+- move #ifdef __MACH__ my_clock_gettime into OSX specific code
+- redesign get_rt_flag_, renaming it into query_rt_ and moving OS specific stuff into appropriate files.
 - list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object.
 - _this_method gets clobbered by a call to @tail, during destructuring of @As:
   type met{a b}
@@ -6,10 +8,6 @@
   M = met 123 456
   M.test
   still, expand_block_item_method works, because it avoids clobbering.
-- no and got should be macros
-- move m_mkdir into OS specific code.
-- move #ifdef __MACH__ my_clock_gettime into OSX specific code
-- redesign get_rt_flag_, renaming it into query_rt_ and moving OS specific stuff into appropriate files.
 - TCC compiled Symta compiler fails because of some bug in TCC.
   compiling core_...
   fatal: stack overflow
@@ -22,6 +20,7 @@
     000000002152EF01:ssa_form:423,14,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
     000000002152CBB1:ssa_expr:478,13,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
     000000002159462E:ssa_progn:240,15,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+- ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
 - SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
 - fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
   Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
