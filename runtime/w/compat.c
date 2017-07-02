@@ -4,6 +4,9 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+int cmt_mkdir(const char *path, int mode) {
+  mkdir(path);
+}
 
 /*
 realpath() Win32 implementation
@@ -164,7 +167,7 @@ static LARGE_INTEGER getFILETIMEoffset()
     return (t);
 }
 
-int compat_clock_gettime(int X, struct timespec *ts)
+int cmt_clock_gettime(int clk_id, struct timespec *ts)
 {
     LARGE_INTEGER           t;
     FILETIME            f;

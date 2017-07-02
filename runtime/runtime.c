@@ -18,33 +18,24 @@
 
 static void fatal(char *fmt, ...);
 
-#ifdef __MACH__
-// OS X does not have clock_gettime, define it through clock_get_time
-#include <mach/clock.h>
-#include <mach/mach.h>
-#define CLOCK_REALTIME 0
-int my_clock_gettime(int clk_id, struct timespec *ts) {
-  clock_serv_t cclock;
-  mach_timespec_t mts;
-  host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-  clock_get_time(cclock, &mts);
-  mach_port_deallocate(mach_task_self(), cclock);
-  ts->tv_sec = mts.tv_sec;
-  ts->tv_nsec = mts.tv_nsec;
-}
-#else
-#include <sys/time.h>
-
-#define my_clock_gettime clock_gettime
-#endif
-
 #include "runtime.h"
+
 
 #ifdef WINDOWS
 #include "w/compat.h"
 #include "w/mman.h"
-#else
+// on Windows executable and libs are loaded into
+// lower 32-bits of address space, so no masking
+#define MD_NORM(x) (x)
+#elif defined __MACH__
+#include "unix/compat.h"
+#include "osx/compat.h"
+#define MD_NORM(x) ((x)&0xFFFFFFFF)
+#else /*assume linux*/
+#include "unix/compat.h"
+#include "linux/compat.h"
 #include <sys/mman.h>
+#define MD_NORM(x) ((x)&0xFFFFFFFF)
 #endif
 
 #define VIEW_START(o) REF4(o,0)
@@ -60,14 +51,6 @@ int my_clock_gettime(int clk_id, struct timespec *ts) {
 static void **metlut[0x10000];
 
 #define FN_ALIGN 2
-#ifdef WINDOWS
-// on Windows executable and libs are loaded into
-// lower 32-bits of address space, so no masking
-#define MD_NORM(x) (x)
-#else
-#define MD_NORM(x) ((x)&0xFFFFFFFF)
-#endif
-
 static void **alloc_meta_table() {
   void **pt = (void**)malloc((0x10000>>FN_ALIGN)*sizeof(void*));
   memset(pt, 0, (0x10000>>FN_ALIGN)*sizeof(void*));
@@ -1521,12 +1504,6 @@ BUILTIN1("get_rt_flag_",get_rt_flag_,C_TEXT,name_text)
 
 RETURNS(R)
 
-#ifdef WIN32
-#define m_mkdir(X) mkdir(X)
-#else
-#define m_mkdir(X) mkdir(X, S_IRWXU|S_IRWXG|S_IROTH|S_IXOTH)
-#endif
-
 static void makePath(char *Path) {
   char T[1024], *P;
   strcpy(T, Path);
@@ -1535,10 +1512,10 @@ static void makePath(char *Path) {
     *P = 0;
     // create a directory named with read/write/search permissions for
     // owner and group, and with read/search permissions for others.
-    if (!file_exists(T)) m_mkdir(T);
+    if (!file_exists(T)) cmt_mkdir(T, 0775);
     *P = '/';
   }
-  if (!file_exists(T)) m_mkdir(T);
+  if (!file_exists(T)) cmt_mkdir(T, 0775);
   //free(shell("mkdir -p '%s'", Path));
 }
 
@@ -1598,7 +1575,7 @@ RETURNS(FIXNUM((intptr_t)time(0)))
 //RETURNS(R)
 BUILTIN0("clock",clock)
   struct timespec time;
-  my_clock_gettime(CLOCK_REALTIME,&time);
+  cmt_clock_gettime(CLOCK_REALTIME,&time);
   double dSeconds = time.tv_sec;
   double dNanoSeconds = (double)time.tv_nsec/1000000000L;
   LOAD_FLOAT(R, dSeconds+dNanoSeconds);
