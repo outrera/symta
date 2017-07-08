@@ -29,13 +29,11 @@ newerThan Source Dependent =
 | Source.time << DependentTime and GHeaderTimestamp << DependentTime
 
 copy_file A B =
-| if get_rt_flag_ windows
+| if rt_get windows
   then | A <= A.replace{'/' '\\'}
        | B <= B.replace{'/' '\\'}
        | unix "copy /y \"[A]\" \"[B]\""
   else unix "cp -f '[A]' '[B]'"
-
-DLL_EXT = ''
 
 c_compiler Dst Src =
 | Dst <= "[Dst]." // else gcc will add ".exe" on Windows
@@ -43,8 +41,11 @@ c_compiler Dst Src =
 | unix "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
 
 copy_runtime Dst =
-| when get_rt_flag_ windows: Dst <= "[Dst].exe"
-| less Dst.exists: copy_file "[GRootFolder]symta.exe" Dst
+| Src = "[GRootFolder]symta"
+| when rt_get windows:
+  | Src <= "[Src].exe"
+  | Dst <= "[Dst].exe"
+| less Dst.exists: copy_file Src Dst
 
 add_imports Expr Deps =
 | less Deps.size: leave Expr
@@ -68,7 +69,7 @@ compile_expr Name Dst Expr =
 | Macros = Imports.skip{X => X.1.is_text}.map{X => X.0}.uniq.skip{X => X><macro} // keep macros
 | Imports = Imports.keep{X => X.1.is_text} // skip macros
 | ExprWithDeps = add_imports Expr Imports
-| Ms = [GMacros @(map M Macros "[GDstFolder][M][DLL_EXT]"^load_macros)].join
+| Ms = [GMacros @(map M Macros "[GDstFolder][M]"^load_macros)].join
 | ExpandedExpr = macroexpand ExprWithDeps Ms.table &compile_module &module_folders
 | Text = ssa_produce_file ExpandedExpr
 | CFile = "[Dst].c"
@@ -85,7 +86,7 @@ compile_module_sub Name =
 | for Folder GSrcFolders
   | SrcFile = "[Folder][Name].s"
   | when SrcFile.exists
-    | DstFile = "[GDstFolder][Name][DLL_EXT]"
+    | DstFile = "[GDstFolder][Name]"
     | GCompiledModules.Name <= DstFile
     | DepFile = "[DstFile].dep"
     | when DepFile.exists and DepFile^newerThan{SrcFile}:

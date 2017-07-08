@@ -14,8 +14,7 @@ export address
        file_exists_
        file_time_
        get_work_folder
-       get_symta_version
-       get_rt_flag_
+       rt_get
        mkpath_
        load_library
        register_library_folder

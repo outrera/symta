@@ -808,14 +808,14 @@ fin Finalizer Body =
 
 compile_when @Conds Body =
 | Xs = map C Conds: case C
-       [`-` X] | not get_rt_flag_ X
-       Else  | get_rt_flag_ C
+       [`-` X] | not rt_get X
+       Else  | rt_get C
 | if Xs.all{1} then form @(`|` Body) else 0
 
 FFI_Lib = No
 
 copy_file A B =
-| if get_rt_flag_ windows
+| if rt_get windows
   then | A <= A.replace{'/' '\\'}
        | B <= B.replace{'/' '\\'}
        | unix "copy /y \"[A]\" \"[B]\""

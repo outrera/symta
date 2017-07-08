@@ -1,4 +1,5 @@
-- redesign get_rt_flag_, renaming it into query_rt_ and moving OS specific stuff into appropriate files.
+- copy_file should be part of core.s. Remove it from eval.s and macro.s
+- rename `unix` to `sh`; reason: `unix` is a bad name, and shorter name would help in cases here a lot of `sh` commands being dispatched
 - list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object.
 - _this_method gets clobbered by a call to @tail, during destructuring of @As:
   type met{a b}

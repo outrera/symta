@@ -1473,14 +1473,12 @@ BUILTIN0("get_work_folder",get_work_folder)
   }
 RETURNS(R)
 
-BUILTIN0("get_symta_version",get_symta_version)
-  TEXT(R, version);
-RETURNS(R)
-
-BUILTIN1("get_rt_flag_",get_rt_flag_,C_TEXT,name_text)
+BUILTIN1("rt_get",rt_get,C_TEXT,name_text)
   char *name = text_to_cstring(name_text);
   void *one = (void*)FIXNUM(1);
   R = 0;
+
+  if (!strcmp(name, "version")) R = one;
 
 #ifndef WINDOWS
   if (!strcmp(name, "unix")) R = one;
@@ -1488,14 +1486,6 @@ BUILTIN1("get_rt_flag_",get_rt_flag_,C_TEXT,name_text)
 
 #ifdef WINDOWS
   if (!strcmp(name, "windows")) R = one;
-#endif
-
-  if (sizeof(long) == 4 && !strcmp(name, "bits32")) R = one;
-
-  if (sizeof(long) == 8 && !strcmp(name, "bits64")) R = one;
-
-#ifdef _WIN64
-  if (!strcmp(name, "win64")) R = one;
 #endif
 
 #ifdef __APPLE__
@@ -1709,8 +1699,7 @@ static struct {
   B(file_exists_)
   B(file_time_)
   B(get_work_folder)
-  B(get_symta_version)
-  B(get_rt_flag_)
+  B(rt_get)
   B(mkpath_)
   B(load_library)
   B(register_library_folder)

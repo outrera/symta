@@ -18,7 +18,7 @@ print_usage =
 case Args [@_ '-h'+'--help' @_]: print_usage
 
 case Args [@_ '-v'+'--version' @_]
-| say "Symta v[get_symta_version]"
+| say "Symta v[rt_get version]"
 | say "Copyright (C) 2014 Nikita Sadkov"
 | say "See LICENSE for copying conditions"
 | halt
