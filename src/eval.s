@@ -28,13 +28,6 @@ newerThan Source Dependent =
 | DependentTime = Dependent.time
 | Source.time << DependentTime and GHeaderTimestamp << DependentTime
 
-copy_file A B =
-| if rt_get windows
-  then | A <= A.replace{'/' '\\'}
-       | B <= B.replace{'/' '\\'}
-       | unix "copy /y \"[A]\" \"[B]\""
-  else unix "cp -f '[A]' '[B]'"
-
 c_compiler Dst Src =
 | Dst <= "[Dst]." // else gcc will add ".exe" on Windows
 | RtFolder = "[GRootFolder]runtime/"

@@ -814,13 +814,6 @@ compile_when @Conds Body =
 
 FFI_Lib = No
 
-copy_file A B =
-| if rt_get windows
-  then | A <= A.replace{'/' '\\'}
-       | B <= B.replace{'/' '\\'}
-       | unix "copy /y \"[A]\" \"[B]\""
-  else unix "cp -f '[A]' '[B]'"
-
 copy_ffi S D =
 | D.mkpath
 | for X S.items

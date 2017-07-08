@@ -346,6 +346,13 @@ text.exists = file_exists_ Me
 text.time = file_time_ Me
 text.mkpath = mkpath_ Me
 
+copy_file A B =
+| if rt_get windows
+  then | A <= A.replace{'/' '\\'}
+       | B <= B.replace{'/' '\\'}
+       | unix "copy /y \"[A]\" \"[B]\""
+  else unix "cp -f '[A]' '[B]'"
+
 text.paths @As =
 | Path = if $last >< '/' then Me else "[Me]/"
 | Xs = if As.size then $items{all} else $items
@@ -819,4 +826,4 @@ iter.`+` N = iter $base $p+N
 
 list.iter = iter $list 0
 
-export non say bad table_ new_macro meta main_root methods
+export non say bad table_ new_macro meta main_root methods copy_file
