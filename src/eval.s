@@ -31,7 +31,7 @@ newerThan Source Dependent =
 c_compiler Dst Src =
 | Dst <= "[Dst]." // else gcc will add ".exe" on Windows
 | RtFolder = "[GRootFolder]runtime/"
-| unix "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
+| sh "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
 
 copy_runtime Dst =
 | Src = "[GRootFolder]symta"

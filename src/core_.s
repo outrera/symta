@@ -350,8 +350,8 @@ copy_file A B =
 | if rt_get windows
   then | A <= A.replace{'/' '\\'}
        | B <= B.replace{'/' '\\'}
-       | unix "copy /y \"[A]\" \"[B]\""
-  else unix "cp -f '[A]' '[B]'"
+       | sh "copy /y \"[A]\" \"[B]\""
+  else sh "cp -f '[A]' '[B]'"
 
 text.paths @As =
 | Path = if $last >< '/' then Me else "[Me]/"

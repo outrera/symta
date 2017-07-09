@@ -1546,7 +1546,7 @@ static char *exec_command(char *cmd) {
   return r;
 }
 
-BUILTIN1("unix",unix,C_TEXT,command_text)
+BUILTIN1("sh",sh,C_TEXT,command_text)
   char *command = text_to_cstring(command_text);
   char *contents = exec_command(command);
   if (contents) {
@@ -1703,7 +1703,7 @@ static struct {
   B(mkpath_)
   B(load_library)
   B(register_library_folder)
-  B(unix)
+  B(sh)
   B(time)
   B(clock)
   B(main_args)
