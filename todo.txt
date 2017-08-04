@@ -1,4 +1,4 @@
-- TCC compiled Symta compiler fails because of some bug in TCC.
+- Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations.
   compiling core_...
   fatal: stack overflow
   at ip=00000000215CC700 sp=0000000020B48860
