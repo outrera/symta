@@ -495,7 +495,7 @@ static uintptr_t show_runtime_info(api_t *api) {
   uintptr_t heap1_used = get_heap_used(1);
   uintptr_t total_reserved = runtime_reserved0+runtime_reserved1;
   fprintf(stderr, "-------------\n");
-  fprintf(stderr, "level: %ld\n", Level-1);
+  fprintf(stderr, "level: %ld/%ld\n", Level-1, MAX_LEVEL);
   fprintf(stderr, "usage: %ld = %ld+%ld\n"
          , heap0_used+heap1_used-total_reserved
          , heap0_used-runtime_reserved0
