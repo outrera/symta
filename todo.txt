@@ -1,15 +1,5 @@
 - Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations.
-  compiling core_...
-  fatal: stack overflow
-  at ip=00000000215CC700 sp=0000000020B48860
-  Stack Trace:
-    000000002152EF01:ssa_form:423,14,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    000000002152CBB1:ssa_expr:478,13,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    00000000215BA299:ev:86,5,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    00000000215984E3:ssa_set:234,22,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    000000002152EF01:ssa_form:423,14,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    000000002152CBB1:ssa_expr:478,13,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
-    000000002159462E:ssa_progn:240,15,C:/Users/nikita/Documents/git/symta/build/new/src/compiler.s
+  Replace excessive case blocks with hcase.
 - in @As methods, _this_method gets clobbered by a call to As.tail, during destructuring of "Me @As":
   yet expand_block_item_method works, as it avoids clobbering in a special case for "when Name >< _"
   int.test @As = say: _method_name: _this_method

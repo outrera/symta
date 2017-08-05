@@ -421,9 +421,7 @@ ssa_ffi_call K Type F As =
 | ssa ffi_call ResultType R F AsTypes Vs
 | if ResultType >< void then ssa move K 0 else ssa "ffi_from_[ResultType]" K R
 
-ssa_form K Xs =
-| Src = Xs.meta_
-| let GSrc (if got Src then Src else GSrc): case Xs
+hcase SsaFormCases Xs (K)
   [_fn As Body] | ssa_fn K As Body Xs
   [_if Cnd Then Else] | ssa_if K Cnd Then Else
   [_quote X @Xs] | ssa_quote K X
@@ -463,9 +461,18 @@ ssa_form K Xs =
   [_ffi_get Type Ptr Off] | ssa ffi_get K Type.1 Ptr^ev Off^ev
   [_ffi_set Type Ptr Off Val] | ssa ffi_set Type.1 Ptr^ev Off^ev Val^ev
                               | ssa move K 0
-  [F @As] | ssa_apply K F As
-  [] | ssa_atom K No
-  Else | compiler_error "special form: [Xs]"
+
+ssa_form K Xs =
+| when Xs.end:
+  | ssa_atom K No
+  | leave
+| Src = Xs.meta_
+| let GSrc (if got Src then Src else GSrc):
+  hcase_go SsaFormCases Xs (K)
+      (Head NArgs =>
+          compiler_error "special form `[Head]` expects [NArgs] arguments")
+  | ssa_apply K Xs.0 Xs.tail
+| 0
 
 ssa_atom K X =
 | if X.is_int then

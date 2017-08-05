@@ -986,6 +986,37 @@ same A B = form A^address >< B^address
 
 on @Xs X = [X @Xs]
 
+hcase Name Expr Args @Cases =
+| Cs = Cases.group{2}
+| HeadRnd = @rand 'Hd'
+| Cs = map A,B Cs:
+  | Pat = HeadRnd,@A.drop{2}
+  | N = case A.last
+        [`@` Xs] | -1
+        Else | Pat.size
+  | [A.1 N | form: _fn (Expr $@Args)
+             | [$@Pat] = Expr
+             | B]
+| form @| Name = t $@| @join: map A,B,C Cs: [A [`[]` B C]]
+
+hcase_go Cases Expr Args Err Default =
+| form:
+  | ~E = Expr
+  | ~H = ~E.0
+  | ~R = 0
+  | when ~H.is_text:
+    | ~C = Cases.~H
+    | when got ~C:
+      | ~N = ~C.0
+      | if ~N >< -1 or ~E.size >< ~N
+        then ~R <= ~C.1 ~E $@Args
+        else ~R <= Err ~H ~N
+      | _goto ~end
+  | _label ~default
+  | ~R <= Default
+  | _label ~end
+  | ~R
+
 export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'if' '@'
        '[]' 't' '\\' 'form'
        'mtx' 'list' 'no' 'got' 'not' 'and' 'or' 'when' 'less' 'while' 'till' 'dup' 'times'
@@ -995,3 +1026,4 @@ export macroexpand 'mexlet' 'let_' 'let' 'default_leave_' 'leave' 'case' 'is' 'i
        '<=' '+=' '-=' '*=' '/=' '%=' '++' '--'
        '&&&' '+++' '---' '<<<' '>>>' 'cons' 'uncons' 'same' 'on'
        'ffi_begin' 'ffi' 'min' 'max' 'swap' '~' 'have' 'source_' 'compile_when' '"'
+       'hcase' 'hcase_go'
