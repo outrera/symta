@@ -2,6 +2,7 @@
 //including around 4500 8-byte variables on stack, per function call
 //GCC somehow optimizes it, but TCC is unable to optimize,
 //resulting in stack overflow after a few hundred recursive calls.
+//For now compiling runtime with "-Wl,--stack,10485760" solves the problem.
 
 ssa_apply K F As =
 | ssa_expr F

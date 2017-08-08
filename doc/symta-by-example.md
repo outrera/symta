@@ -649,6 +649,35 @@ puts group.sort.reverse
 As you probably noticed, Ruby's code has a lot of annoying boilerplate, like ``attr_reader :name, :age``, ``def initialize`` and "end".
 
 
+hcase and hcase_on
+------------------------------
+The following code:
+
+```
+hcase Cases Expr (U V)
+  [f A B C] | [C B A U V]
+  [g X @Xs] | [U X Xs V]
+
+U = 123
+V = 456
+say: hcase_go Cases [g 1 2 3 4] (U V)
+  (Head NArgs => bad "[Head] expect [NArgs] arguments")
+| 'no match'
+```
+would be the same as:
+```
+U = 123
+V = 456
+
+Expr = [g 1 2 3 4]
+say: case Expr
+  [f A B C] | [C B A U V]
+  [g X @Xs] | [U X Xs V]
+  Else | 'no match'
+```
+
+but more efficient with large number of cases, due to the use of hash table `Cases`, instead of destructuring. The main difference is that `hcase` doesn't handle `[]` empty lists and assumes that the head element is text.
+
 Core Library
 ------------------------------
 This section provides a quick reference of the content of the Symta's standard library, defined in cors_.s, rt_.s and macro.s files.

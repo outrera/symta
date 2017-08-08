@@ -927,14 +927,7 @@ normalize_nesting O =
 | case O [X] | if X.is_keyword then O else normalize_nesting X
          X | X
 
-mex ExprIn =
-| when no GMacros: mex_error 'lib_path got clobbered again'
-| Expr = normalize_nesting ExprIn
-| when Expr.is_text
-  | case Expr^handle_extern [Pkg Name]: leave: mex_extern Pkg Name
-  | when not Expr.is_keyword and got GMacros.Expr: Expr <= GMacros.Expr.expander
-| less Expr.is_list: leave Expr
-| R = let GExpansionDepth GExpansionDepth+1: case Expr
+hcase MexFormCases Expr ()
   [_fn As Body] | [_fn As Body^mex]
   [_set Place Value] | [_set Place (if Value.is_keyword then [_quote Value] else mex Value)]
   [_label Name] | Expr
@@ -943,10 +936,20 @@ mex ExprIn =
   [_nomex X] | X // no macroexpand
   [_type Type Var Body] | let GVarsTypes [[Var Type]@GVarsTypes]: mex Body
   [`&` O] | if O.is_keyword then O else [O^mex]
-  [] | Expr
-  [X@Xs] | Src = when Expr.is_meta: Expr.meta_ 
-         | let GSrc (if got Src then Src else GSrc)
-           | mex_normal X Xs
+
+mex ExprIn =
+| when no GMacros: mex_error 'lib_path got clobbered again'
+| Expr = normalize_nesting ExprIn
+| when Expr.is_text
+  | case Expr^handle_extern [Pkg Name]: leave: mex_extern Pkg Name
+  | when not Expr.is_keyword and got GMacros.Expr: Expr <= GMacros.Expr.expander
+| when not Expr.is_list or Expr.end: leave Expr
+| R = let GExpansionDepth GExpansionDepth+1: hcase_go MexFormCases Expr ()
+      (Head NArgs =>
+          mex_error "special form `[Head]` expects [NArgs] arguments")
+  | Src = when Expr.is_meta: Expr.meta_ 
+  | let GSrc (if got Src then Src else GSrc)
+    | mex_normal Expr.head Expr.tail
 | when R.is_list: R <= supply_meta R ExprIn
 | R
 

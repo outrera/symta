@@ -1,5 +1,3 @@
-- Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations.
-  Replace excessive case blocks with hcase.
 - in @As methods, _this_method gets clobbered by a call to As.tail, during destructuring of "Me @As":
   yet expand_block_item_method works, as it avoids clobbering in a special case for "when Name >< _"
   int.test @As = say: _method_name: _this_method
@@ -15,6 +13,7 @@
 - `get_` and `set_` methods, based on cached `methods_` list
 - optimize build dependencies being recompiled when not required.
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
+- Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations. Optimize generated code to reuse stack variables.
 
 - reuse `!` for list splicing python style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
