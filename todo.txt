@@ -1,14 +1,8 @@
-- in @As methods, _this_method gets clobbered by a call to As.tail, during destructuring of "Me @As":
-  yet expand_block_item_method works, as it avoids clobbering in a special case for "when Name >< _"
-  int.test @As = say: _method_name: _this_method
-  123.test
-  look for add_pattern_matcher, which should probably use 
+- fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
+  Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
 - list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object. Check out expand_block_item_method
 - ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
 - SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
-- fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
-  Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
-- "$method = Body" declarations which would attach to the last type defined in current file.
 - change void* and uintptr_t to uint64_t, typedef'ed as u64
 - `get_` and `set_` methods, based on cached `methods_` list
 - optimize build dependencies being recompiled when not required.

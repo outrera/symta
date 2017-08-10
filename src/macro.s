@@ -603,6 +603,8 @@ expand_assign Place Value =
 
 `<=` Place Value = expand_assign Place.0 Value
 
+GLastType = 0
+
 type Name @Fields =
 | Parent = 0
 | CtorName = 0
@@ -630,6 +632,7 @@ type Name @Fields =
                    | Parent <= B
   Else | mex_error "type: bad declarator [Name]"
 | less CtorName: CtorName <= Name
+| GLastType <= Name
 | Vs = []
 | Fs = map F Fields: case F
        [`/` Name Value] | push Value Vs
@@ -687,6 +690,9 @@ expand_block_item_method Type Name Args Body =
 expand_block_item Expr =
 | Y = case Expr
   [`=` [[`.` Type Method] @Args] Body] | expand_block_item_method Type Method Args Body
+  [`=` [[`$` Method] @Args] Body]
+    | less GLastType: mex_error "no type declared beforehard"
+    | expand_block_item_method GLastType Method Args Body
   [`=` [Name @Args] Value]
     | if Name.is_keyword then expand_block_item_fn Name Args Value
       else | when Args.size: mex_error "`=`: left side has too many expressions"
@@ -961,6 +967,7 @@ macroexpand Expr Macros ModuleCompiler ModuleFolders =
       GModuleFolders ModuleFolders
       GTypes (t)
       GMexLets (t)
+      GLastType 0
   | R = mex Expr
   | R
 

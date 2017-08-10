@@ -4,6 +4,7 @@
 Table of Contents
 ------------------------------
 - What is Symta?
+- Comparison to Other Languages
 - Installing Symta
 - Printing Text on Screen
 - Variables and Arithmetics
@@ -18,7 +19,6 @@ Table of Contents
 - Symta's Approach to Memory Management
 - Non-local Return
 - Foreign Function Interface
-- Comparison to Other Languages
 - Core Library
 - Thanks
 
@@ -44,6 +44,48 @@ Yet, compared to J, Symta's ``qsort`` is arguably more readable than Haskell's v
 qsort [] = []
 qsort (x:xs) = qsort [y | y <- xs, y < x] ++ [x] ++ qsort [y | y <- xs, y >= x]
 ```
+
+
+Comparison to Other Languages
+------------------------------
+Compared to other languages, Symta provides macro-system to extend the language and do meta-programming. Some thoughts were put into avoiding verbosity and bloated constructs; for example, Symta has some syntatic sugar and shorthands missing from other Lisps, while predefined identifier names were picked based on length in characters. That is how Symta got "flip" instead of "reverse" and "say" instead of "print".
+
+Here is an OOP example from Wikipedia's Ruby article rewritten into Symta:
+```
+type person{name age}
+$`<` X = $age < X.age
+$as_text = "[$name] ([$age])"
+
+Group = ['Bob',33 'Chris',16 'Ash',23].map{(person @?)}
+
+say Group.sort.flip
+```
+
+Compare it to the original Ruby code:
+```
+class Person
+  attr_reader :name, :age
+  def initialize(name, age)
+    @name, @age = name, age
+  end
+  def <=>(person) # the comparison operator for sorting
+    age <=> person.age
+  end
+  def to_s
+    "#{name} (#{age})"
+  end
+end
+ 
+group = [
+  Person.new("Bob", 33),
+  Person.new("Chris", 16),
+  Person.new("Ash", 23)
+]
+ 
+puts group.sort.reverse
+```
+
+As you probably noticed, Ruby's code has a lot of annoying boilerplate, like ``attr_reader :name, :age``, ``def initialize`` and "end".
 
 
 Installing Symta
@@ -370,10 +412,18 @@ type point{x y}
 which is a complete equivalent to more verbose `type point{X Y} x/X y/Y`
 
 
+Another shorthand is `$` in methods declaration:
+```
+type point x y
+$as_text = "[$x], [$y]"
+```
+Here `$as_text` gets replaced with `point.as_text`.
+
+
 Sometimes we can reuse pre-existing functionality. To do that, Symta provides inheritance. Here is how we can declare a `circle` type, which extends point with a radius around it:
 ```
 type circle.$base{X Y R} base/point{X Y} radius/R
-circle.as_text = "point [$base] with radius [$radius]"
+$as_text = "point [$base] with radius [$radius]"
 ```
 
 The `$base` makes newly declared type `circle` to inherit all the methods the $base field provides (which holds point value), so now both methods is_point and is_rect return true on it. Note that we inherit from prototype object as opposed to class. Instead of $base, we can specify any value and it will still work.
@@ -382,9 +432,9 @@ The `$base` makes newly declared type `circle` to inherit all the methods the $b
 The other way to inherit methods is to use interfaces. Say you want to provide point with methods previously defined on type `list`:
 ```
 type point.list{X Y} x/X y/Y 
-point.head = $x
-point.tail = [$y]
-point.end = 0
+$head = $x
+$tail = [$y]
+$end = 0
 ```
 
 Now point has all methods `list` has, like `map` and `sum`. The methods `head`, `tail` and `end` are required for all types implementing list functionality.
@@ -402,7 +452,7 @@ When you want to make a method available to all types, declare it with `_` in pl
 _.get_my_typename = Me^typename
 ```
 
-The type `_` denotes the default parent of all types. But there is a way to declare a type without any parent by using `~` instead of inheritance name:
+The type `_` denotes the default parent of all types. But there is a way to declare a type without any parent by using `~` instead of parent's name:
 ```
 type point.~{X Y} x/X y/Y
 ```
@@ -606,78 +656,6 @@ Here is the list of currently supported native types
 - `double` - 64-bit floating point number
 - `text` - char* string (will be converted to Symta's text type)
 
-
-Comparison to Other Languages
-------------------------------
-Compared to other languages, Symta provides macro-system to extend the language and do meta-programming. Some thoughts were put into avoiding verbosity and bloated constructs; for example, Symta has some syntatic sugar and shorthands missing from other Lisps, while predefined identifier names were picked based on length in characters. That is how Symta got "flip" instead of "reverse" and "say" instead of "print".
-
-Here is an OOP example from Wikipedia's Ruby article rewritten into Symta:
-```
-type person{name age}
-person.`<` X = $age < X.age
-person.as_text = "[$name] ([$age])"
-
-Group = ['Bob',33 'Chris',16 'Ash',23].map{(person @?)}
-
-say Group.sort.flip
-```
-
-Compare it to the original Ruby code:
-```
-class Person
-  attr_reader :name, :age
-  def initialize(name, age)
-    @name, @age = name, age
-  end
-  def <=>(person) # the comparison operator for sorting
-    age <=> person.age
-  end
-  def to_s
-    "#{name} (#{age})"
-  end
-end
- 
-group = [
-  Person.new("Bob", 33),
-  Person.new("Chris", 16),
-  Person.new("Ash", 23)
-]
- 
-puts group.sort.reverse
-```
-
-As you probably noticed, Ruby's code has a lot of annoying boilerplate, like ``attr_reader :name, :age``, ``def initialize`` and "end".
-
-
-hcase and hcase_on
-------------------------------
-The following code:
-
-```
-hcase Cases Expr (U V)
-  [f A B C] | [C B A U V]
-  [g X @Xs] | [U X Xs V]
-
-U = 123
-V = 456
-say: hcase_go Cases [g 1 2 3 4] (U V)
-  (Head NArgs => bad "[Head] expect [NArgs] arguments")
-| 'no match'
-```
-would be the same as:
-```
-U = 123
-V = 456
-
-Expr = [g 1 2 3 4]
-say: case Expr
-  [f A B C] | [C B A U V]
-  [g X @Xs] | [U X Xs V]
-  Else | 'no match'
-```
-
-but more efficient with large number of cases, due to the use of hash table `Cases`, instead of destructuring. The main difference is that `hcase` doesn't handle `[]` empty lists and assumes that the head element is text.
-
 Core Library
 ------------------------------
 This section provides a quick reference of the content of the Symta's standard library, defined in cors_.s, rt_.s and macro.s files.
@@ -872,6 +850,37 @@ For the full semantics see `expand_hole` function in macro.s
 `R<Object.method{@Args}` - binds `R` the the result of calling `method` on the `Object`
 
 
+hcase and hcase_on
+------------------------------
+The following code:
+
+```
+hcase Cases Expr (U V)
+  [f A B C] | [C B A U V]
+  [g X @Xs] | [U X Xs V]
+
+U = 123
+V = 456
+say: hcase_go Cases [g 1 2 3 4] (U V)
+  (Head NArgs => bad "[Head] expect [NArgs] arguments")
+| 'no match'
+```
+would be the same as:
+```
+U = 123
+V = 456
+
+Expr = [g 1 2 3 4]
+say: case Expr
+  [f A B C] | [C B A U V]
+  [g X @Xs] | [U X Xs V]
+  Else | 'no match'
+```
+
+but more efficient with large number of cases, due to the use of hash table `Cases`, instead of destructuring. The main difference is that `hcase` doesn't handle `[]` empty lists and assumes that the head element is text.
+
+
+
 Implementation Primitives and Helpers
 ------------------------------
 
@@ -902,6 +911,9 @@ Implementation Primitives and Helpers
 `_type Type Var Body` - assumes that `Var` is of type `Type` inside of `Body`.
 
 `_fatal Msg` - fatal error; `Msg` will be show in console together with stack trace.
+
+
+
 
 Thanks
 ------------------------------
