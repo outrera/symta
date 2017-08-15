@@ -1,5 +1,3 @@
-- fix OOP so that `type child.parent` would include parent's fields and call parent's constructor.
-  Child's constructor should somehow get parent's type size and parent's constructor, which would require compiler dumping typeinfo and runtime collecting type constructors.
 - list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object. Check out expand_block_item_method
 - ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
 - SUBTYPE and SET_TYPE_PARAMS should be tables, passed to init tables.
@@ -8,6 +6,7 @@
 - optimize build dependencies being recompiled when not required.
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
 - Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations. Optimize generated code to reuse stack variables.
+- fix OOP so that `type child.parent` would check that parent has no data fields.
 
 - reuse `!` for list splicing python style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each

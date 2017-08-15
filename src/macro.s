@@ -625,10 +625,10 @@ type Name @Fields =
     | CtorArgs <= As
     | Name <= N
   ['.' A B] | Name <= A
-            | if B >< ~ then Super <= Super.skip{_}
+            | if B >< ~ then Super <= []
               else if B >< no_copy then ProvideCopy <= 0
-              else if B.is_keyword then push B Super
-              else | Super <= Super.skip{_} // get parent's redeclarations of _'s methods
+              else if B.is_keyword then Super <= [B]
+              else | Super <= []
                    | Parent <= B
   Else | mex_error "type: bad declarator [Name]"
 | less CtorName: CtorName <= Name

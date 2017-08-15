@@ -285,7 +285,7 @@ static void add_method_r(api_t *api, int depth, intptr_t type_id, intptr_t metho
       m = list_has_method(s->methods[hid], method_id);
       if (m && m->fn == n->fn) goto inherited;
     }
-    if (depth) return;
+    if (depth) return; //subtype already has this method
     fatal("add_method: redefining %s.%s\n"
          ,t->name, print_object(method_names[method_id]));
   inherited:;
