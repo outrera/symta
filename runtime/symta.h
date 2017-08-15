@@ -228,7 +228,7 @@ typedef struct tot_entry_t { //table of tables entry
 #define END_CODE }
 #define LDFXN(dst,x) dst = (void*)FIXNUM(x)
 #define TEXT(dst,x) dst = api->alloc_text((char*)(x))
-#define THIS_METHOD(dst) dst = (void*)FIXNUM(api->method);
+#define THIS_METHOD(dst) dst = (void*)api->method;
 #define METHOD_NAME(dst,method) dst = api->get_method_name((uintptr_t)method);
 #define TYPE_ID(dst,o) dst = (void*)FIXNUM(O_TYPE(o));
 // P holds points to closure of current function

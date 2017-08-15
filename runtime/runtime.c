@@ -197,7 +197,7 @@ static intptr_t resolve_method(api_t *api, char *name) {
 }
 
 static void *get_method_name(uintptr_t method_id) {
-  return method_names[UNFIXNUM(method_id)];
+  return method_names[method_id];
 }
 
 static void *get_method(uintptr_t tag, uintptr_t method_id) {
@@ -1040,7 +1040,7 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   }
   {
     void *fn;
-    api->method = (uintptr_t)UNFIXNUM(m);
+    api->method = (uintptr_t)m;
     fn = api->get_method(O_TAG(o),(uintptr_t)api->method);
     CALL(R,fn);
   }
