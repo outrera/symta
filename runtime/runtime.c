@@ -1670,7 +1670,7 @@ meta._ Method Args =
 BUILTIN_VARARGS("_",sink)
   void *name;
   void *o = getArg(0);
-  METHOD_NAME(name, FIXNUM(api->method));
+  METHOD_NAME(name, api->method);
   fprintf(stderr, "%s has no method ", print_object(types[O_TYPE(o)].sname));
   fprintf(stderr, "%s\n", print_object(name));
   print_stack_trace(api);
