@@ -352,7 +352,7 @@ for (I=0; I<10; I++)
 | say I
 ```
 
-This example prints numbers from 0 to 6, skipping 4. Note that that words `pass` and `done` are used instead of usual hard-to-type `continue` and `break`. The variable `I=0`, declared for the loop, is not available outside of it, as opposed ot C.
+This example prints numbers from 0 to 6, skipping 4. Note that that words `pass` and `done` are used instead of usual harder to type `continue` and `break`. The variable `I=0`, declared for the loop, is not available outside of it, as opposed ot C.
 
 
 Object Oriented Programming
