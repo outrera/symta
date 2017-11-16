@@ -624,9 +624,9 @@ Symta's Approach to Memory Management
 ------------------------------
 The major problem of functional programming languages is the construction of many temporary data structures, which makes manual memory management impractical. Thus arises requirement for automatic memory management, usually implemented through heap and garbage collection process (GC), which determines obsolete data and frees its memory. Heap-based GC processes are complex, requiring suspending execution and copying large chunks of memory to avoid fragmentation, which impedes allocation of large continuous data structures. To avoid pauses, modern GCs uses generations, but generations are still unreliable, uncontrollable by user and poorly map to memory usage. Several large GC processes can allocate memory concurrently, leading to a race condition on who will get OutOfMemoryError first.
 
-Symta's motto for memory management is "no heap - no garbage". By using just stack we can compact incrementally and use stack frames naturally as garbage collector generations: when a function leaves a stack frame, all frame's data is freed or compacted to parent frame. A good example would be webserver's `render_html_page` function, allocating a lot of per frame data, which won't be needed for the next http request and therefore can be safely thrown away. Stack provides explicit, intuitive and predictable way to manage memory. Of course we do GC, but only on stack-frame basis? resolving everything same time.
+Symta's motto for memory management is "no heap - no garbage". By using just stack we can compact incrementally and use stack frames naturally as garbage collector generations: when a function leaves a stack frame, all frame's data is freed or compacted to parent frame. A good example would be webserver's `render_html_page` function, allocating a lot of per page data, which won't be needed for the next http request and therefore can be safely discarded after the page is served. Stack provides explicit, intuitive and predictable way to manage memory. Of course we do GC, but only on stack-frame basis, resolving everything the same time.
 
-Where needed, like for thread-sharing, heap is emulated through a stack structsure.
+Where needed, like for thread-sharing, heap is emulated through a stack structure.
 
 
 Non-local Return
@@ -638,16 +638,16 @@ Symta provides two approaches to FFI. The first uses `ffi_load PathToLibrary Sym
 
 The second approach uses `ffi_begin` and `ffi` macros, which provide simplified interface to `ffi_load` and `_ffi_call`. The `ffi_begin LibraryName` call requires shared library to be present under as `./ffi/LibraryName/lib/main`, which would be automatically copied to the program's `lib/` folder during compilation.
 
-The following example imports symbol `new_gfx` from the `gfx` dynamic library as `creat_new_gfx` macro (which would be expaned to `_ffi_call` during compilation):
+The following example imports symbol `new_gfx` from the `gfx` dynamic library as `create_new_gfx` macro (which would be expanded to `_ffi_call` during compilation):
 ```
 ffi_begin gfx
-ffi creat_new_gfx: new_gfx.ptr Width.u4 Height.u4
+ffi create_new_gfx: new_gfx.ptr Width.u4 Height.u4
 ```
 
 The `new_gfx.ptr` points compiler, that call to `new_gfx` returns `ptr` FFI type, while `Width.u4` and `Height.u4` declare arguments to `new_gfx` as 32-bit (4-byte) uinsigned integers
 
 Here is the list of currently supported native types
-- `ptr` - pointer (all pointers must be aligned to 3 bytes)
+- `ptr` - pointer (all pointers must be aligned to 4 bytes)
 - `void` - no return (calling it would produce `No`)
 - `int` - int type
 - `s4` - 32-bit signed integer
