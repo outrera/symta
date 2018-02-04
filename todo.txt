@@ -1,3 +1,17 @@
+- `times` uses doesn't use `expand_loop`, so `pass` would skip post-icrement, so following code hangs Symta:
+    times N 7
+    | when N><3: pass
+    | say N
+  Fix: use expand_loop, instead of using `while`. `expand_dup` has similar problem, but tharder to fix, because it pre-allocates array, so its elements can't be easily `pass`ed, solution: check for `pass` usage, and produce alternate code for such versions.
+- `list.has Item` returns 1 if list contains item, otherwise 0 
+- `table.has Key` returns 1 if table contains Key, otherwise 0 
+- There are too many `when A><B: C` forms in any program. Consider introducing shorthand notation: A? B: C
+- We write `A.Lore,A.Mana,A.Cool <= U.cost`, instead of
+  | Lore,Mana,Cool = U.cost
+  | A.lore <= Lore
+  | A.cost <= Mana
+  | A.cool <= Cool
+  Although there is probably not enough use cases to justify introducing this sugar
 - Introduce `symta -i <folder>` command, that would populate target folder with src/main.s and other files required for Symta's package, like readme.txt and license.txt. Otherwise user may get confused on how to structure the project.
 - consider treating `@m1{A B} @m2{C D} foo A B` as `foo{A B}.m2{C D}.m1{A B}`
 - Calling non-existing method gives wrong `name` for that method.
@@ -10,7 +24,6 @@
   ensure to check export list. Alayws recompile for macro deps, but dont for unchanged function export list or classes
 - Compiler generates a lot of stack variables for `case` matchers, which can lead to C's stack overflow with TCC, that is unable to optimize stack allocations. Optimize generated code to reuse stack variables.
 - fix OOP so that `type child.parent` would check that parent has no data fields.
-
 - reuse `!` for list splicing python style
 - methods `list.e` and `hard_list.e` don't appear to be used that much, rename the to each
 - optimize and fix ssa_form, so that will report wrong number of arguments
