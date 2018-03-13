@@ -1263,7 +1263,7 @@ BUILTIN0("halt",halt)
   exit(0);
 RETURNS(0)
 
-BUILTIN1("dbg",log,C_ANY,a)
+BUILTIN1("dbg",dbg,C_ANY,a)
   fprintf(stderr, "dbg: %s\n", print_object(a));
 RETURNS(a)
 
@@ -1688,7 +1688,7 @@ static struct {
   B(halt)
   B(typename)
   B(methods_)
-  B(log)
+  B(dbg)
   B(say_)
   B(rtstat)
   B(stack_trace)

@@ -5,6 +5,13 @@
   Fix: use expand_loop, instead of using `while`. `expand_dup` has similar problem, but tharder to fix, because it pre-allocates array, so its elements can't be easily `pass`ed, solution: check for `pass` usage, and produce alternate code for such versions.
 - `list.has Item` returns 1 if list contains item, otherwise 0 
 - `table.has Key` returns 1 if table contains Key, otherwise 0 
+- `list.tkeep` and `list.tskep` like:
+     list.tskip T F = $skip{E => T.has{(F E)}}
+  would allow writing:
+     Es.tskip{Cs{[?1 1]}.table ?cell}
+  instead of:
+     | Flt = Cs{[?1 1]}.table //filtering table
+     | Es = Es.skip{E => Flt.(E.cell)><1}
 - There are too many `when A><B: C` forms in any program. Consider introducing shorthand notation: A? B: C
 - We write `A.Lore,A.Mana,A.Cool <= U.cost`, instead of
   | Lore,Mana,Cool = U.cost
