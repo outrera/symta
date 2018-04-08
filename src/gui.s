@@ -49,10 +49,10 @@ widget.wants_focus_rect = 0
 type spacer.widget{W H} w/W h/H
 spacer.as_text = "#spacer{[$w] [$h]}"
 
-type tabs.~{Init Tabs} tab all/Tabs | $pick{Init}
+type tabs.~{Init Tabs} tab table/Tabs | $pick{Init}
 tabs.pick TabName =
 | when $tab: when got@@it get_gui: it.focus_widget <= No
-| $tab <= $all.TabName
+| $tab <= $table.TabName
 | when no $tab: bad "tabs.pick: no [TabName]"
 tabs.as_text = "#tabs{[$tab]}"
 tabs._ Method Args =

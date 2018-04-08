@@ -5,6 +5,8 @@
   Fix: use expand_loop, instead of using `while`. `expand_dup` has similar problem, but tharder to fix, because it pre-allocates array, so its elements can't be easily `pass`ed, solution: check for `pass` usage, and produce alternate code for such versions.
 - `list.has Item` returns 1 if list contains item, otherwise 0 
 - `table.has Key` returns 1 if table contains Key, otherwise 0 
+- No real need for '' quotes, because their role is completely covered by "". The free `'` could be reused for stuff like `Object'xs{X=>X+1}` instead of `Object.xs{}{X=>X+1}`. Although using {} for mapping instead of indexing was a bad idea. Consider changing it back to indexing with help of compiler detecting such call sites. Using `$UpperCaseName` and `Object.UpperCaseName` for indexing is really non-unintuitives, and disallows using `$Xs{X=>X+1}` and `Object.Xs{X=>X+1}`. It also makes harder translate global vars to member vars. So it would be much better to use `'` for indexing.
+- It is useful to treat stuff like get_main in `get_main.img{"ui_[F]"}` as a function call, instead of string
 - `list.tkeep` and `list.tskep` like:
      list.tskip T F = $skip{E => T.has{(F E)}}
   would allow writing:
@@ -12,6 +14,7 @@
   instead of:
      | Flt = Cs{[?1 1]}.table //filtering table
      | Es = Es.skip{E => Flt.(E.cell)><1}
+- move gfx/gui stuff into different packages.
 - There are too many `when A><B: C` forms in any program. Consider introducing shorthand notation: A? B: C
 - We write `A.Lore,A.Mana,A.Cool <= U.cost`, instead of
   | Lore,Mana,Cool = U.cost
