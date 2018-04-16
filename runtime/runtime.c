@@ -962,6 +962,27 @@ BUILTIN2("list.pre",list_pre,C_ANY,o,C_ANY,head)
   CONS(R, head, o);
 RETURNS(R)
 
+static void *SortFn;
+int qsort_comp(const void *elem1, const void *elem2)  {
+    api_t *api = &api_g;
+    void *R;
+    void *a = *(void**)elem1;
+    void *b = *(void**)elem2;
+    void *e;
+    BPUSH();
+    ARL(e,2);
+    STARG(e,0,a);
+    STARG(e,1,b);
+    CALL(R,SortFn);
+    if (R) return -1;
+    return  1;
+}
+BUILTIN2("list.qsort",list_qsort,C_ANY,o,C_ANY,fn)
+  intptr_t nitems = UNFIXNUM(LIST_SIZE(o));
+  SortFn = fn;
+  qsort(&REF(o,0), nitems, sizeof(void*), qsort_comp);
+RETURNS(o)
+
 BUILTIN_VARARGS("list.text",list_text)
   int i;
   void *x, *t;
@@ -2114,6 +2135,7 @@ static void init_types(api_t *api) {
   METHOD_FN("code", 0, 0, 0, 0, b_fixtext_code, 0, 0, 0, 0);
   METHOD_FN("char", b_int_char, 0, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("text", 0, 0, 0, b_list_text, 0, 0, 0, 0, 0);
+  METHOD_FN("qsort", 0, 0, 0, b_list_qsort, 0, 0, 0, 0, 0);
   METHOD_FN("apply", 0, 0, 0, b_list_apply, 0, 0, 0, 0, 0);
   METHOD_FN("apply_method", 0, 0, 0, b_list_apply_method, 0, 0, 0, 0, 0);
   METHOD_FN("nargs", 0, 0, b_fn_nargs, 0, 0, 0, 0, 0, 0);
