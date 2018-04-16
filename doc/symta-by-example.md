@@ -751,6 +751,8 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `list.bytes` - coerce list of integers to an efficient internal representation, using only 8-bit byte per value.
 
+`hard_list.qsort_ Fn` - that is a fast, but unsafe sorting function, that modifies the list it sorts. Therefore it is only available for array-like lists (hard_list type).
+
 `_.as_text` - convert object to textual represenation
 
 `int.x` - heXadecimal textual representation of an integer
