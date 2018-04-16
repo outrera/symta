@@ -2135,7 +2135,7 @@ static void init_types(api_t *api) {
   METHOD_FN("code", 0, 0, 0, 0, b_fixtext_code, 0, 0, 0, 0);
   METHOD_FN("char", b_int_char, 0, 0, 0, 0, 0, 0, 0, 0);
   METHOD_FN("text", 0, 0, 0, b_list_text, 0, 0, 0, 0, 0);
-  METHOD_FN("qsort", 0, 0, 0, b_list_qsort, 0, 0, 0, 0, 0);
+  METHOD_FN("qsort_", 0, 0, 0, b_list_qsort, 0, 0, 0, 0, 0);
   METHOD_FN("apply", 0, 0, 0, b_list_apply, 0, 0, 0, 0, 0);
   METHOD_FN("apply_method", 0, 0, 0, b_list_apply_method, 0, 0, 0, 0, 0);
   METHOD_FN("nargs", 0, 0, b_fn_nargs, 0, 0, 0, 0, 0, 0);
