@@ -246,12 +246,8 @@ times Var Count Body =
 | N = @rand 'N'
 | ['|' ['=' [N] Count]
        ['=' [I] [0]]
-       [less [`and` [_eq [_tag N] 0]
-                      [_gte N 0]]
-         [_fatal 'dup: bad loop count']]
-       [while [_lt I N]
-         ['|' Body
-              [_set I [_add I 1]]]]]
+       [when [_tag N] [_fatal 'times: bad loop count']]
+       (expand_loop [_lt I N] [_set I [_add I 1]] Body)]
 
 expand_dup Var Count Body =
 | I = if got Var then Var else @rand 'I'
