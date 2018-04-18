@@ -829,6 +829,11 @@ Loop control macros mexlets (available inside of `while`, `till` and `for`)
 
 `done` -- break out of loop
 
+Options for `type`
+------------------------------
+`type typename.no_copy{...} ...` - dont produce copy default constructors.
+`type typename{@name ...} ...` - typename's constructor would be named `name`, instead of `typename`.
+
 
 Operators available inside of `case` macro 
 ------------------------------

@@ -29,7 +29,7 @@ token_is What O = O.is_token and O.symbol >< What
 //FIXME: optimize memory usage
 add_lexeme Dst Pattern Type =
 | when Pattern.end
-  | Dst.'type' <= Type
+  | Dst.0 <= Type
   | leave No
 | [Cs@Next] = Pattern
 | Kleene = 0
@@ -39,10 +39,10 @@ add_lexeme Dst Pattern Type =
                   | Kleene <= 1
 | when Cs.is_text: Cs <= Cs.list
 | Cs = if Cs.is_list then Cs else [Cs]
-| for C Cs
+| for C Cs{?code}
   | T = Dst.C
   | when no T: 
-    | T <= if Kleene then Dst else t
+    | T <= if Kleene then Dst else dup 128 No
     | Dst.C <= T
   | add_lexeme T Next Type
 
@@ -74,7 +74,7 @@ init_tokenizer =
          (($HeadChar @$TailChar) symbol)
          )
 | Ss = \((`if` `if`) (`then` `then`) (`else` `else`) (`and` `and`) (`or` `or`) (`No` `void`))
-| GTable <= t
+| GTable <= dup 128 No
 | GSpecs <= t
 | for [A B] Ss: GSpecs.A <= B
 | for L Ls
@@ -92,17 +92,18 @@ read_token R LeftSpaced =
 | while 1
   | Cur <= Next
   | C <= R.peek
-  | Next <= Next.C
+  | CC = if got C then C.code else 127
+  | Next <= Next.CC
   | when no Next
     | Value = Cs.flip.text
     | Type = GSpecs.Value
-    | when no Type: Type <= Cur.'type'
+    | when no Type: Type <= Cur.0
     | when Value >< '-' and LeftSpaced and C <> '\n' and C <> ' ':
       | Type <= \negate
     | when Type >< end and got C: Type <= 0
     | less Type:
       | when Value><'' and C.size><1:
-        | C <= if C.code>#d then "[C] (#[C.code.x])" else "no-printable (#[C.code.x])"
+        | C <= if CC>#d then "[C] (#[C.code.x])" else "no-printable (#[CC.x])"
       | R.error{"unexpected `[Value][C or '']`"}
     | when Type.is_fn
       | Value <= Type R Value

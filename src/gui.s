@@ -1,4 +1,4 @@
-use gfx reader gui_
+use gfx gui_
 
 // loop body made a separate routine, so that GC will free all per-frame data
 event_loop F =

@@ -12409,10 +12409,10 @@ LABEL(f__25202)
   CALL_TAGGED(r__25300,r__25301);
   STARG(E,6,r__25300);
   LOCAL(endif__25264);
-  JMP(end__37583);
+  JMP(end__37669);
   LOCAL(endif__25254);
   LOCAL(endif__25244);
-  LOCAL(default__37584);
+  LOCAL(default__37670);
   VAR(r__25309);
   BPUSH();
   VAR(r__25310);
@@ -12453,7 +12453,7 @@ LABEL(f__25202)
   STARG(env__25323,2,r__25319);
   CALL(r__25309,r__25310);
   STARG(E,6,r__25309);
-  LOCAL(end__37583);
+  LOCAL(end__37669);
   LDARG(r__25235,E,6);
   STARG(E,2,r__25235);
   VAR(r__25324);
