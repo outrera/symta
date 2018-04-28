@@ -13,7 +13,7 @@ static int window_h;
 static int window_x;
 static int window_y;
 
-static done_init;
+static int done_init;
 
 static char *title = "Symta";
 
@@ -342,13 +342,17 @@ static char *upload_gfx(gfx_t *gfx) {
 
   SDL_LockSurface(surface);
 
-  p = (uint8_t*)surface->pixels;
-  s = gfx->data;
-  for (y = 0; y < h; y++) {
-    d = (uint32_t*)(p + surface->pitch*y);
-    end = s + w;
-    while (s < end) {
-      *d++ = *s++;
+  if (surface->pitch == w*4) {
+    memcpy(surface->pixels, gfx->data, w*h*4);
+  } else {
+    p = (uint8_t*)surface->pixels;
+    s = gfx->data;
+    for (y = 0; y < h; y++) {
+      d = (uint32_t*)(p + surface->pitch*y);
+      end = s + w;
+      while (s < end) {
+        *d++ = *s++;
+      }
     }
   }
 
