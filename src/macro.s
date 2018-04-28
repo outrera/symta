@@ -197,8 +197,8 @@ swap A B = form | ~T = A
                 | B <= ~T
 
 `if` A B C = [_if A B C]
-no @Xs = form No >< Xs
-got @Xs = form No <> Xs
+no @Xs = form: _eq No Xs
+got @Xs = form: _ne No Xs
 not @Xs = [_if Xs 0 1]
 `and` A B = [_if A B 0]
 `or` A B = form: let_ ((~V A)) (_if ~V ~V B)
@@ -350,16 +350,16 @@ push Item O = form: O <= [Item @O]
 `%=` A B = [`<=` A [`%` A B]]
 
 `++` O = form: let_ ((~O O))
-               (_if (_eq (_tag ~O) 0) //is int?
+               (_if (_tag ~O) //is int?
+                    (_mcall ~O `++`)
                     (`|` (`<=` (O) (_add ~O 1))
-                         ~O)
-                    (_mcall ~O `++`))
+                         ~O))
 
 `--` O = form: let_ ((~O O))
-               (_if (_eq (_tag ~O) 0) //is int?
+               (_if (_tag ~O) //is int?
+                    (_mcall ~O `--`)
                     (`|` (`<=` (O) (_sub ~O 1))
-                         ~O)
-                    (_mcall ~O `--`))
+                         ~O))
 
 let @As =
 | when As.size < 2: mex_error "bad let @As"
@@ -373,21 +373,30 @@ let @As =
     @(map G Gs [_set G.1 G.0])
     R]
 
-`+` A B = [_mcall A '+' B]
+bin_op A B Op Method =
+| form: let_ ((~A A) (~B B))
+       (_if (_add (_tag ~A) (_tag ~B))
+            (_mcall ~A Method ~B)
+            (Op ~A ~B))
+
+`+` A B = bin_op A B _add `+`
 `-` @As = case As
-  [A] | [_mcall A neg]
-  [A B] | [_mcall A '-' B]
+  [O] | form: let_ ((~O O))
+               (_if (_tag ~O) //is int?
+                    (_mcall ~O `neg`)
+                    (_sub 0 ~O))
+  [A B] | bin_op A B _sub `-`
   Else | mex_error "`-` got wrong number of args: [As]"
-`*` A B = [_mcall A '*' B]
-`/` A B = [_mcall A '/' B]
-`%` A B = [_mcall A '%' B]
+`*` A B = bin_op A B _mul `*`
+`/` A B = bin_op A B _div `/`
+`%` A B = bin_op A B _rem `%`
 `^^` A B = [_mcall A '^^' B]
-`<` A B = [_mcall A '<' B]
-`>` A B = [_mcall A '>' B]
-`<<` A B = [_mcall A '<<' B]
-`>>` A B = [_mcall A '>>' B]
-`><` A B = [_mcall A '><' B]
-`<>` A B = [_mcall A '<>' B]
+`<` A B = bin_op A B _lt `<`
+`>` A B = bin_op A B _gt `>`
+`<<` A B = bin_op A B _lte `<<`
+`>>` A B = bin_op A B _gte `>>`
+`><` A B = bin_op A B _eq `><`
+`<>` A B = bin_op A B _ne `<>`
 `^` A B = [B A]
 `.` A B = if A.is_keyword then [A B]
           else if B.is_keyword
@@ -396,7 +405,10 @@ let @As =
                       | P = got Fields and Fields.locate{B}
                       | when got P: leave [_dget A P]
                     | ['{}' ['.' A B]]
-          else [_mcall A '.' B]
+          else form: let_ ((~A A) (~B B))
+                (_if (_canget ~A ~B)
+                    (_ref ~A ~B)
+                    (_mcall ~A `.` ~B))
 `->` A B = form
 | `=` (~A) A
 | `=` (~B) B

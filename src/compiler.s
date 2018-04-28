@@ -444,9 +444,17 @@ hcase SsaFormCases Xs (K)
   [_import Lib Symbol] | ssa_import K Lib Symbol
   [_add A B] | ssa_fixed2 K fxnadd A B
   [_sub A B] | ssa_fixed2 K fxnsub A B
+  [_mul A B] | ssa_fixed2 K fxnmul A B
+  [_div A B] | ssa_fixed2 K fxndiv A B
+  [_rem A B] | ssa_fixed2 K fxnrem A B
   [_eq A B] | ssa_fixed2 K fxneq A B
+  [_ne A B] | ssa_fixed2 K fxnne A B
   [_lt A B] | ssa_fixed2 K fxnlt A B
+  [_gt A B] | ssa_fixed2 K fxngt A B
+  [_lte A B] | ssa_fixed2 K fxnlte A B
   [_gte A B] | ssa_fixed2 K fxngte A B
+  [_canget A B] | ssa_fixed2 K fxncanget A B
+  [_ref A B] | ssa_fixed2 K fxnref A B
   [_tag X] | ssa_fixed1 K fxntag X
   [_fatal Msg] | ssa fatal Msg^ev
   [_this_method] | ssa this_method K

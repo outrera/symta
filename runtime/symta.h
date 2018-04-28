@@ -68,6 +68,8 @@
 #define FIXNUM(x) ASHL((intptr_t)(x),ALIGN_BITS)
 #define UNFIXNUM(x) ASHR((intptr_t)(x),ALIGN_BITS)
 
+#define LIST_SIZE(o) ((uintptr_t)O_CODE(o))
+
 #define FXNNEG(dst,o) dst = (void*)(-(intptr_t)(o))
 #define FXNADD(dst,a,b) dst = (void*)((intptr_t)(a) + (intptr_t)(b))
 #define FXNSUB(dst,a,b) dst = (void*)((intptr_t)(a) - (intptr_t)(b))
@@ -81,6 +83,9 @@
 #define FXNLTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) <= (intptr_t)(b))
 #define FXNGTE(dst,a,b) dst = (void*)FIXNUM((intptr_t)(a) >= (intptr_t)(b))
 #define FXNTAG(dst,x) dst = (void*)FIXNUM(O_TAGL(x))
+#define FXNREF(dst,x,i) dst = (void*)REF(x,UNFIXNUM(i))
+#define FXNCANGET(dst,x,i) dst = (void*)FIXNUM(!O_TAGL(i) && O_TAGL(x)==T_LIST \
+                                             && (uintptr_t)(i) < (uintptr_t)LIST_SIZE(x))
 #define UNFXN(dst,x) dst = (void*)UNFIXNUM(x)
 
 #define LOAD_FLOAT(dst,x) { \

@@ -4,7 +4,7 @@ GError = Msg => | say Msg; halt
 GInput = No
 GOutput = No
 
-type text_stream{T O} chars/T.list len/T.size off last/No row col origin/O
+type text_stream{T O} chars/T.list len off last/No row col origin/O
 | DD = (#0d).char //allows reading windows line encoded files
 | $chars <= $chars.skip{?><DD}
 | $len <= $chars.size
