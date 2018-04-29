@@ -255,8 +255,7 @@ expand_dup Var Count Body =
 | Ys = @rand 'Ys'
 | ['|' ['=' [N] Count]
        ['=' [I] [0]]
-       [less [`and` [_eq [_tag N] 0]
-                      [_gte N 0]]
+       [when [_add [_tag N] [_lt N 0]]
          [_fatal 'dup: bad loop count']]
        ['=' [Ys] [_alloc N]]
        [while [_lt I N]
@@ -275,8 +274,8 @@ expand_map_for Type Item Items Body =
 | I = @rand 'I'
 | N = @rand 'N'
 | ['|' ['=' [Xs] [_mcall Items list]]
-       [Type I [_mcall Xs size]
-          ['|' ['=' [Item] [_mcall Xs '.' I]]
+       [Type I [_size Xs]
+          ['|' ['=' [Item] [_ref Xs I]]
                Body]]]
 
 map @As = case As

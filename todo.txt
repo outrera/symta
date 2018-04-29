@@ -1,4 +1,5 @@
-- `expand_dup` should have quicker way to produce items, something like `pass Item`
+- expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
+- `expand_dup` should have shortcut to produce items, something like `pass Item`
 - `list.has Item` returns 1 if list contains item, otherwise 0 
 - `table.has Key` returns 1 if table contains Key, otherwise 0 
 - No real need for '' quotes, because their role is completely covered by "". The free `'` could be reused for stuff like `Object'xs{X=>X+1}` instead of `Object.xs{}{X=>X+1}`. Although using {} for mapping instead of indexing was a bad idea. Consider changing it back to indexing with help of compiler detecting such call sites. Using `$UpperCaseName` and `Object.UpperCaseName` for indexing is really non-unintuitives, and disallows using `$Xs{X=>X+1}` and `Object.Xs{X=>X+1}`. It also makes harder translate global vars to member vars. So it would be much better to use `'` for indexing.
