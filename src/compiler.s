@@ -382,6 +382,7 @@ ssa_mark Name = GFnMeta.GCurProperFn.name <= Name
 
 ssa_fixed1 K Op X = ssa Op K X^ev
 ssa_fixed2 K Op A B = ssa Op K A^ev B^ev
+ssa_fixed3 K Op A B C = ssa Op K A^ev B^ev C^ev
 
 ssa_alloc K N =
 | X = ssa_var x
@@ -453,8 +454,15 @@ hcase SsaFormCases Xs (K)
   [_gt A B] | ssa_fixed2 K fxngt A B
   [_lte A B] | ssa_fixed2 K fxnlte A B
   [_gte A B] | ssa_fixed2 K fxngte A B
+  [_and A B] | ssa_fixed2 K fxnand A B
+  [_ior A B] | ssa_fixed2 K fxnior A B
+  [_xor A B] | ssa_fixed2 K fxnxor A B
+  [_shl A B] | ssa_fixed2 K fxnshl A B
+  [_shr A B] | ssa_fixed2 K fxnshr A B
   [_canget A B] | ssa_fixed2 K fxncanget A B
   [_ref A B] | ssa_fixed2 K fxnref A B
+  [_refs A I V] | ssa_fixed3 K fxnrefs A I V
+  [_size A] | ssa_fixed1 K fxnsize A
   [_tag X] | ssa_fixed1 K fxntag X
   [_fatal Msg] | ssa fatal Msg^ev
   [_this_method] | ssa this_method K

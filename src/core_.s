@@ -167,9 +167,9 @@ list.size =
   | S++
 | S
 
-list.end = not $size
+list.end = _eq $size 0
 
-text.end = not $size
+text.end = _eq $size 0
 
 _bytes_.list = dup I $size $I
 
@@ -193,8 +193,16 @@ list.`><` B =
 hard_list.`><` B =
 | less B.is_list: leave 0 //FIXME: cons_list B will be O(n^2) slow
 | N = $size
-| less N >< B.size: leave 0
+| when _ne N B.size: leave 0
 | times I N: less $I >< B.I: leave 0
+| 1
+
+_list_.`><` B =
+| less B.is_list: leave 0 //FIXME: cons_list B will be O(n^2) slow
+| when _ne (_tag B) 5: B <= B.list //convert B to _list_
+| N = $size
+| when _ne N B.size: leave 0
+| times I N: less (_ref Me I) >< (_ref B I): leave 0
 | 1
 
 list.`<` Xs =
@@ -236,7 +244,7 @@ list.`>>` Xs =
 list.flip =
 | N = $size
 | Ys = dup N
-| while N > 0
+| while N
   | N--
   | Ys.N <= pop Me
 | Ys
@@ -247,12 +255,19 @@ hard_list.flip =
   | N--
   | $N
 
+_list_.flip =
+| N = $size
+| dup N
+  | N--
+  | _ref Me N
+
 text.flip = $list.flip.text
 
 list.transpose = Me.0.size{}{I=>Me.map{?.I}}
 
 list.map F = dup $size: F Me^pop
 hard_list.map F = dup I $size: F $I
+_list_.map F = dup I $size: F (_ref Me I)
 text.map F = $list.map{F}
 
 list.fold Run F =
@@ -450,6 +465,15 @@ hard_list.find F =
          | It = $I
          | when F><It: leave It
 
+_list_.find F =
+| if F.is_fn
+  then | times I Me^_size:
+         | It = _ref Me I
+         | when F It: leave It
+  else | times I Me^_size:
+         | It = _ref Me I
+         | when F><It: leave It
+
 text.list = dup I $size $I
 
 list.group N =
@@ -555,19 +579,19 @@ bad Text =
 type table.no_copy{@table_ Size} buckets/(dup Size No)
 table.`.` K =
 | Bs = $buckets
-| H = K.hash%Bs.size
-| Xs = Bs.H
+| H = _rem K.hash Bs^_size
+| Xs = _ref Bs H
 | when no Xs: leave No
-| for X Xs: when X.0 >< K: leave X.1
+| for X Xs: when _mcall (_ref X 0) `><` K: leave: _ref X 1
 | No
 table.`=` K V =
 | Bs = $buckets
-| H = K.hash%Bs.size
-| Xs = Bs.H
-| if no Xs then Bs.H <= [[K V]]
-  else | Old = Xs.find{X => X.0><K}
-       | if no Old then Bs.H <= [[K V]@Xs]
-         else Old.1 <= V
+| H = _rem K.hash Bs^_size
+| Xs = _ref Bs H
+| if no Xs then _refs Bs H [[K V]]
+  else | Old = Xs.find{X => _mcall (_ref X 0) `><` K}
+       | if no Old then _refs Bs H [[K V]@Xs].list
+         else _refs Old 1 V
 | No
 table.del K =
 | Bs = $buckets
@@ -578,7 +602,7 @@ table.del K =
 | when got L: Bs.H <= $Xs.L
 | Me
 table._ Method Args =
-| if Args.size > 1
+| if _gt Args.size 1
   then Args.0.(Method^_method_name.tail) <= Args.1 // strip `assign indicator`
   else Me.(Method^_method_name)
 table.size = $buckets.map{X => if got X then X.size else 0}.sum

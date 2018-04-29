@@ -37,9 +37,9 @@ gfx.resize W H =
 | bad "FIXME: gfx.resize"
 | gfx_resize $handle W H
 gfx.save Filename = gfx_save_png Filename $handle
-gfx.cmap raw/0 =
+gfx.raw_cmap = gfx_cmap $handle
+gfx.cmap = 
 | P = gfx_cmap $handle
-| when Raw: leave P
 | less P: leave 0
 | dup I 256: _ffi_get uint32_t P I
 gfx.`=cmap` NewCM =

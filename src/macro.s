@@ -395,8 +395,13 @@ bin_op A B Op Method =
 `>` A B = bin_op A B _gt `>`
 `<<` A B = bin_op A B _lte `<<`
 `>>` A B = bin_op A B _gte `>>`
-`><` A B = bin_op A B _eq `><`
-`<>` A B = bin_op A B _ne `<>`
+`><` A B = [_mcall A '><' B]
+`<>` A B = [_mcall A '<>' B]
+`&&&` A B = bin_op A B _and '&&&'
+`---` A B = bin_op A B _ior '---'
+`+++` A B = bin_op A B _xor '+++'
+`<<<` A B = bin_op A B _shl '<<<'
+`>>>` A B = bin_op A B _shr '<<<'
 `^` A B = [B A]
 `.` A B = if A.is_keyword then [A B]
           else if B.is_keyword
@@ -417,12 +422,6 @@ bin_op A B Op Method =
   | ~G <= t
   | ~A.~B <= ~G
 | ~G
-
-`&&&` A B = [_mcall A '&&&' B]
-`+++` A B = [_mcall A '+++' B]
-`---` A B = [_mcall A '---' B]
-`<<<` A B = [_mcall A '<<<' B]
-`>>>` A B = [_mcall A '>>>' B]
 
 
 expand_colon_r E Found =

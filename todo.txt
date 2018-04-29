@@ -20,6 +20,7 @@
   Although there is probably not enough use cases to justify introducing this sugar
 - Introduce `symta -i <folder>` command, that would populate target folder with src/main.s and other files required for Symta's package, like readme.txt and license.txt. Otherwise user may get confused on how to structure the project.
 - consider treating `@m1{A B} @m2{C D} foo A B` as `foo{A B}.m2{C D}.m1{A B}`
+- Consider allocating separate buffer for data that gonna get lifted a lot. Consider having pools of these buffers for small objects and mallocing for large objects. Also consider allocating large objects out of stack, holding only references to them. That way lifting could be greatly reduced.
 - Calling non-existing method gives wrong `name` for that method.
 - list.apply and list.apply_method should really be runtime calls, followed by MCALL. That may open ways to speedup them. Replace list.apply_method with _redirect, which will simply redirect method call to other object. Check out expand_block_item_method
 - ensure type_method_t->fn gets properly lifted, before get_method's result is cached.
