@@ -1853,6 +1853,26 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
   fatal("aborting\n");
 }
 
+#define GC_PARAM(dst,o,gcframe,pre,post) \
+  { \
+    void *o_ = (void*)(o); \
+    if (IMMEDIATE(o_)) { \
+      dst = o_; \
+    } else { \
+      frame_t *frame_ = O_FRAME(o_); \
+      if (frame_ != gcframe) { \
+        if (frame_ > (frame_t*)api->heap) { \
+          dst = frame_; \
+        } else { \
+          dst = o_; \
+        } \
+      } else { \
+        pre; \
+        dst = ((collector_t)api->collectors[O_TYPE(o_)])(o_); \
+        post; \
+      } \
+    } \
+  }
 #define GCFrame (api->frame+1)
 #define GC_REC(dst,value) GC_PARAM(dst,value,GCFrame,;,;)
 

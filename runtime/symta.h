@@ -292,30 +292,23 @@ typedef struct tot_entry_t { //table of tables entry
     } \
   }
 typedef void *(*collector_t)( void *o);
-#define GC_PARAM(dst,o,gcframe,pre,post) \
+#define GC(dst,o) \
+  /*fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);*/ \
   { \
     void *o_ = (void*)(o); \
     if (IMMEDIATE(o_)) { \
       dst = o_; \
     } else { \
-      frame_t *frame_ = O_FRAME(o_); \
-      if (frame_ != gcframe) { \
-        if (frame_ > (frame_t*)api->heap) { \
-          dst = frame_; \
-        } else { \
-          dst = o_; \
-        } \
+      if (O_FRAME(o_) != Frame) { \
+        dst = o_; \
       } else { \
-        pre; \
+        --Frame; \
         dst = ((collector_t)api->collectors[O_TYPE(o_)])(o_); \
-        post; \
+        ++Frame; \
       } \
     } \
-  }
-#define GC(dst,value) \
-  /*fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);*/ \
-  if (Lifts) api->gc_lifts(); \
-  GC_PARAM(dst, value, Frame, --Frame, ++Frame);
+  } \
+  if (Lifts) api->gc_lifts();
 #define RETURN_NO_POP(value) \
    GC(value,value); \
    return (void*)(value);

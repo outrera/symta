@@ -1,4 +1,5 @@
 - expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
+- most method calls just access member items, therefore it makes sense to store at call site direct indices into objects.
 - `expand_dup` should have shortcut to produce items, something like `pass Item`
 - `list.has Item` returns 1 if list contains item, otherwise 0 
 - `table.has Key` returns 1 if table contains Key, otherwise 0 
