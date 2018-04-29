@@ -821,6 +821,8 @@ float.clip A B = if Me < A then A
 
 list.init Src = times I $size: $I <= Src.I
 
+_list_.init Src = times I Me^_size: _refs Me I Src.I
+
 list.div F =
 | R = t
 | for X Me
