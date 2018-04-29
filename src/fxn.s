@@ -3,7 +3,11 @@
 tofxn E =
 | less E.is_list: leave E
 | case E
-  [`<=` A @Xs] | leave [`<=` A Xs^tofxn]
+  [`<=` X @Xs]
+    | case X [[`.` A I]]
+      | less I.is_text and not I.0.is_upcase:
+        | leave [_refs A^tofxn I^tofxn Xs^tofxn]
+    | leave [`<=` X Xs^tofxn]
   [esc @Xs] | leave Xs
 | E <= E{?^tofxn}
 | case E
@@ -19,8 +23,8 @@ tofxn E =
   [`>` A B]  | [_gt A B]
   [`<<` A B] | [_lte A B]
   [`>>` A B] | [_gte A B]
-  [`.` A B] | if B.is_text and B.0.is_upcase then [_ref A B]
-              else E
+  [`.` A B] | if B.is_text and not B.0.is_upcase then E
+              else [_ref A B]
   [`++` X]  | form: let_ ((~O X)) (`|` (`<=` (X) (_add ~O 1)) ~O)
   [`--` X]  | form: let_ ((~O X)) (`|` (`<=` (X) (_sub ~O 1)) ~O)
   [`+=` A B]  | [`<=` A [_add A B]]
