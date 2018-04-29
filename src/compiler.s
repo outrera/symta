@@ -374,7 +374,7 @@ ssa_goto Name =
 | N = GBases.locate{B => got B.locate{?><Name}}
 | when no N: compiler_error "cant find label [Name]"
 | times I N
-  | ssa gc (ssa_var d) 0 // FIXME: have to GC, since base-pop wont LIFT
+  | ssa gc_lifts //have to GC, since bpop wont LIFT
   | ssa bpop
 | ssa jmp Name
 

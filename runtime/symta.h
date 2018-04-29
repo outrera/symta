@@ -291,29 +291,22 @@ typedef struct tot_entry_t { //table of tables entry
       MCALL(k,o,api->m_ampersand); \
     } \
   }
+
+//#define GCDEBUG fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);
 typedef void *(*collector_t)( void *o);
-#define GC(dst,o) \
-  /*fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);*/ \
-  { \
-    void *o_ = (void*)(o); \
-    if (IMMEDIATE(o_)) { \
-      dst = o_; \
-    } else { \
-      if (O_FRAME(o_) != Frame) { \
-        dst = o_; \
-      } else { \
-        --Frame; \
-        dst = ((collector_t)api->collectors[O_TYPE(o_)])(o_); \
-        ++Frame; \
-      } \
-    } \
+#define GC_LIFTS() if (Lifts) api->gc_lifts();
+#define GCRET(o) \
+  if (!IMMEDIATE(o) && O_FRAME(o) == Frame) { \
+    --Frame; \
+    o = ((collector_t)api->collectors[O_TAGH(o)])(o); \
+    ++Frame; \
   } \
   if (Lifts) api->gc_lifts();
 #define RETURN_NO_POP(value) \
-   GC(value,value); \
+   GCRET(value); \
    return (void*)(value);
 #define RETURN(value) \
-   GC(value,value); \
+   GCRET(value); \
    BPOP(); \
    return (void*)(value);
 #define RETURN_NO_GC(value) return (void*)(value);
@@ -383,7 +376,7 @@ typedef struct {
           ARL(E,0); \
           CALL(k_,h_) \
       } \
-      GC(value,value); \
+      GC(value); \
       BPOP(); \
     } \
     api->jmp_return = value; \

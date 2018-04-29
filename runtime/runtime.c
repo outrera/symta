@@ -1853,7 +1853,7 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
   fatal("aborting\n");
 }
 
-#define GC_PARAM(dst,o,gcframe,pre,post) \
+#define GC_PARAM(dst,o,gcframe) \
   { \
     void *o_ = (void*)(o); \
     if (IMMEDIATE(o_)) { \
@@ -1867,14 +1867,12 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
           dst = o_; \
         } \
       } else { \
-        pre; \
-        dst = ((collector_t)api->collectors[O_TYPE(o_)])(o_); \
-        post; \
+        dst = ((collector_t)api->collectors[O_TAGH(o_)])(o_); \
       } \
     } \
   }
 #define GCFrame (api->frame+1)
-#define GC_REC(dst,value) GC_PARAM(dst,value,GCFrame,;,;)
+#define GC_REC(dst,value) GC_PARAM(dst,value,GCFrame)
 
 //if frame field points to heap, instead of stack, then it is already moved
 #define MARK_MOVED(o,p) REF(o,-1) = p
