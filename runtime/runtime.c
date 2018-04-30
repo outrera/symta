@@ -751,7 +751,7 @@ RETURNI(single_chars[REF1(o,4+idx)])
 BUILTIN1("text.hash",text_hash,C_ANY,o)
 RETURNI(FIXNUM(hash(BIGTEXT_DATA(o), BIGTEXT_SIZE(o))))
 BUILTIN1("text.utf8",text_utf8,C_ANY,o)
-RETURNI(text_to_bytes(api,o))
+RETURNS(text_to_bytes(api,o))
 
 
 BUILTIN2("text.`><`",fixtext_eq,C_ANY,a,C_ANY,b)
