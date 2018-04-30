@@ -96,6 +96,7 @@
   void *A, *R; \
   BUILTIN_CHECK_VARARGS(0);
 #define RETURNS(r) R = (void*)(r); RETURN(R); }
+#define RETURNI(r) GC_LIFTS(); BPOP(); return (void*)(r); }
 #define RETURNS_NO_GC(r) RETURN_NO_GC(r); }
 
 

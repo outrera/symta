@@ -684,24 +684,24 @@ uint32_t hash(uint8_t *data, int len) {
 }
 
 BUILTIN2("void.`><`",void_eq,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a == b))
+RETURNI(FIXNUM(a == b))
 BUILTIN2("void.`<>`",void_ne,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a != b))
+RETURNI(FIXNUM(a != b))
 BUILTIN1("void.hash",void_hash,C_ANY,a)
-RETURNS(FIXNUM(0x12345678))
+RETURNI(FIXNUM(0x12345678))
 
 
 BUILTIN2("fn.`><`",fn_eq,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a == b))
+RETURNI(FIXNUM(a == b))
 BUILTIN2("fn.`<>`",fn_ne,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a != b))
+RETURNI(FIXNUM(a != b))
 BUILTIN1("fn.nargs",fn_nargs,C_ANY,o)
   fn_meta_t *meta = (fn_meta_t*)get_meta(O_FN(o));
   void *nargs = meta ? meta->nargs : No;
-RETURNS(nargs)
+RETURNI(nargs)
 
 BUILTIN1("bytes.size",bytes_size,C_ANY,o)
-RETURNS(FIXNUM(BYTES_SIZE(o)))
+RETURNI(FIXNUM(BYTES_SIZE(o)))
 BUILTIN2("bytes.`.`",bytes_get,C_ANY,o,C_INT,index)
   uintptr_t idx = (uintptr_t)UNFIXNUM(index);
   char t[2];
@@ -710,7 +710,7 @@ BUILTIN2("bytes.`.`",bytes_get,C_ANY,o,C_INT,index)
     TEXT(P, ".");
     bad_call(api,P);
   }
-RETURNS(FIXNUM(BYTES_DATA(o)[idx]))
+RETURNI(FIXNUM(BYTES_DATA(o)[idx]))
 BUILTIN3("bytes.`=`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
   intptr_t i = UNFIXNUM(index);
   if (BYTES_SIZE(o) <= (uintptr_t)i) {
@@ -720,7 +720,7 @@ BUILTIN3("bytes.`=`",bytes_set,C_ANY,o,C_INT,index,C_INT,value)
   }
   BYTES_DATA(o)[i] = (uint8_t)UNFIXNUM(value);
   R = 0;
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("bytes.clear",bytes_clear,C_ANY,o,C_INT,value)
   intptr_t i;
   intptr_t size = BYTES_SIZE(o);
@@ -728,17 +728,17 @@ BUILTIN2("bytes.clear",bytes_clear,C_ANY,o,C_INT,value)
   uint8_t *p = BYTES_DATA(o);
   for (i = 0; i < size; i++) p[i] = v;
   R = 0;
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("bytes.utf8",bytes_utf8,C_ANY,o)
 RETURNS(bytes_to_text(api, BYTES_DATA(o), BYTES_SIZE(o)))
 
 
 BUILTIN2("text.`><`",text_eq,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(IS_BIGTEXT(b) ? texts_equal(a,b) : 0))
+RETURNI(FIXNUM(IS_BIGTEXT(b) ? texts_equal(a,b) : 0))
 BUILTIN2("text.`<>`",text_ne,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(IS_BIGTEXT(b) ? !texts_equal(a,b) : 1))
+RETURNI(FIXNUM(IS_BIGTEXT(b) ? !texts_equal(a,b) : 1))
 BUILTIN1("text.size",text_size,C_ANY,o)
-RETURNS(FIXNUM(BIGTEXT_SIZE(o)))
+RETURNI(FIXNUM(BIGTEXT_SIZE(o)))
 BUILTIN2("text.`.`",text_get,C_ANY,o,C_INT,index)
   uintptr_t idx = (uintptr_t)UNFIXNUM(index);
   char t[2];
@@ -747,19 +747,19 @@ BUILTIN2("text.`.`",text_get,C_ANY,o,C_INT,index)
     TEXT(P, ".");
     bad_call(api,P);
   }
-RETURNS(single_chars[REF1(o,4+idx)])
+RETURNI(single_chars[REF1(o,4+idx)])
 BUILTIN1("text.hash",text_hash,C_ANY,o)
-RETURNS(FIXNUM(hash(BIGTEXT_DATA(o), BIGTEXT_SIZE(o))))
+RETURNI(FIXNUM(hash(BIGTEXT_DATA(o), BIGTEXT_SIZE(o))))
 BUILTIN1("text.utf8",text_utf8,C_ANY,o)
-RETURNS(text_to_bytes(api,o))
+RETURNI(text_to_bytes(api,o))
 
 
 BUILTIN2("text.`><`",fixtext_eq,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(IS_FIXTEXT(b) ? texts_equal(a,b) : 0))
+RETURNI(FIXNUM(IS_FIXTEXT(b) ? texts_equal(a,b) : 0))
 BUILTIN2("text.`<>`",fixtext_ne,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(IS_FIXTEXT(b) ? !texts_equal(a,b) : 1))
+RETURNI(FIXNUM(IS_FIXTEXT(b) ? !texts_equal(a,b) : 1))
 BUILTIN1("text.size",fixtext_size,C_ANY,o)
-RETURNS(FIXNUM(fixtext_size(o)))
+RETURNI(FIXNUM(fixtext_size(o)))
 BUILTIN2("text.`.`",fixtext_get,C_ANY,o,C_INT,index)
   char t[20];
   uint64_t c;
@@ -772,13 +772,13 @@ bounds_error:
   }
   c = ((uint64_t)o>>(i*7))&(0x7F<<ALIGN_BITS);
   if (!c) goto bounds_error;
-RETURNS(ADD_TAGL(c,T_FIXTEXT))
+RETURNI(ADD_TAGL(c,T_FIXTEXT))
 BUILTIN1("text.end",fixtext_end,C_ANY,o)
-RETURNS(FIXNUM(1))
+RETURNI(FIXNUM(1))
 BUILTIN1("text.hash",fixtext_hash,C_ANY,o)
-RETURNS(FIXNUM(((uint64_t)o&(((uint64_t)1<<32)-1))^((uint64_t)o>>32)))
+RETURNI(FIXNUM(((uint64_t)o&(((uint64_t)1<<32)-1))^((uint64_t)o>>32)))
 BUILTIN1("text.code",fixtext_code,C_ANY,o)
-RETURNS(FIXNUM((uint64_t)o>>ALIGN_BITS))
+RETURNI(FIXNUM((uint64_t)o>>ALIGN_BITS))
 BUILTIN1("text.utf8",fixtext_utf8,C_ANY,o)
 RETURNS(text_to_bytes(api,o))
 
@@ -794,13 +794,13 @@ RETURNS(CAR(o))
 BUILTIN1("cons.tail",cons_tail,C_ANY,o)
 RETURNS(CDR(o))
 BUILTIN1("cons.end",cons_end,C_ANY,o)
-RETURNS(FIXNUM(0))
+RETURNI(FIXNUM(0))
 BUILTIN2("cons.pre",cons_pre,C_ANY,o,C_ANY,head)
   CONS(R, head, o);
 RETURNS(R)
 
 BUILTIN1("view.size",view_size,C_ANY,o)
-RETURNS((uintptr_t)VIEW_SIZE(o))
+RETURNI((uintptr_t)VIEW_SIZE(o))
 BUILTIN2("view.`.`",view_get,C_ANY,o,C_INT,index)
   uint32_t start = VIEW_START(o);
   uint32_t size = VIEW_SIZE(o);
@@ -823,9 +823,9 @@ BUILTIN3("view.`=`",view_set,C_ANY,o,C_INT,index,C_ANY,value)
   p = &VIEW_REF(o, 0, 0);
   LIFT(p,start,value);
   R = 0;
-RETURNS(No)
+RETURNI(No)
 BUILTIN1("view.end",view_end,C_ANY,o)
-RETURNS(FIXNUM(0))
+RETURNI(FIXNUM(0))
 BUILTIN1("view.head",view_head,C_ANY,o)
 RETURNS(VIEW_REF(o, VIEW_START(o), 0))
 BUILTIN1("view.tail",view_tail,C_ANY,o)
@@ -877,7 +877,7 @@ RETURNS(R)
 
 
 BUILTIN1("list.size",list_size,C_ANY,o)
-RETURNS(LIST_SIZE(o))
+RETURNI(LIST_SIZE(o))
 BUILTIN2("list.`.`",list_get,C_ANY,o,C_INT,index)
   if (LIST_SIZE(o) <= (uintptr_t)index) {
     fprintf(stderr, "index out of bounds\n");
@@ -899,15 +899,21 @@ BUILTIN3("list.`=`",list_set,C_ANY,o,C_INT,index,C_ANY,value)
 RETURNS(R)
 BUILTIN2("list.clear",list_clear,C_ANY,o,C_ANY,value)
   intptr_t i;
-  intptr_t size = LIST_SIZE(o);
+  intptr_t size = UNFIXNUM(LIST_SIZE(o));
   void **p = (void*)O_PTR(o);
-  for (i = 0; i < size; i++) {
-    LIFT(p,UNFIXNUM(i),value);
+  if (IMMEDIATE(value)) {
+    for (i = 0; i < size; i++) {
+      p[i] = value;
+    }
+  } else {
+    for (i = 0; i < size; i++) {
+      LIFT(p,i,value);
+    }
   }
   R = 0;
 RETURNS(R)
 BUILTIN1("list.end",list_end,C_ANY,o)
-RETURNS(FIXNUM(LIST_SIZE(o) == 0))
+RETURNI(FIXNUM(LIST_SIZE(o) == 0))
 BUILTIN1("list.head",list_head,C_ANY,o)
   intptr_t size = UNFIXNUM(LIST_SIZE(o));
   if (size < 1) {
@@ -1072,184 +1078,184 @@ BUILTIN1("float.neg",float_neg,C_ANY,a)
   double fa;
   UNFLOAT(fa,a);
   LOAD_FLOAT(R,-fa);
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`+`",float_add,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
   LOAD_FLOAT(R,fa+fb);
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`-`",float_sub,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
   LOAD_FLOAT(R,fa-fb);
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`*`",float_mul,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
   LOAD_FLOAT(R,fa*fb);
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`/`",float_div,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
   if (fb == 0.0) fb = FLT_MIN;
   LOAD_FLOAT(R,fa/fb);
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`^^`",float_pow,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
   LOAD_FLOAT(R,pow(fa,fb));
-RETURNS(R)
+RETURNI(R)
 BUILTIN2("float.`><`",float_eq,C_ANY,a,C_ANY,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa == fb))
+RETURNI(FIXNUM(fa == fb))
 BUILTIN2("float.`<>`",float_ne,C_ANY,a,C_ANY,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa != fb))
+RETURNI(FIXNUM(fa != fb))
 BUILTIN2("float.`<`",float_lt,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa < fb))
+RETURNI(FIXNUM(fa < fb))
 BUILTIN2("float.`>`",float_gt,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa > fb))
+RETURNI(FIXNUM(fa > fb))
 BUILTIN2("float.`<<`",float_lte,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa <= fb))
+RETURNI(FIXNUM(fa <= fb))
 BUILTIN2("float.`>>`",float_gte,C_ANY,a,C_FLOAT,b)
   double fa, fb;
   UNFLOAT(fa,a);
   UNFLOAT(fb,b);
-RETURNS(FIXNUM(fa >= fb))
+RETURNI(FIXNUM(fa >= fb))
 BUILTIN1("float.as_text",float_as_text,C_ANY,a)
   TEXT(R, print_object(a));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.float",float_float,C_ANY,o)
-RETURNS(o)
+RETURNI(o)
 BUILTIN1("float.int",float_int,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
-RETURNS(FIXNUM((intptr_t)fo))
+RETURNI(FIXNUM((intptr_t)fo))
 BUILTIN1("float.sqrt",float_sqrt,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, sqrt(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.log",float_log,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, log(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.sin",float_sin,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, sin(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.asin",float_asin,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, asin(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.cos",float_cos,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, cos(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.acos",float_acos,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, acos(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.tan",float_tan,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, tan(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.atan",float_atan,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, atan(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.floor",float_floor,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, floor(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.ceil",float_ceil,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, ceil(fo));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("float.round",float_round,C_ANY,o)
   double fo;
   UNFLOAT(fo,o);
   LOAD_FLOAT(R, round(fo));
-RETURNS(R)
+RETURNI(R)
 
 BUILTIN1("int.neg",int_neg,C_ANY,o)
-RETURNS(-(intptr_t)o)
+RETURNI(-(intptr_t)o)
 BUILTIN2("int.`+`",int_add,C_ANY,a,C_INT,b)
-RETURNS((intptr_t)a + (intptr_t)b)
+RETURNI((intptr_t)a + (intptr_t)b)
 BUILTIN2("int.`-`",int_sub,C_ANY,a,C_INT,b)
-RETURNS((intptr_t)a - (intptr_t)b)
+RETURNI((intptr_t)a - (intptr_t)b)
 BUILTIN2("int.`*`",int_mul,C_ANY,a,C_INT,b)
-RETURNS(UNFIXNUM(a) * (intptr_t)b)
+RETURNI(UNFIXNUM(a) * (intptr_t)b)
 BUILTIN2("int.`/`",int_div,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)a / (intptr_t)b))
+RETURNI(FIXNUM((intptr_t)a / (intptr_t)b))
 BUILTIN2("int.`%`",int_rem,C_ANY,a,C_INT,b)
-RETURNS((intptr_t)a % (intptr_t)b)
+RETURNI((intptr_t)a % (intptr_t)b)
 BUILTIN2("int.`^^`",int_pow,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)pow((double)UNFIXNUM(a), (double)UNFIXNUM(b))))
+RETURNI(FIXNUM((intptr_t)pow((double)UNFIXNUM(a), (double)UNFIXNUM(b))))
 BUILTIN2("int.`><`",int_eq,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a == b))
+RETURNI(FIXNUM(a == b))
 BUILTIN2("int.`<>`",int_ne,C_ANY,a,C_ANY,b)
-RETURNS(FIXNUM(a != b))
+RETURNI(FIXNUM(a != b))
 BUILTIN2("int.`<`",int_lt,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)a < (intptr_t)b))
+RETURNI(FIXNUM((intptr_t)a < (intptr_t)b))
 BUILTIN2("int.`>`",int_gt,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)a > (intptr_t)b))
+RETURNI(FIXNUM((intptr_t)a > (intptr_t)b))
 BUILTIN2("int.`<<`",int_lte,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)a <= (intptr_t)b))
+RETURNI(FIXNUM((intptr_t)a <= (intptr_t)b))
 BUILTIN2("int.`>>`",int_gte,C_ANY,a,C_INT,b)
-RETURNS(FIXNUM((intptr_t)a >= (intptr_t)b))
+RETURNI(FIXNUM((intptr_t)a >= (intptr_t)b))
 BUILTIN2("int.`&&&`",int_mask,C_ANY,a,C_INT,b)
-RETURNS((uintptr_t)a & (uintptr_t)b)
+RETURNI((uintptr_t)a & (uintptr_t)b)
 BUILTIN2("int.`---`",int_ior,C_ANY,a,C_INT,b)
-RETURNS((uintptr_t)a | (uintptr_t)b)
+RETURNI((uintptr_t)a | (uintptr_t)b)
 BUILTIN2("int.`+++`",int_xor,C_ANY,a,C_INT,b)
-RETURNS((uintptr_t)a ^ (uintptr_t)b)
+RETURNI((uintptr_t)a ^ (uintptr_t)b)
 BUILTIN2("int.`<<<`",int_shl,C_ANY,a,C_INT,b)
-RETURNS((intptr_t)a<<UNFIXNUM(b))
+RETURNI((intptr_t)a<<UNFIXNUM(b))
 BUILTIN2("int.`>>>`",int_shr,C_ANY,a,C_INT,b)
-RETURNS(((intptr_t)a>>UNFIXNUM(b))&~TAGL_MASK)
+RETURNI(((intptr_t)a>>UNFIXNUM(b))&~TAGL_MASK)
 BUILTIN1("int.end",int_end,C_ANY,o)
-RETURNS(FIXNUM(1))
+RETURNI(FIXNUM(1))
 BUILTIN1("int.char",int_char,C_ANY,o)
-RETURNS(((uint64_t)o&~TAGL_MASK)|T_FIXTEXT)
+RETURNI(((uint64_t)o&~TAGL_MASK)|T_FIXTEXT)
 BUILTIN1("int.hash",int_hash,C_ANY,o)
-RETURNS(o)
+RETURNI(o)
 BUILTIN1("int.float",int_float,C_ANY,o)
   LOAD_FLOAT(R, UNFIXNUM(o));
-RETURNS(R)
+RETURNI(R)
 BUILTIN1("int.int",int_int,C_ANY,o)
-RETURNS(o)
+RETURNI(o)
 BUILTIN1("int.sqrt",int_sqrt,C_ANY,o)
-RETURNS(FIXNUM((intptr_t)sqrt((intptr_t)UNFIXNUM(o))))
+RETURNI(FIXNUM((intptr_t)sqrt((intptr_t)UNFIXNUM(o))))
 BUILTIN1("int.log",int_log,C_ANY,o)
-RETURNS(FIXNUM((intptr_t)log((double)(intptr_t)UNFIXNUM(o))))
+RETURNI(FIXNUM((intptr_t)log((double)(intptr_t)UNFIXNUM(o))))
 BUILTIN1("int.bytes",int_bytes,C_ANY,count)
 RETURNS(alloc_bytes(api,UNFIXNUM(count)))
 
@@ -1257,7 +1263,7 @@ BUILTIN1("typename",typename,C_ANY,o)
 RETURNS(types[O_TYPE(o)].sname);
 
 BUILTIN1("address",address,C_ANY,o)
-RETURNS((uintptr_t)(o)&~ALIGN_MASK)
+RETURNI((uintptr_t)(o)&~ALIGN_MASK)
 
 #define NUM_SPECIAL_METHODS 6
 
@@ -1282,7 +1288,7 @@ RETURNS(R)
 
 BUILTIN0("halt",halt)
   exit(0);
-RETURNS(0)
+RETURNI(0)
 
 BUILTIN1("dbg",dbg,C_ANY,a)
   fprintf(stderr, "dbg: %s\n", print_object(a));
@@ -1579,7 +1585,7 @@ BUILTIN1("sh",sh,C_TEXT,command_text)
 RETURNS(R)
 
 BUILTIN0("time",time)
-RETURNS(FIXNUM((intptr_t)time(0)))
+RETURNI(FIXNUM((intptr_t)time(0)))
 
 //BUILTIN0("clock",clock)
 //  LOAD_FLOAT(R, (double)clock()/(double)CLOCKS_PER_SEC);
@@ -1590,7 +1596,7 @@ BUILTIN0("clock",clock)
   double dSeconds = time.tv_sec;
   double dNanoSeconds = (double)time.tv_nsec/1000000000L;
   LOAD_FLOAT(R, dSeconds+dNanoSeconds);
-RETURNS(R)
+RETURNI(R)
 
 BUILTIN0("main_args", main_args)
 RETURNS(main_args)
@@ -1609,7 +1615,7 @@ BUILTIN1("parse_float", parse_float,C_TEXT,text)
     xs = (char*)BIGTEXT_DATA(text);
   }
   LOAD_FLOAT(R, atof(xs));
-RETURNS(R);
+RETURNI(R);
 
 
 static char *get_line() {
@@ -1696,7 +1702,7 @@ BUILTIN_VARARGS("_",sink)
   fprintf(stderr, "%s\n", print_object(name));
   print_stack_trace(api);
   fatal("aborting");
-RETURNS(0)
+RETURNI(0)
 
 static struct {
   char *name;

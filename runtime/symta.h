@@ -295,20 +295,15 @@ typedef struct tot_entry_t { //table of tables entry
 //#define GCDEBUG fprintf(stderr, "GC %p:%p -> %p\n", Top, Base, api->top[(Level-1)&1]);
 typedef void *(*collector_t)( void *o);
 #define GC_LIFTS() if (Lifts) api->gc_lifts();
-#define GCRET(o) \
+#define RETURN(o) \
   if (!IMMEDIATE(o) && O_FRAME(o) == Frame) { \
     --Frame; \
     o = ((collector_t)api->collectors[O_TAGH(o)])(o); \
     ++Frame; \
   } \
-  if (Lifts) api->gc_lifts();
-#define RETURN_NO_POP(value) \
-   GCRET(value); \
-   return (void*)(value);
-#define RETURN(value) \
-   GCRET(value); \
-   BPOP(); \
-   return (void*)(value);
+  if (Lifts) api->gc_lifts();\
+  BPOP(); \
+  return (void*)(o);
 #define RETURN_NO_GC(value) return (void*)(value);
 #define LIFTS_CONS(dst,head,tail) \
   Top=(void**)Top-2; \
