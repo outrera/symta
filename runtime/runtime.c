@@ -180,6 +180,9 @@ static int method_names_used;
 static type_t types[MAX_TYPES];
 static int types_used;
 
+//internal collectors for recursive calls
+static void *collectors2[MAX_TYPES];
+
 static int texts_equal(void *a, void *b);
 
 static intptr_t resolve_method(api_t *api, char *name) {
@@ -209,8 +212,11 @@ static void *get_method(uintptr_t tag, uintptr_t method_id) {
   return *(void**)t->sink;
 }
 
-static void *collect_data(void *o);
-#define SET_COLLECTOR(type,handler) api->collectors[type] = handler;
+static void *gc_data(void *o);
+static void *gc_data_i(void *o);
+#define SET_COLLECTOR(type,handler) \
+  api->collectors[type] = handler; \
+  collectors2[type] = handler##_i;
 
 static intptr_t resolve_type(api_t *api, char *name) {
   int i;
@@ -226,7 +232,7 @@ static intptr_t resolve_type(api_t *api, char *name) {
   t->id = i;
 
   if (!api->collectors[i]) {
-    SET_COLLECTOR(i, collect_data);
+    SET_COLLECTOR(i, gc_data);
   }
 
   return i;
@@ -1859,27 +1865,27 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
   fatal("aborting\n");
 }
 
-#define GC_PARAM(dst,o,gcframe) \
+#define GCFrame (api->frame+1)
+#define GC_REC(dst,o) \
   { \
     void *o_ = (void*)(o); \
     if (IMMEDIATE(o_)) { \
       dst = o_; \
     } else { \
       frame_t *frame_ = O_FRAME(o_); \
-      if (frame_ != gcframe) { \
+      if (frame_ != GCFrame) { \
         if (frame_ > (frame_t*)api->heap) { \
           dst = frame_; \
         } else { \
           dst = o_; \
         } \
       } else { \
-        dst = ((collector_t)api->collectors[O_TAGH(o_)])(o_); \
+        dst = ((collector_t)collectors2[O_TAGH(o_)])(o_); \
       } \
     } \
   }
-#define GCFrame (api->frame+1)
-#define GC_REC(dst,value) GC_PARAM(dst,value,GCFrame)
 
+//place redirection to the new location of the object
 //if frame field points to heap, instead of stack, then it is already moved
 #define MARK_MOVED(o,p) REF(o,-1) = p
 
@@ -1900,102 +1906,29 @@ static void *gc_arglist(void *o) {
   return p;
 }
 
-static void *collect_immediate(void *o) {
+static void *gc_immediate(void *o) {
   return o;
 }
 
-static void *collect_closure(void *o) {
-  int i, size;
-  frame_t *frame;
-  void *p, *q;
-  void *fixed_size, *dummy;
-  api_t *api = &api_g;
-  size = ((fn_meta_t*)get_meta(O_FN(o)))->size;
-  CLOSURE(p, O_CODE(o), size);
-  MARK_MOVED(o,p);
-  for (i = 0; i < size; i++) {
-    q = REF(o,i);
-    frame = O_FRAME(q);
-    if (frame == GCFrame) {
-      q = gc_arglist(q);
-    } else {
-      if (frame > (frame_t*)api->heap) {
-        // already moved
-        q = frame;
-      }
-    }
-    STOR(p, i, q);
-  }
-  return p;
+static void *gc_immediate_i(void *o) {
+  return o;
 }
 
-static void *collect_list(void *o) {
-  int i, size;
-  void *p;
-  api_t *api = &api_g;
-  size = (int)UNFIXNUM(LIST_SIZE(o));
-  LIST_ALLOC(p, size);
-  MARK_MOVED(o,p);
-  for (i = 0; i < size; i++) {
-    GC_REC(REF(p,i), REF(o,i));
-  }
-  return p;
-}
+#define GCDEF(fn) static void *fn(void *o)
+#define GCPRE --Frame;
+#define GCPOST ++Frame;
+#include "runtime_gc.h"
+#undef GCDEF
+#undef GCPRE
+#undef GCPOST
 
-static void *collect_view(void *o) {
-  void *p, *q;
-  api_t *api = &api_g;
-  uint32_t start = VIEW_START(o);
-  uint32_t size = VIEW_SIZE(o);
-  VIEW(p, 0, start, size);
-  MARK_MOVED(o,p);
-  q = ADD_TAG(&VIEW_REF(o,0,0), T_LIST);
-  GC_REC(q, q);
-  O_CODE(p) = &REF(q, 0);
-  return p;
-}
-
-static void *collect_cons(void *o) {
-  void *p;
-  api_t *api = &api_g;
-  CONS(p, 0, 0);
-  MARK_MOVED(o,p);
-  GC_REC(CAR(p), CAR(o))
-  GC_REC(CDR(p), CDR(o))
-  return p;
-}
-
-static void *collect_text(void *o) {
-  void *p;
-  api_t *api = &api_g;
-  p = alloc_bigtext(api, BIGTEXT_DATA(o), BIGTEXT_SIZE(o));
-  MARK_MOVED(o,p);
-  return p;
-}
-
-static void *collect_bytes(void *o) {
-  void *p;
-  api_t *api = &api_g;
-  int size = (int)BYTES_SIZE(o);
-  p = alloc_bytes(api, size);
-  memcpy(BYTES_DATA(p), BYTES_DATA(o), size);
-  MARK_MOVED(o,p);
-  return p;
-}
-
-static void *collect_data(void *o) {
-  int i, size;
-  void *p;
-  api_t *api = &api_g;
-  uintptr_t tag = O_TAGH(o);
-  size = types[tag].size;
-  ALLOC_DATA(p, tag, size);
-  MARK_MOVED(o,p);
-  for (i = 0; i < size; i++) {
-    GC_REC(REF(p,i), REF(o,i));
-  }
-  return p;
-}
+#define GCDEF(fn) static void * fn##_i(void *o)
+#define GCPRE
+#define GCPOST
+#include "runtime_gc.h"
+#undef GCDEF
+#undef GCPRE
+#undef GCPOST
 
 #define ON_CURRENT_LEVEL(x) (Top <= (void*)x && (void*)x < Base)
 static void gc_lifts() {
@@ -2083,15 +2016,15 @@ static void init_types(api_t *api) {
   api->m_ampersand = resolve_method(api, "&");
   api->m_underscore = resolve_method(api, "_");
 
-  SET_COLLECTOR(T_INT, collect_immediate);
-  SET_COLLECTOR(T_FLOAT, collect_immediate);
-  SET_COLLECTOR(T_FIXTEXT, collect_immediate);
-  SET_COLLECTOR(T_CLOSURE, collect_closure);
-  SET_COLLECTOR(T_LIST, collect_list);
-  SET_COLLECTOR(T_VIEW, collect_view);
-  SET_COLLECTOR(T_CONS, collect_cons);
-  SET_COLLECTOR(T_TEXT, collect_text);
-  SET_COLLECTOR(T_BYTES, collect_bytes);
+  SET_COLLECTOR(T_INT, gc_immediate);
+  SET_COLLECTOR(T_FLOAT, gc_immediate);
+  SET_COLLECTOR(T_FIXTEXT, gc_immediate);
+  SET_COLLECTOR(T_CLOSURE, gc_closure);
+  SET_COLLECTOR(T_LIST, gc_list);
+  SET_COLLECTOR(T_VIEW, gc_view);
+  SET_COLLECTOR(T_CONS, gc_cons);
+  SET_COLLECTOR(T_TEXT, gc_text);
+  SET_COLLECTOR(T_BYTES, gc_bytes);
 
   TEXT(n_int, "int");
   TEXT(n_float, "float");

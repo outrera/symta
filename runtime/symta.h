@@ -126,7 +126,7 @@ typedef struct fn_meta_t { //function metadata
 
 typedef struct frame_t {
   void **top;  //this frame's heap top
-  void *base;  //pointer to current frame's heap, used only by ON_CURRENT_LEVEL
+  void *base;  //pointer to current frame's heap base, used by GC
   void *clsr;  //closure
   void *lifts; //what should be lifted to parent frame
   void *onexit; //called on exit
@@ -183,18 +183,24 @@ typedef void *(*pfun)(api_t *api);
 #define HEAP_GUARD()
 
 #define ALLOC_BASIC(dst,code,count) \
-  HEAP_GUARD(); \
-  dst = (void**)Top - (uintptr_t)(count); \
-  Top = (void**)dst - OBJ_HEAD_SIZE; \
-  *((void**)Top+0) = (void*)(code); \
-  *((void**)Top+1) = Frame;
+  { \
+    void** t_; \
+    HEAP_GUARD(); \
+    dst = (void**)Top - (uintptr_t)(count); \
+    Top = t_ = (void**)dst - OBJ_HEAD_SIZE; \
+    *t_ = (void*)(code); \
+    *(t_+1) = Frame; \
+  }
 
 #define ALLOC_DATA(dst,tag,count) \
-  HEAP_GUARD(); \
-  dst = (void**)Top - (uintptr_t)(count); \
-  Top = (void**)dst - 1; \
-  *((void**)Top+0) = Frame;\
-  dst = ADD_TAG(dst,tag);
+  { \
+    void** t_; \
+    HEAP_GUARD(); \
+    dst = (void**)Top - (uintptr_t)(count); \
+    Top = t_ = (void**)dst - 1; \
+    *t_ = Frame;\
+    dst = ADD_TAG(dst,tag); \
+  }
 
 #define CLOSURE(dst,code,count) \
   ALLOC_BASIC(dst,code,count); \
@@ -297,20 +303,21 @@ typedef void *(*collector_t)( void *o);
 #define GC_LIFTS() if (Lifts) api->gc_lifts();
 #define RETURN(o) \
   if (!IMMEDIATE(o) && O_FRAME(o) == Frame) { \
-    --Frame; \
     o = ((collector_t)api->collectors[O_TAGH(o)])(o); \
-    ++Frame; \
   } \
   if (Lifts) api->gc_lifts();\
   BPOP(); \
   return (void*)(o);
 #define RETURN_NO_GC(value) return (void*)(value);
 #define LIFTS_CONS(dst,head,tail) \
-  Top=(void**)Top-2; \
-  *((void**)Top+0) = (head); \
-  *((void**)Top+1) = (tail); \
-  dst = Top;
-#define LIFTS_HEAD(xs) (*((void**)(xs)+0))
+  { \
+   void** t_ = (void**)Top-2;\
+   Top=t_; \
+   *t_ = (head); \
+   *(t_+1) = (tail); \
+   dst = t_; \
+  }
+#define LIFTS_HEAD(xs) (*((void**)(xs)))
 #define LIFTS_TAIL(xs) (*((void**)(xs)+1))
 #define LIFT(base,pos,value) \
   { \
