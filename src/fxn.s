@@ -23,6 +23,11 @@ tofxn E =
   [`>` A B]  | [_gt A B]
   [`<<` A B] | [_lte A B]
   [`>>` A B] | [_gte A B]
+  [`&&&` A B]  | [_and A B]
+  [`---` A B]  | [_ior A B]
+  [`+++` A B]  | [_xor A B]
+  [`<<<` A B]  | [_shl A B]
+  [`>>>` A B]  | [_shr A B]
   [`.` A B] | if B.is_text and not B.0.is_upcase then E
               else [_ref A B]
   [`++` X]  | form: let_ ((~O X)) (`|` (`<=` (X) (_add ~O 1)) ~O)

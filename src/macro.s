@@ -400,7 +400,7 @@ bin_op A B Op Method =
 `---` A B = bin_op A B _ior '---'
 `+++` A B = bin_op A B _xor '+++'
 `<<<` A B = bin_op A B _shl '<<<'
-`>>>` A B = bin_op A B _shr '<<<'
+`>>>` A B = bin_op A B _shr '>>>'
 `^` A B = [B A]
 `.` A B = if A.is_keyword then [A B]
           else if B.is_keyword

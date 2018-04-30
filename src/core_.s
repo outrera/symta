@@ -808,6 +808,9 @@ int.s2b =
 | when Me < 0: Me += #10000
 | [Me/#100%256 Me%256]
 
+int.bit N = _and 1: _shr Me N
+int.bitSet N Bit = _xor Me (_xor (_shl Bit N) (_and Me (_shl 1 N)))
+
 int.in Start End = Start << Me and Me < End
 list.in [RX RY RW RH] = $0.in{RX RX+RW} and $1.in{RY RY+RH}
 
