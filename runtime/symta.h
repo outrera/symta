@@ -157,7 +157,7 @@ struct api_t {
   void (*add_subtype)(api_t *api, intptr_t super, intptr_t sub);
   void (*set_type_size_and_name)(api_t *api, intptr_t tag, intptr_t size, void *name);
   void (*add_method)(api_t *api, intptr_t method_id, intptr_t type_id, void *handler);
-  void *(*get_method)(uintptr_t tag, uintptr_t method_id);
+  void *(*get_method)(uintptr_t tag);
   void *(*get_method_name)(uintptr_t method_id);
   char *(*text_chars)(api_t *api, void *text);
 
@@ -269,21 +269,19 @@ typedef struct tot_entry_t { //table of tables entry
   --Frame;
 #define CALL(k,f) Frame->clsr = f; k = O_FN(f)(api);
 
-#define MCALL_NO_SAVE(k,o,m) {\
-  static uintptr_t cached_tag = 0xFFFFFF; \
-  static void *cached_method; \
-  uintptr_t tag = O_TAG(o); \
-  if (cached_tag != tag) { \
-    cached_tag = tag; \
-    cached_method = api->get_method(tag,(uintptr_t)m); \
-  } \
-  CALL(k,cached_method); \
-}
-
-//method call
 #define MCALL(k,o,m) \
-   api->method = (uintptr_t)m; \
-   MCALL_NO_SAVE(k,o,m);
+  api->method = (uintptr_t)m; \
+  {\
+    static uintptr_t cached_tag = 0xFFFFFF; \
+    static void *cached_method; \
+    uintptr_t tag = O_TAG(o); \
+    if (cached_tag != tag) { \
+      cached_tag = tag; \
+      cached_method = api->get_method(tag); \
+    } \
+    CALL(k,cached_method); \
+  }
+
 #define CALL_TAGGED(k,o) \
   { \
     if (O_TAG(o) == TAG(T_CLOSURE)) { \

@@ -203,8 +203,9 @@ static void *get_method_name(uintptr_t method_id) {
   return method_names[method_id];
 }
 
-static void *get_method(uintptr_t tag, uintptr_t method_id) {
+static void *get_method(uintptr_t tag) {
   type_method_t *m;
+  uintptr_t method_id = api_g.method;
   type_t *t = types+O_TYPE(tag);
   uintptr_t hid = method_id&METHOD_TABLE_MASK;
   for (m = t->methods[hid]; m; m = m->next)
@@ -1061,6 +1062,7 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   intptr_t nargs = UNFIXNUM(LIST_SIZE(as));
   void *o;
   void *e;
+  void *fn;
   uintptr_t tag;
   if (!nargs) {
     fprintf(stderr, "apply_method: empty list\n");
@@ -1071,12 +1073,9 @@ BUILTIN2("list.apply_method",list_apply_method,C_ANY,as,C_ANY,m)
   for (i = 0; i < nargs; i++) {
     STARG(e,i,REF(as,i));
   }
-  {
-    void *fn;
-    api->method = (uintptr_t)m;
-    fn = api->get_method(O_TAG(o),(uintptr_t)api->method);
-    CALL(R,fn);
-  }
+  api->method = (uintptr_t)m;
+  fn = get_method(O_TAG(o));
+  CALL(R,fn);
 RETURNS_NO_GC(R)
 
 
