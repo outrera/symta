@@ -21,6 +21,9 @@ list.is_list = 1
 _.is_text = 0
 text.is_text = 1
 
+_.is_fixtext = 0
+_fixtext_.is_fixtext = 1
+
 //_.is_hard_list = 0
 //list.is_hard_list = 1
 

@@ -393,6 +393,7 @@ ssa_store Base Off Value = ssa utstor Base^ev Off^ev Value^ev
 ssa_tagged K Tag X = ssa tagged K X^ev Tag.1
 
 ssa_text String =
+| when String.is_fixtext: leave "FIXTEXT([String.fixnum]ULL)"
 | It = GTextsMap.String
 | when got It: leave It
 | push String^ssa_cstring GTexts

@@ -21,6 +21,8 @@
 #define TAGH_MASK ((((uintptr_t)1<<TAGH_BITS)-1)<<TAGH_SHIFT)
 #define ALIGN_MASK (((uintptr_t)1<<ALIGN_BITS)-1)
 
+//all liftable objects are 8-byte aligned
+//so we use 4th bit of their address for flag
 #define LIFT_FLAG ((uintptr_t)4)
 
 #define O_TAGL(o) ((uintptr_t)(o)&TAGL_MASK)
@@ -67,6 +69,8 @@
 #define ASHR(x,count) ((x)/(1<<(count)))
 #define FIXNUM(x) ASHL((intptr_t)(x),ALIGN_BITS)
 #define UNFIXNUM(x) ASHR((intptr_t)(x),ALIGN_BITS)
+
+#define FIXTEXT(x) (void*)(((uint64_t)(x)<<3) | T_FIXTEXT)
 
 #define LIST_SIZE(o) ((uintptr_t)O_CODE(o))
 

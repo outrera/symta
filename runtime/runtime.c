@@ -788,7 +788,8 @@ BUILTIN1("text.code",fixtext_code,C_ANY,o)
 RETURNI(FIXNUM((uint64_t)o>>ALIGN_BITS))
 BUILTIN1("text.utf8",fixtext_utf8,C_ANY,o)
 RETURNS(text_to_bytes(api,o))
-
+BUILTIN1("text.fixnum",fixtext_fixnum,C_ANY,o)
+RETURNI((uintptr_t)(o)&~TAGL_MASK)
 
 #define CONS(dst, a, b) \
   ALLOC_BASIC(dst, a, 1); \
@@ -2115,6 +2116,8 @@ static void init_types(api_t *api) {
   METHOD_FN1("file", T_TEXT, b_text_file);
   METHOD_FN1("folder", T_TEXT, b_text_folder);
   METHOD_FN1("items", T_TEXT, b_text_items);
+
+  METHOD_FN1("fixnum", T_FIXTEXT, b_fixtext_fixnum);
 
   METHOD_FN1("size", T_BYTES, b_bytes_size);
   METHOD_FN1(".", T_BYTES, b_bytes_get);
