@@ -2274,10 +2274,27 @@ static void init_metadata(void *metatbl, int count) {
 static void init_texts(api_t *api, void *txtbl, int count) {
   int i;
   void **ts = (void**)txtbl;
+  void **top0;
+  void *p,*t;
+  int sz;
+  top0 = Top;
   for (i = 0; i < count; i++) {
-    void *bytes = ts[i];
-    TEXT(ts[i], bytes);
+    ts[i] = alloc_text(ts[i]);
   }
+  if (top0 == Top) return;
+
+  //relocated to heap, because nothing references these texts
+  sz = ((uint8_t*)top0-(uint8_t*)Top);
+  p = malloc(sz);
+  memcpy(p,Top,sz);
+  for (i = 0; i < count; i++) {
+    t = ts[i];
+    if (!IS_FIXTEXT(t)) {
+      REF(t,-1) = &api->frames[0];
+      ts[i] = (uint8_t*)p + ((uint8_t*)t-(uint8_t*)Top);
+    }
+  }
+  Top = top0;
 }
 
 static void resolve_methods(api_t *api, void *metbl, int count) {

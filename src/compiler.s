@@ -22,7 +22,6 @@ GFns = No
 GClosure = No // other lambdas, this lambda references
 GBases = No
 GUniquifyStack = No
-GHoistedTexts = No
 GSrc = [0 0 unknown]
 GAll = @rand all
 
@@ -86,7 +85,7 @@ ssa_var Name = as V Name.rand: ssa var V
 
 ev X = as R 'r'^ssa_var: ssa_expr R X
 
-ssa_quote K X = if X.is_text then ssa_expr K GHoistedTexts.X
+ssa_quote K X = if X.is_text then ssa move K X^ssa_text
                 else if X.is_list then compiler_error "ssa_quote: got list [X]"
                 else ssa_expr K X
 
@@ -301,8 +300,7 @@ uniquify_form Expr =
         | Bs = Rs.map{?.1}
         | Bs = if As.is_text then Bs.0 else Bs
         | [_fn Bs @Body.map{&uniquify_expr}]
-    [_quote X] | when X.is_text: GHoistedTexts.X <= @rand 'T'
-               | Expr
+    [_quote X] Expr
     [_label X] Expr
     [_goto X] Expr
     [_call @Xs] Xs^uniquify_form
@@ -327,7 +325,7 @@ uniquify_expr Expr = if Expr.is_list
 uniquify Expr = //gives each variables unique name
 | let GUniquifyStack []
   | R = uniquify_expr Expr
-  | [[_fn (map [K V] GHoistedTexts V) R] @(map [K V] GHoistedTexts [_text K])]
+  | R
 
 ssa_list K Xs =
 | less Xs.size: leave: ssa move K 'Empty'
@@ -560,7 +558,6 @@ produce_ssa Entry Expr =
       GImportsCount 0
       GClosure []
       GBases [[]]
-      GHoistedTexts (t size/1000)
   | ssa entry Entry
   | Origin = find_closes_meta Expr
   | less got Origin: Origin <= [-1 -1 unknown]

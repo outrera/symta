@@ -1,4 +1,3 @@
-- optimize fixtext in `ssa_quote K X = if X.is_text then ssa_expr K GHoistedTexts.X`
 - expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
 - most method calls just access member items, therefore it makes sense to store at call site direct indices into objects.
 - fixtext uses 3-bit tag field (all other tags are 2-bit) and has some free unused bits. Explore this.
