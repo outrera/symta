@@ -394,8 +394,17 @@ bin_op A B Op Method =
 `>` A B = bin_op A B _gt `>`
 `<<` A B = bin_op A B _lte `<<`
 `>>` A B = bin_op A B _gte `>>`
-`><` A B = [_mcall A '><' B]
-`<>` A B = [_mcall A '<>' B]
+is_fixkw X = X.is_fixtext and X.is_keyword
+`><` A B =
+   if A.is_int or is_fixkw A
+      or case A ['\\'+'"'+_quote X] (X.is_fixtext or X.is_int)
+   then form: let_ ((~B B)) (_eq A B)
+   else [_mcall A '><' B]
+`<>` A B =
+   if A.is_int or (A.is_fixtext and A.is_keyword)
+      or case A ['\\'+'"'+_quote X] (X.is_fixtext or X.is_int)
+   then form: let_ ((~B B)) (_ne A B)
+   else [_mcall A '<>' B]
 `&&&` A B = bin_op A B _and '&&&'
 `---` A B = bin_op A B _ior '---'
 `+++` A B = bin_op A B _xor '+++'

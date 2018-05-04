@@ -372,7 +372,7 @@ copy_file A B =
   else sh "cp -f '[A]' '[B]'"
 
 text.paths @As =
-| Path = if $last >< '/' then Me else "[Me]/"
+| Path = if '/' >< $last then Me else "[Me]/"
 | Xs = if As.size then $items{all} else $items
 | map X Xs "[Path][X]"
 
@@ -560,7 +560,7 @@ text.as_text =
 | Q = 0
 | for C Me
   | less plain_char C: Q <= 1
-  | when C >< '`': C <= '\\`'
+  | when '`' >< C: C <= '\\`'
   | push C Cs
 | if Q then ['`' @['`' @Cs].flip].text else Me
 
