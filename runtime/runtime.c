@@ -1885,6 +1885,21 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
     } \
   }
 
+#define GC_REC_LIFT(dst,o) \
+  { \
+    void *o_ = (void*)(o); \
+    frame_t *frame_ = O_FRAME(o_); \
+    if (frame_ != GCFrame) { \
+      if (frame_ > (frame_t*)api->heap) { \
+        dst = frame_; \
+      } else { \
+        dst = o_; \
+      } \
+    } else { \
+      dst = ((collector_t)collectors2[O_TAGH(o_)])(o_); \
+    } \
+  }
+
 //place redirection to the new location of the object
 //if frame field points to heap, instead of stack, then it is already moved
 #define MARK_MOVED(o,p) REF(o,-1) = p
@@ -1931,46 +1946,43 @@ static void *gc_immediate_i(void *o) {
 #undef GCPOST
 
 #define ON_CURRENT_LEVEL(x) (Top <= (void*)x && (void*)x < Base)
+#define LIFT_MASK (LIFT_FLAG|T_DATA)
 static void gc_lifts() {
-  int i, lifted_count;
-  void **lifted;
+  void **liftp, **lift0;
   void *xs, *ys;
   api_t *api = &api_g;
 
-  xs = Lifts;
+  xs = Lifts; //source
   Lifts = 0;
 
-  lifted = (void**)Top;
+  lift0 = liftp = (void**)Top;
   --Frame; // move to the frame below, where we will be lifting it to
 
-  lifted_count = 0;
-  ys = Lifts;
+  ys = Lifts; //destination
   while (xs) {
     void **p = (void**)LIFTS_HEAD(xs);
-    if ((uintptr_t)*p&LIFT_FLAG) {
-      void *q;
-      GC_REC(q, *p);
-      *--lifted = q;
-      *--lifted = p;
-      *p = 0;
-      lifted_count++;
+    if (((uintptr_t)*p&LIFT_MASK) == LIFT_MASK) {//still needs lift?
+      GC_REC_LIFT(*p, *p);
+      if (!ON_CURRENT_LEVEL(p)) {
+        // needs future lifting
+        *--liftp = p;
+      } else {
+        // object got lifted to the frame of it's holder
+        //fprintf(stderr, "lifted!\n");
+      }
     }
     xs = LIFTS_TAIL(xs);
   }
-  for (i = 0; i < lifted_count; i++) {
-    void **p = (void**)*lifted++;
-    *p = (void*)*lifted++;
-    if (ON_CURRENT_LEVEL(p)) {
-      // object got lifted to the frame of it's holder
-      //fprintf(stderr, "lifted!\n");
-    } else { // needs future lifting
-      *p = (void*)((uintptr_t)*p | LIFT_FLAG);
-      LIFTS_CONS(ys, p, ys);
-    }
-  }
-  if (lifted_count > max_lifted) {
-    max_lifted = lifted_count;
-    //fprintf(stderr,"max_lifted=%d\n", max_lifted);
+
+  /*if ((lift0-liftp)/2 > max_lifted) {
+    max_lifted = (lift0-liftp)/2;
+    fprintf(stderr,"max_lifted=%d\n", max_lifted);
+  }*/
+
+  while (liftp < lift0) {
+    void **p = (void**)*liftp++;
+    *p = (void*)((uintptr_t)*p | LIFT_FLAG);
+    LIFTS_CONS(ys, p, ys);
   }
   Lifts = ys;
   ++Frame;
