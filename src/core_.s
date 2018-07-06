@@ -681,6 +681,9 @@ int.rand =
 | LCG_Seed <= (LCG_Seed*LCG_A + LCG_B) % LCG_M
 | @int: @round: LCG_Seed.float*$float/LCG_M_F
 
+lcg_get = LCG_Seed
+lcg_set V = LCG_Seed <= V
+
 float.rand =
 | LCG_Seed <= (LCG_Seed*LCG_A + LCG_B) % LCG_M
 | LCG_Seed.float/LCG_M_F*Me
@@ -858,4 +861,4 @@ iter.`+` N = iter $base $p+N
 
 list.iter = iter $list 0
 
-export non say bad table_ new_macro meta main_root methods copy_file
+export non say bad table_ new_macro meta main_root methods copy_file lcg_get lcg_set

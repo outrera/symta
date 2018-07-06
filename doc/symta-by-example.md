@@ -785,6 +785,10 @@ This section provides a quick reference of the content of the Symta's standard l
 
 `list.rand` - random element from a list
 
+`lcg_get` - get's entropy value, used by `rand` methods.
+
+`lcg_set Value` - set's entropy value, used by `rand` methods.
+
 `A &&& B` - bitwise and
 
 `A --- B` - bitwise inclusive or
