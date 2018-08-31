@@ -30,6 +30,8 @@ static void fatal(char *fmt, ...);
 #elif defined __MACH__
 #include "unix/compat.h"
 #include "osx/compat.h"
+#include <sys/mman.h>
+#define _mprotect mprotect
 #define MD_NORM(x) ((x)&0xFFFFFFFF)
 #else /*assume linux*/
 #include "unix/compat.h"
@@ -502,7 +504,7 @@ static uintptr_t show_runtime_info(api_t *api) {
   uintptr_t heap1_used = get_heap_used(1);
   uintptr_t total_reserved = runtime_reserved0+runtime_reserved1;
   fprintf(stderr, "-------------\n");
-  fprintf(stderr, "level: %ld/%ld\n", Level-1, MAX_LEVEL);
+  fprintf(stderr, "level: %d/%d\n", (int)(Level-1), MAX_LEVEL);
   fprintf(stderr, "usage: %ld = %ld+%ld\n"
          , heap0_used+heap1_used-total_reserved
          , heap0_used-runtime_reserved0
@@ -1994,7 +1996,7 @@ static void fatal_error(api_t *api, void *msg) {
   fatal("aborting");
 }
 
-static void setup_0() {}
+static void setup_0(api_t *api) {}
 
 #define ADD_MET(tid,m_cfun) do {\
   BUILTIN_CLOSURE(met, m_cfun); \
@@ -2235,7 +2237,7 @@ static void init_args(api_t *api, int argc, char **argv) {
 
   //printf("lib_path: %s\n", lib_path);
 
-  while (i > 0 && lib_path[i-1] == '/' || lib_path[i-1] == '\\') {
+  while (i > 0 && (lib_path[i-1] == '/' || lib_path[i-1] == '\\')) {
    lib_path[--i] = 0;
   }
 
