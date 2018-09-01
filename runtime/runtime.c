@@ -579,12 +579,12 @@ static void *load_lib(struct api_t *api, char *name) {
     return REF(lib_exports,i);
   }
 
-  //fprintf(stderr, "load_lib begin: %s\n", name);
+  fprintf(stderr, "load_lib begin: %s\n", name);
 
   name = strdup(name);
   exports = exec_module(api, name);
 
-  //fprintf(stderr, "load_lib end: %s\n", name);
+  fprintf(stderr, "load_lib end: %s\n", name);
 
   if (libs_used == MAX_LIBS) fatal("module table overflow\n");
 
@@ -1874,6 +1874,7 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
     if (IMMEDIATE(o_)) { \
       dst = o_; \
     } else { \
+    /*fprintf(stderr, "%p\n",o_);*/\
       frame_t *frame_ = O_FRAME(o_); \
       if (frame_ != GCFrame) { \
         if (frame_ > (frame_t*)api->heap) { \
@@ -1903,7 +1904,7 @@ static void *bad_argnum(api_t *api, void *E, intptr_t expected) {
   }
 
 //place redirection to the new location of the object
-//if frame field points to heap, instead of stack, then it is already moved
+//if frame field points outside of our heap, then it is already moved
 #define MARK_MOVED(o,p) REF(o,-1) = p
 
 static void *gc_arglist(void *o) {
@@ -1911,15 +1912,17 @@ static void *gc_arglist(void *o) {
   uintptr_t i;
   uintptr_t size;
   api_t *api = &api_g;
-
   size = UNFIXNUM(NARGS(o));
+  //fprintf(stderr, "beg gc_arglist: %d\n", (int)size);
   ARL(p, size);
   MARK_MOVED(o,p);
   for (i = 0; i < size; i++) {
+    //fprintf(stderr, "%d/%d\n", (int)i,(int)size);
     LDARG(q,o,i);
     GC_REC(q, q);
     STARG(p, i, q);
   }
+  //fprintf(stderr, "end gc_arglist\n");
   return p;
 }
 
@@ -2265,7 +2268,7 @@ static int ctx_error_handler(ctx_error_t *info) {
     } else if ((uint8_t*)api->heap[0] <= p && p < (uint8_t*)api->heap[1]+HEAP_SIZE) {
       fprintf(stderr, "out of memory\n");
     } else {
-      fprintf(stderr, "segfault at 0x%p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
+      fprintf(stderr, "segfault at %p (heap=%p)\n", p, (uint8_t*)api->heap[0]);
     }
   } else {
     fprintf(stderr, "%s\n", info->text);
@@ -2285,6 +2288,22 @@ static void init_metadata(void *metatbl, int count) {
   }
 }
 
+#define TEXT_HEAP_SIZE (1024*1024*4)
+static uint8_t text_heap[TEXT_HEAP_SIZE];
+static uint8_t *text_heap_top;
+
+uint8_t *text_heap_alloc(int count) {
+  uint8_t *r;
+  if (!text_heap_top) text_heap_top = text_heap;
+  r = text_heap_top;
+  count = ((count+7)/8)*8; //align to 64bit size
+  text_heap_top += count;
+  if (text_heap_top > text_heap+TEXT_HEAP_SIZE) {
+    fatal("Text heap overflow\n");
+  }
+  return r;
+}
+
 static void init_texts(api_t *api, void *txtbl, int count) {
   int i;
   void **ts = (void**)txtbl;
@@ -2299,7 +2318,7 @@ static void init_texts(api_t *api, void *txtbl, int count) {
 
   //relocated to heap, because nothing references these texts
   sz = ((uint8_t*)top0-(uint8_t*)Top);
-  p = malloc(sz);
+  p = text_heap_alloc(sz);
   memcpy(p,Top,sz);
   for (i = 0; i < count; i++) {
     t = ts[i];

@@ -6,6 +6,7 @@ GCDEF(gc_closure) {
   void *fixed_size, *dummy;
   api_t *api = &api_g;
   size = ((fn_meta_t*)get_meta(O_FN(o)))->size;
+  //fprintf(stderr, "beg closure: %d\n", size);
   GCPRE
   CLOSURE(p, O_CODE(o), size);
   MARK_MOVED(o,p);
@@ -25,6 +26,7 @@ GCDEF(gc_closure) {
     pp[i] = q;
   }
   GCPOST
+  //fprintf(stderr, "end closure\n");
   return p;
 }
 
@@ -39,9 +41,11 @@ GCDEF(gc_list) {
   MARK_MOVED(o,p);
   pp = (void**)&REF(p,0);
   oo = (void**)&REF(o,0);
+  //fprintf(stderr, "beg list: %d\n", size);
   for (i = 0; i < size; i++) {
     GC_REC(pp[i], oo[i]);
   }
+  //fprintf(stderr, "end list\n");
   GCPOST
   return p;
 }

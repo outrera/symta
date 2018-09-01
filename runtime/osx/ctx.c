@@ -79,6 +79,11 @@ static void unix_exception_handler(int sig, siginfo_t *siginfo, void *context) {
     error.text = "access violation";
     error.mem = (void*)(siginfo->si_addr);
     break;
+  case SIGBUS: //protect memory accessed
+    error.id = CTXE_ACCESS;
+    error.text = "access violation (SIGBUS)";
+    error.mem = (void*)(siginfo->si_addr);
+    break;
   case SIGINT:
     error.text = "SIGINT (ctrl-c)";
    break;
@@ -210,9 +215,11 @@ void ctx_set_error_handler(int (*error_handler)(ctx_error_t *info)) {
 
     sa.sa_sigaction = unix_exception_handler;
     if (sigaction(SIGSEGV, &sa, NULL)) saerr("SIGSEGV");
+    if (sigaction(SIGBUS,  &sa, NULL)) saerr("SIGBUS");
     if (sigaction(SIGFPE,  &sa, NULL)) saerr("SIGFPE");
     if (sigaction(SIGINT,  &sa, NULL)) saerr("SIGINT");
     if (sigaction(SIGILL,  &sa, NULL)) saerr("SIGILL");
+
     //if (sigaction(SIGTERM, &sa, NULL)) saerr("SIGTERM");
     //if (sigaction(SIGABRT, &sa, NULL)) saerr("SIGABRT");
   }

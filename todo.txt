@@ -1,3 +1,5 @@
+- homebrew malloc, because system provided allocates stuff at improper addresses
+  and we want to mmap new stuff at lower pages.
 - expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
 - most method calls just access member items, therefore it makes sense to store at call site direct indices into objects.
 - fixtext uses 3-bit tag field (all other tags are 2-bit) and has some free unused bits. Explore this.

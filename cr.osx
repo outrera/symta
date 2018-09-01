@@ -4,3 +4,6 @@ cflags="-O2 -fno-stack-protector -fomit-frame-pointer -fno-exceptions -fno-unwin
 #-fno-asynchronous-unwind-tables -nostartfiles -e run 
 rt="./runtime/osx/"
 gcc -Wl,-stack_size -Wl,0xA00000 $cflags -I "$rt"  "${rt}ctx.c" "${rt}compat.c" ./runtime/runtime.c -o symta
+
+#following disables position independent executable
+# -Wl,-no_pie

@@ -6,6 +6,10 @@
 
 #define SYMTA_DEBUG 1
 
+//Symta pointer layout:
+//| 63..54 | 53..3    | 2    | 1..0
+//+--------+----------+------+-----
+//| TAGH   | PAYLOAD  | LIFT | TAGL
 #define TAGL_BITS ((uintptr_t)2)
 #define PTR_BITS ((uintptr_t)40)
 #define TAGH_BITS ((uintptr_t)10)
