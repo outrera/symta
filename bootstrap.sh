@@ -1,7 +1,7 @@
 bs=bootstrap/
 rt="./runtime/"
 echo compiling symta runtime
-#bash cr.osx
+bash cr.osx
 mkdir lib
 echo compiling core
 ./c "$rt" "${bs}core_.c" lib/core_

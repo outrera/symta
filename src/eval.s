@@ -29,7 +29,6 @@ newerThan Source Dependent =
 | Source.time << DependentTime and GHeaderTimestamp << DependentTime
 
 c_compiler Dst Src =
-| Dst <= "[Dst]." // else gcc will add ".exe" on Windows
 | RtFolder = "[GRootFolder]runtime/"
 | sh "[GRootFolder]c \"[RtFolder]\" \"[Src]\" \"[Dst]\""
 

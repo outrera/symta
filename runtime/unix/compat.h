@@ -3,6 +3,6 @@
 
 #include <sys/stat.h>
 
-#define cmt_mkdir(path, mode) mkdir
+#define cmt_mkdir(path, mode) mkdir(path, mode)
 
 #endif

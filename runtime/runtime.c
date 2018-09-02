@@ -1534,6 +1534,9 @@ static void makePath(char *Path) {
   strcpy(T, Path);
   P = T;
   while((P = strchr(P+1, '/'))) {
+    if (P[1] == '.' && P[2] == '/') {
+      strcpy(P, P+2);
+    }
     *P = 0;
     // create a directory named with read/write/search permissions for
     // owner and group, and with read/search permissions for others.
