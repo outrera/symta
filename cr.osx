@@ -3,7 +3,11 @@
 cflags="-O2 -fno-stack-protector -fomit-frame-pointer -fno-exceptions -fno-unwind-tables -fno-ident -Wno-return-type -Wno-pointer-sign -I ./runtime"
 #-fno-asynchronous-unwind-tables -nostartfiles -e run 
 rt="./runtime/osx/"
-gcc -Wl,-stack_size -Wl,0xA00000 $cflags -I "$rt"  "${rt}ctx.c" "${rt}compat.c" ./runtime/runtime.c -o symta
+gcc -Wl,-image_base -Wl,0x100000000 -Wl,-stack_size -Wl,0xA00000 $cflags -I "$rt"  "${rt}ctx.c" "${rt}compat.c" ./runtime/runtime.c -o symta
+
+#NOTE: the first 4 gigabytes of OSX address space are
+#      mapped to "__PAGEZERO/__pagezero" (to guard against 32bit integer casts)
+#      so image_base cant be lower than 0x100000000
 
 #following disables position independent executable
 # -Wl,-no_pie

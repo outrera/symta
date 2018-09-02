@@ -579,12 +579,12 @@ static void *load_lib(struct api_t *api, char *name) {
     return REF(lib_exports,i);
   }
 
-  fprintf(stderr, "load_lib begin: %s\n", name);
+  //fprintf(stderr, "load_lib begin: %s\n", name);
 
   name = strdup(name);
   exports = exec_module(api, name);
 
-  fprintf(stderr, "load_lib end: %s\n", name);
+  //fprintf(stderr, "load_lib end: %s\n", name);
 
   if (libs_used == MAX_LIBS) fatal("module table overflow\n");
 
@@ -2415,10 +2415,10 @@ static api_t *init_api() {
   _mprotect(ALIGN(api->heap[1]), CTX_PGSZ*2, PROT_NONE);
 
 #if 0
-  fprintf(stderr, "hello\n");
+  fprintf(stderr, "writing to guard page...\n");
   *(int*)ALIGN(api->heap[0]) = 123;
   //*(int*)ALIGN(api->frame_guard) = 123;
-  fprintf(stderr, "world\n");
+  fprintf(stderr, "written to guard page!!!\n");
 #endif
   
   return api;
@@ -2429,6 +2429,14 @@ int main(int argc, char **argv) {
   char tmp[1024];
   api_t *api;
   void *R;
+  if ((uint64_t)&tmp > (uint64_t)PTR_MASK) {
+    fprintf(stderr, "Stack is is too high! (relink with proper -stack_addr)\n");
+    abort();
+  }
+  if ((uint64_t)(&api_g+1) > (uint64_t)PTR_MASK) {
+    fprintf(stderr, "Heap is is too high! (relink with proper -image_base)\n");
+    abort();
+  }
 
   api = init_api();
   init_args(api, argc, argv);

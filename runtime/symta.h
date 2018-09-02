@@ -11,7 +11,7 @@
 //+--------+----------+------+-----
 //| TAGH   | PAYLOAD  | LIFT | TAGL
 #define TAGL_BITS ((uintptr_t)2)
-#define PTR_BITS ((uintptr_t)40)
+#define PTR_BITS ((uintptr_t)50)
 #define TAGH_BITS ((uintptr_t)10)
 #define ALIGN_BITS ((uintptr_t)3)
 
