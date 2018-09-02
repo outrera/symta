@@ -1,0 +1,1 @@
+/Library/Frameworks/SDL2_mixer.framework/Headers/SDL_mixer.h
