@@ -1,5 +1,7 @@
 #include <setjmp.h>
 #include <png.h>
+#include <string.h>
+#include <errno.h>
 
 #include "gfx.h"
 
@@ -24,7 +26,7 @@ gfx_t *gfx_load_png(char *filename) {
   infile = fopen(filename, "rb");
 
   if (!infile) {
-    fprintf(stderr, "cant open `%s`\n", filename);
+    fprintf(stderr, "cant open `%s`\nError: %s\n", filename, strerror(errno));
     return 0;
   }
 
@@ -40,7 +42,7 @@ fail:
   fread(sig, 1, 8, infile);
   if (!png_check_sig(sig, 8)) {
     fprintf(stderr, "bad signature for `%s`\n", filename);
-    return 0;
+    goto fail;
   }
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
