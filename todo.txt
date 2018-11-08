@@ -1,3 +1,16 @@
+Symta syntax needs rethinking. The `|` is underused and leave is used frequently, so renaming it to shorten name, like `out` makes sense. If/else syntax could be improved too, because `else if` really wastes space and misaligns stuff.
+
+f A B =
+| if A < B then leave -1
+  else if A > B then leave 1
+  else
+| 0
+  
+f A B =
+  if A < B: out -1
+  el A > B: out 1
+  0
+
 - homebrew malloc, because system provided allocates stuff at improper addresses
   and we want to mmap new stuff at lower pages.
 - expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
