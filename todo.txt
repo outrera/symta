@@ -11,6 +11,7 @@ f A B =
   el A > B: out 1
   0
 
+- For functions, `:` duplicates `|`, so it would be more useful for it to always as act uniformly as it does for macros.
 - homebrew malloc, because system provided allocates stuff at improper addresses
   and we want to mmap new stuff at lower pages.
 - expressions like `$anim<>idle` can really be optimized, because $anim would most likely be a literal string.
