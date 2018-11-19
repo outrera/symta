@@ -497,7 +497,7 @@ Function arguments can be destructured the same way:
 vector_length [X Y] = @sqrt X*X + Y*Y
 ```
 
-But what if a value doesn't match the pattern or we want to match against several patterns? To solve that, Symta has macros `case`:
+But what if a value doesn't match the pattern or we want to match against several patterns? To solve that, Symta has macro `case`:
 ```
 case Xs
   [Y<a+b+c @Ys] | "Xs's head is [Y], which is one of a, b or c"
@@ -658,7 +658,7 @@ Here is the list of currently supported native types
 
 Core Library
 ------------------------------
-This section provides a quick reference of the content of the Symta's standard library, defined in cors_.s, rt_.s and macro.s files.
+This section provides a quick reference of the content of the Symta's standard library, defined in core_.s, rt_.s and macro.s files.
 
 `f A B ... C: g D E ... F` - same as `f A B ... C (g D E ... F)`, but also binds sub expressions, like `when got@@it get_value: process it`
 
