@@ -10,7 +10,14 @@ f A B =
   if A < B: out -1
   el A > B: out 1
   0
-
+- `+++` should be ior, not `---`, because `ior` is the binary addition, and `and` is binary multiplication. They should also have similar precedency.
+- Use nicer looking and more readable operators for ior, and, xor. The .+, .*, and .-, would be a good choice, because member dot is rarely used in bitwise expressions:
+  W[*]M [>] 8
+  W.*M .> 8
+  W&*M &> 8
+  W&*M &> 8
+- whole program symbol macros, similar to C/C++ enums, that would allow using integers instead of symbols.
+- Provide flt macro, similar to fxn.
 - For functions, `:` duplicates `|`, so it would be more useful for it to always as act uniformly as it does for macros.
 - homebrew malloc, because system provided allocates stuff at improper addresses
   and we want to mmap new stuff at lower pages.
