@@ -213,10 +213,11 @@ gui.update_timers Time =
 | when $timers.size: Ts <= [@Ts @$timers]
 | $timers <= Ts
 | 0
+gui.widget_under_cursor = $root.itemAt{$mice_xy [0 0] [0 0]}
 gui.input Es =
 | T = clock
 | $update_timers{T}
-| [NW NW_XY NW_WH] = $root.itemAt{$mice_xy [0 0] [0 0]} //new widget
+| [NW NW_XY NW_WH] = $widget_under_cursor //new widget
 | $popup <= NW.popup
 | $widget_cursor <= NW.pointer
 | for E Es: case E
